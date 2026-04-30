@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Flowback Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        'bg-main': '#0B0E14',
+        'bg-card': '#131820',
+        'accent-orange': '#F57C00',
+        'accent-blue': '#38BDF8',
+      },
+      fontFamily: {
+        serif: ['"Playfair Display"', 'serif'],
+        sans: ['Inter', 'sans-serif'],
+      }
+    }
+  }
+}
+</script>
+<style>
+  :root {
+    --bg: #0B0E14;
+    --card: #131820;
+    --orange: #F57C00;
+    --blue: #38BDF8;
+    --text: #F0F4F8;
+    --grad: linear-gradient(135deg, #F57C00 0%, #38BDF8 100%);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(245,124,0,.3); border-radius: 3px; }
+
+  /* Typography */
+  .serif { font-family: 'Playfair Display', serif; }
+  .grad-text {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid rgba(245,124,0,.1);
+    transition: border-color .2s, transform .2s;
+  }
+  .card:hover { border-color: rgba(245,124,0,.35); }
+
+  /* Buttons */
+  .btn-grad {
+    background: var(--grad);
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .btn-grad:hover { transform: scale(1.02); box-shadow: 0 0 22px rgba(245,124,0,.35); }
+  .btn-mp { background: #00B1EA; color: #fff; font-weight: 700; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+  .btn-mp:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(0,177,234,.4); }
+  .btn-paypal { background: #FFC439; color: #003087; font-weight: 700; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+  .btn-paypal:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(255,196,57,.4); }
+
+  /* Tabs */
+  .tab-section { display: none; }
+  .tab-section.active { display: block; }
+
+  /* Bottom nav */
+  #bottom-nav {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 480px;
+    background: rgba(19,24,32,.88);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(245,124,0,.2);
+    border-radius: 24px;
+    padding: 8px;
+    display: flex;
+    z-index: 50;
+  }
+  .nav-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 4px;
+    cursor: pointer;
+    border-radius: 16px;
+    background: transparent;
+    border: none;
+    transition: background .2s;
+  }
+  .nav-icon-wrap {
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    transition: background .2s;
+  }
+  .nav-icon-wrap svg { color: rgba(240,244,248,.45); transition: color .2s; }
+  .nav-label { font-size: 10px; font-weight: 500; color: rgba(240,244,248,.45); transition: color .2s; }
+  .nav-tab.active .nav-icon-wrap { background: var(--grad); }
+  .nav-tab.active .nav-icon-wrap svg { color: #fff; }
+  .nav-tab.active .nav-label { color: #fff; font-weight: 600; }
+
+  /* Main layout */
+  main { padding-top: 68px; padding-bottom: 120px; max-width: 480px; margin: 0 auto; }
+
+  /* Badges */
+  .badge-presencial { background: rgba(56,189,248,.14); color: #38BDF8; border: 1px solid rgba(56,189,248,.3); }
+  .badge-online { background: rgba(245,124,0,.14); color: #F57C00; border: 1px solid rgba(245,124,0,.3); }
+  .badge-gold { background: linear-gradient(135deg,rgba(245,124,0,.2),rgba(255,193,7,.2)); color: #FFC107; border: 1px solid rgba(245,124,0,.4); }
+
+  /* Event / Course cards hover */
+  .event-card, .course-card { transition: border-color .2s, transform .2s; }
+  .event-card:hover { border-color: rgba(245,124,0,.5) !important; transform: translateY(-2px); }
+  .course-card:hover { border-color: rgba(56,189,248,.45) !important; transform: translateY(-2px); }
+
+  /* Resource list hover */
+  .res-row { transition: transform .2s; cursor: pointer; }
+  .res-row:hover { transform: translateX(4px); }
+
+  /* Auth input */
+  .auth-input {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 14px;
+    width: 100%;
+    transition: border-color .2s;
+    font-family: 'Inter', sans-serif;
+  }
+  .auth-input:focus { outline: none; border-color: var(--orange); }
+  .auth-input::placeholder { color: rgba(240,244,248,.2); }
+
+  /* Schedule */
+  .sched-table { width: 100%; border-collapse: separate; border-spacing: 0 3px; }
+  .sched-table th { color: rgba(240,244,248,.4); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 4px 6px; text-align: center; }
+  .sched-table td { background: rgba(255,255,255,.03); padding: 7px 5px; text-align: center; font-size: 11px; color: rgba(240,244,248,.7); }
+  .sched-table td:first-child { border-radius: 8px 0 0 8px; color: var(--blue); font-weight: 700; font-size: 11px; padding-left: 8px; }
+  .sched-table td:last-child { border-radius: 0 8px 8px 0; }
+  .sched-table .has-class { background: rgba(245,124,0,.08); color: rgba(240,244,248,.85); }
+
+  /* Modal */
+  #modal-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  #modal-overlay.open { display: flex; }
+  .modal-bg {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .modal-sheet {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 480px;
+    background: #131820;
+    border-radius: 24px 24px 0 0;
+    border-top: 1px solid rgba(245,124,0,.3);
+    padding: 20px 18px env(safe-area-inset-bottom, 28px);
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(60px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .modal-sheet.animate { animation: slideUp .32s cubic-bezier(.34,1.4,.64,1); }
+
+  /* Notification banner */
+  #notif-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    transform: translateY(-120%);
+    transition: transform .4s cubic-bezier(.34,1.2,.64,1);
+  }
+  #notif-bar.show { transform: translateY(0); }
+
+  /* YouTube placeholder */
+  .yt-wrap {
+    position: relative; width: 100%;
+    padding-bottom: 56.25%; height: 0;
+    border-radius: 14px; overflow: hidden;
+    background: #0f1419; cursor: pointer;
+  }
+  .yt-wrap iframe {
+    position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
+  }
+  .yt-placeholder {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(245,124,0,.07), rgba(56,189,248,.07));
+  }
+  .yt-play {
+    width: 54px; height: 54px;
+    background: #ff0000;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .2s;
+  }
+  .yt-wrap:hover .yt-play { transform: scale(1.1); }
+
+  /* Before/after card */
+  .ba-card { border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.05); }
+
+  /* Membership cards */
+  .plan-basic { border: 1px solid rgba(56,189,248,.22); background: rgba(56,189,248,.03); }
+  .plan-premium { border: 1px solid rgba(245,124,0,.45); background: linear-gradient(135deg,rgba(245,124,0,.05),rgba(56,189,248,.05)); }
+
+  /* Glow backgrounds */
+  .glow-orange { background: radial-gradient(ellipse at 50% 0%, rgba(245,124,0,.18) 0%, transparent 70%); }
+  .glow-blue   { background: radial-gradient(ellipse at 50% 0%, rgba(56,189,248,.12) 0%, transparent 70%); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     NOTIFICATION BANNER
+══════════════════════════════════════ -->
+<div id="notif-bar" class="px-4 pt-4 pb-2">
+  <div style="background:#131820; border:1px solid rgba(245,124,0,.25); border-radius:18px;" class="p-3.5 flex items-center gap-3 shadow-2xl">
+    <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:var(--grad)">
+      <i data-lucide="bell" class="w-5 h-5 text-white"></i>
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-semibold text-white leading-tight">¿Activar notificaciones?</p>
+      <p class="text-xs text-white/40 mt-0.5">Entérate de eventos y novedades</p>
+    </div>
+    <div class="flex gap-2 flex-shrink-0">
+      <button onclick="activateNotif()" class="btn-grad text-xs px-3 py-1.5 rounded-lg">Activar</button>
+      <button onclick="dismissNotif()" class="text-xs px-3 py-1.5 rounded-lg text-white/40" style="background:rgba(255,255,255,.06)">Ahora no</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     HEADER
+══════════════════════════════════════ -->
+<header class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-5 py-3.5"
+  style="background:rgba(11,14,20,.88); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid rgba(245,124,0,.1); max-width:100%;">
+  <div class="w-9"></div>
+  <div class="flex items-center">
+    <img src="/logo.png" alt="Flowback Hub" style="width:120px; height:auto; display:block;"
+      onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='block'">
+    <span id="logo-fallback" class="text-xl font-black serif grad-text" style="display:none; letter-spacing:-.5px">Flowback Hub</span>
+  </div>
+  <button onclick="showNotifBar()" class="w-9 h-9 rounded-full flex items-center justify-center"
+    style="background:rgba(245,124,0,.1); border:1px solid rgba(245,124,0,.2);">
+    <i data-lucide="bell" class="w-4 h-4" style="color:var(--orange)"></i>
+  </button>
+</header>
+
+<!-- ══════════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════════ -->
+<main class="px-4">
+
+  <!-- ─── EVENTOS ─── -->
+  <section id="sec-eventos" class="tab-section active">
+    <div class="pt-6 pb-2">
+      <h1 class="text-2xl font-black serif mb-1">Próximos <span class="grad-text">eventos</span></h1>
+      <p class="text-xs text-white/40 mb-5">Únete a nuestras experiencias transformadoras</p>
+
+      <!-- Card 1 -->
+      <article class="event-card card rounded-2xl overflow-hidden mb-4">
+        <div class="relative">
+          <img src="https://flowback.infraqualia.com/assets/flowback-1.jpg" alt="Retiro de Flow" loading="lazy"
+            class="w-full object-cover" style="aspect-ratio:16/9">
+          <span class="badge-presencial absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full">Presencial</span>
+        </div>
+        <div class="p-4">
+          <div class="flex items-center gap-1.5 mb-2 flex-wrap">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 flex-shrink-0" style="color:var(--blue)"></i>
+            <span class="text-xs" style="color:var(--blue)">Sáb 15 May, 2026 · 10:00 AM</span>
+            <span class="text-white/20 mx-0.5">·</span>
+            <i data-lucide="map-pin" class="w-3.5 h-3.5 flex-shrink-0 text-white/40"></i>
+            <span class="text-xs text-white/40">Buenos Aires, AR</span>
+          </div>
+          <h3 class="font-bold text-base serif mb-1.5">Retiro de Flow y Consciencia</h3>
+          <p class="text-xs text-white/50 mb-3 leading-relaxed">Un día de inmersión profunda para reconectar con tu cuerpo, liberar bloqueos emocionales y encontrar tu flujo natural.</p>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-1.5">
+              <div class="flex -space-x-1.5">
+                <div class="w-6 h-6 rounded-full border-2 flex-shrink-0" style="border-color:var(--card); background:var(--grad)"></div>
+                <div class="w-6 h-6 rounded-full border-2 bg-sky-500 flex-shrink-0" style="border-color:var(--card)"></div>
+                <div class="w-6 h-6 rounded-full border-2 bg-purple-500 flex-shrink-0" style="border-color:var(--card)"></div>
+              </div>
+              <span class="text-xs text-white/40">+47 asistentes</span>
+            </div>
+            <span class="text-xs font-semibold" style="color:var(--orange)">8 lugares</span>
+          </div>
+          <button class="btn-grad w-full py-2.5 rounded-xl text-sm">Reservar lugar</button>
+        </div>
+      </article>
+
+      <!-- Card 2 -->
+      <article class="event-card card rounded-2xl overflow-hidden mb-4">
+        <div class="relative">
+          <img src="https://flowback.infraqualia.com/assets/flowback-2.jpg" alt="Taller Liberación" loading="lazy"
+            class="w-full object-cover" style="aspect-ratio:16/9">
+          <span class="badge-online absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full">Online</span>
+        </div>
+        <div class="p-4">
+          <div class="flex items-center gap-1.5 mb-2 flex-wrap">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 flex-shrink-0" style="color:var(--blue)"></i>
+            <span class="text-xs" style="color:var(--blue)">Mié 22 May, 2026 · 7:00 PM</span>
+            <span class="text-white/20 mx-0.5">·</span>
+            <i data-lucide="video" class="w-3.5 h-3.5 flex-shrink-0 text-white/40"></i>
+            <span class="text-xs text-white/40">Zoom</span>
+          </div>
+          <h3 class="font-bold text-base serif mb-1.5">Taller de Liberación Emocional</h3>
+          <p class="text-xs text-white/50 mb-3 leading-relaxed">Aprende técnicas probadas para soltar el peso emocional acumulado y crear espacio para lo nuevo en tu vida.</p>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-1.5">
+              <div class="flex -space-x-1.5">
+                <div class="w-6 h-6 rounded-full border-2 flex-shrink-0 bg-sky-400" style="border-color:var(--card)"></div>
+                <div class="w-6 h-6 rounded-full border-2 flex-shrink-0 bg-green-500" style="border-color:var(--card)"></div>
+                <div class="w-6 h-6 rounded-full border-2 flex-shrink-0 bg-pink-400" style="border-color:var(--card)"></div>
+              </div>
+              <span class="text-xs text-white/40">+92 asistentes</span>
+            </div>
+            <span class="text-xs font-semibold" style="color:var(--orange)">32 lugares</span>
+          </div>
+          <button class="btn-grad w-full py-2.5 rounded-xl text-sm">Inscribirme gratis</button>
+        </div>
+      </article>
+
+      <!-- Card 3 -->
+      <article class="event-card card rounded-2xl overflow-hidden mb-4">
+        <div class="relative">
+          <img src="https://flowback.infraqualia.com/assets/flowback-3.jpg" alt="Congreso Flowback" loading="lazy"
+            class="w-full object-cover" style="aspect-ratio:16/9">
+          <span class="badge-presencial absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full">Presencial</span>
+        </div>
+        <div class="p-4">
+          <div class="flex items-center gap-1.5 mb-2 flex-wrap">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 flex-shrink-0" style="color:var(--blue)"></i>
+            <span class="text-xs" style="color:var(--blue)">Dom 1 Jun, 2026 · 9:00 AM</span>
+            <span class="text-white/20 mx-0.5">·</span>
+            <i data-lucide="map-pin" class="w-3.5 h-3.5 flex-shrink-0 text-white/40"></i>
+            <span class="text-xs text-white/40">Medellín, CO</span>
+          </div>
+          <h3 class="font-bold text-base serif mb-1.5">Congreso Flowback · Edición Especial</h3>
+          <p class="text-xs text-white/50 mb-3 leading-relaxed">El encuentro presencial más grande de la comunidad. Ponentes internacionales, talleres y networking transformador.</p>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-1.5">
+              <div class="flex -space-x-1.5">
+                <div class="w-6 h-6 rounded-full border-2 flex-shrink-0 bg-yellow-500" style="border-color:var(--card)"></div>
+                <div class="w-6 h-6 rounded-full border-2 flex-shrink-0 bg-pink-500" style="border-color:var(--card)"></div>
+                <div class="w-6 h-6 rounded-full border-2 flex-shrink-0" style="border-color:var(--card); background:var(--grad)"></div>
+              </div>
+              <span class="text-xs text-white/40">+214 asistentes</span>
+            </div>
+            <span class="text-xs font-semibold text-red-400">¡Solo 5 lugares!</span>
+          </div>
+          <button class="btn-grad w-full py-2.5 rounded-xl text-sm">Conseguir mi lugar</button>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ─── GRATIS ─── -->
+  <section id="sec-gratis" class="tab-section">
+    <div class="pt-6 pb-2">
+      <h1 class="text-2xl font-black serif mb-1">Recursos <span class="grad-text">gratuitos</span></h1>
+      <p class="text-xs text-white/40 mb-5">Todo para empezar tu transformación hoy</p>
+
+      <!-- WhatsApp group card -->
+      <a href="https://wa.me/" target="_blank" rel="noopener"
+        class="card mb-5 rounded-2xl p-4 flex items-center gap-4 block no-underline"
+        style="border-color:rgba(37,211,102,.25); background:rgba(37,211,102,.04);">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+          style="background:rgba(37,211,102,.14);">
+          <svg viewBox="0 0 24 24" class="w-7 h-7" fill="#25D366">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold text-sm text-white">Grupo de WhatsApp</p>
+          <p class="text-xs text-white/40 mt-0.5">Comunidad gratuita · 3.2k miembros activos</p>
+        </div>
+        <i data-lucide="arrow-right" class="w-4 h-4 text-white/30 flex-shrink-0"></i>
+      </a>
+
+      <!-- Resources list -->
+      <h2 class="text-sm font-bold serif mb-3 text-white/80 uppercase tracking-wide">Contenido destacado</h2>
+      <div class="space-y-2.5 mb-6">
+
+        <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(245,124,0,.13)">
+            <i data-lucide="mic" class="w-5 h-5" style="color:var(--orange)"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-sm text-white">Podcast Flowback</p>
+            <p class="text-xs text-white/40 mt-0.5 truncate">Episodios semanales de transformación</p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <p class="text-xs font-bold" style="color:var(--orange)">142</p>
+            <p class="text-xs text-white/30">ep.</p>
+          </div>
+        </div>
+
+        <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(255,0,0,.1)">
+            <i data-lucide="youtube" class="w-5 h-5 text-red-500"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-sm text-white">Canal de YouTube</p>
+            <p class="text-xs text-white/40 mt-0.5 truncate">Videos gratuitos de bienestar y flow</p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <p class="text-xs font-bold text-white">89k</p>
+            <p class="text-xs text-white/30">subs</p>
+          </div>
+        </div>
+
+        <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(56,189,248,.12)">
+            <i data-lucide="heart-pulse" class="w-5 h-5" style="color:var(--blue)"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-sm text-white">Protocolo Ansiedad</p>
+            <p class="text-xs text-white/40 mt-0.5 truncate">Guía PDF descargable gratuita</p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <p class="text-xs font-bold" style="color:var(--blue)">12k</p>
+            <p class="text-xs text-white/30">desc.</p>
+          </div>
+        </div>
+
+        <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(139,92,246,.12)">
+            <i data-lucide="sparkles" class="w-5 h-5 text-purple-400"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-sm text-white">Clase Liberación Emocional</p>
+            <p class="text-xs text-white/40 mt-0.5 truncate">Masterclass gratuita · 45 min</p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <p class="text-xs font-bold text-purple-400">28k</p>
+            <p class="text-xs text-white/30">vistas</p>
+          </div>
+        </div>
+
+        <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(34,197,94,.11)">
+            <i data-lucide="zap" class="w-5 h-5 text-green-400"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-sm text-white">Clase de Flow</p>
+            <p class="text-xs text-white/40 mt-0.5 truncate">Introducción al estado de flujo</p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <p class="text-xs font-bold text-green-400">19k</p>
+            <p class="text-xs text-white/30">vistas</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA memberships -->
+      <div class="rounded-2xl p-5 mb-6 relative overflow-hidden"
+        style="background:linear-gradient(135deg,rgba(245,124,0,.13) 0%,rgba(56,189,248,.13) 100%); border:1px solid rgba(245,124,0,.3)">
+        <div class="absolute -top-4 -right-4 w-28 h-28 rounded-full" style="background:radial-gradient(circle,rgba(245,124,0,.25),transparent 70%)"></div>
+        <p class="text-xs font-bold mb-1" style="color:var(--orange); letter-spacing:.08em">¿LISTO PARA MÁS?</p>
+        <p class="text-lg font-black serif text-white mb-1">Accede a todo el contenido</p>
+        <p class="text-xs text-white/50 mb-4 leading-relaxed">Clases en vivo, cursos completos y una comunidad que te respalda cada día.</p>
+        <button onclick="openModal()" class="btn-grad px-6 py-2.5 rounded-xl text-sm">Ver Membresías →</button>
+      </div>
+
+      <!-- Transformaciones -->
+      <h2 class="text-base font-bold serif mb-3 text-white">Transformaciones reales</h2>
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <div class="ba-card" style="background:var(--card)">
+          <div class="h-28 flex items-center justify-center" style="background:linear-gradient(135deg,rgba(255,255,255,.03),rgba(255,255,255,.01))">
+            <p class="text-4xl font-black text-white/8 serif" style="color:rgba(255,255,255,.07)">Antes</p>
+          </div>
+          <div class="p-3">
+            <p class="text-xs text-white/55 leading-snug">Ansiedad crónica, sin energía ni dirección</p>
+            <p class="text-xs font-semibold mt-1.5" style="color:var(--blue)">→ María, 34 años</p>
+          </div>
+        </div>
+        <div class="ba-card" style="background:var(--card); border-color:rgba(245,124,0,.2)">
+          <div class="h-28 flex items-center justify-center" style="background:linear-gradient(135deg,rgba(245,124,0,.12),rgba(56,189,248,.08))">
+            <p class="text-4xl font-black serif" style="color:rgba(245,124,0,.25)">Después</p>
+          </div>
+          <div class="p-3">
+            <p class="text-xs text-white/55 leading-snug">+6 meses en Tribu Flowback</p>
+            <p class="text-xs font-semibold mt-1.5" style="color:var(--orange)">Vida plena y en flow ✓</p>
+          </div>
+        </div>
+        <div class="ba-card" style="background:var(--card)">
+          <div class="h-28 flex items-center justify-center" style="background:linear-gradient(135deg,rgba(255,255,255,.03),rgba(255,255,255,.01))">
+            <p class="text-4xl font-black serif" style="color:rgba(255,255,255,.07)">Antes</p>
+          </div>
+          <div class="p-3">
+            <p class="text-xs text-white/55 leading-snug">Dolor crónico de espalda hace 3 años</p>
+            <p class="text-xs font-semibold mt-1.5" style="color:var(--blue)">→ Carlos, 41 años</p>
+          </div>
+        </div>
+        <div class="ba-card" style="background:var(--card); border-color:rgba(245,124,0,.2)">
+          <div class="h-28 flex items-center justify-center" style="background:linear-gradient(135deg,rgba(245,124,0,.1),rgba(34,197,94,.08))">
+            <p class="text-4xl font-black serif" style="color:rgba(245,124,0,.25)">Después</p>
+          </div>
+          <div class="p-3">
+            <p class="text-xs text-white/55 leading-snug">+3 meses en el programa</p>
+            <p class="text-xs font-semibold mt-1.5" style="color:var(--orange)">Sin dolor, activo ✓</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video testimonials -->
+      <h2 class="text-base font-bold serif mb-3 text-white">Testimonios en video</h2>
+      <div class="space-y-4 mb-6">
+        <div>
+          <div class="yt-wrap" onclick="loadYT(this,'VIDEO_ID_1')">
+            <div class="yt-placeholder">
+              <div class="yt-play">
+                <svg viewBox="0 0 24 24" class="w-6 h-6 ml-1" fill="white"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+              <p class="text-xs text-white/50">Toca para reproducir</p>
+            </div>
+          </div>
+          <p class="text-xs text-white/35 mt-2 px-1">"Flowback cambió completamente mi vida" — Laura, México</p>
+        </div>
+        <div>
+          <div class="yt-wrap" onclick="loadYT(this,'VIDEO_ID_2')">
+            <div class="yt-placeholder">
+              <div class="yt-play">
+                <svg viewBox="0 0 24 24" class="w-6 h-6 ml-1" fill="white"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+              <p class="text-xs text-white/50">Toca para reproducir</p>
+            </div>
+          </div>
+          <p class="text-xs text-white/35 mt-2 px-1">"En 3 meses liberé lo que cargué por años" — Diego, Colombia</p>
+        </div>
+      </div>
+
+      <!-- WhatsApp human support banner -->
+      <div class="rounded-2xl p-4 flex items-center gap-4"
+        style="background:rgba(37,211,102,.06); border:1px solid rgba(37,211,102,.2)">
+        <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center" style="background:rgba(37,211,102,.15)">
+          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="#25D366">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-white">Atención humana</p>
+          <p class="text-xs text-white/40 mt-0.5">Nuestro equipo responde en menos de 2h</p>
+        </div>
+        <a href="https://wa.me/" target="_blank" rel="noopener"
+          class="text-xs font-bold px-3.5 py-2 rounded-xl flex-shrink-0 text-white"
+          style="background:#25D366">Escribir</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── CURSOS ─── -->
+  <section id="sec-cursos" class="tab-section">
+    <div class="pt-6 pb-2">
+      <h1 class="text-2xl font-black serif mb-1">Nuestros <span class="grad-text">cursos</span></h1>
+      <p class="text-xs text-white/40 mb-5">Programas de transformación profunda</p>
+
+      <!-- Course 1 -->
+      <article class="course-card card rounded-2xl overflow-hidden mb-4">
+        <div class="relative">
+          <img src="https://flowback.infraqualia.com/assets/flowback-1.jpg" alt="Sana tu Espalda" loading="lazy"
+            class="w-full object-cover" style="aspect-ratio:16/9">
+          <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(11,14,20,.7) 0%,transparent 55%)"></div>
+        </div>
+        <div class="p-4">
+          <div class="flex items-center gap-1.5 mb-2">
+            <i data-lucide="activity" class="w-3.5 h-3.5" style="color:var(--blue)"></i>
+            <span class="text-xs" style="color:var(--blue)">8 semanas · 32 clases</span>
+          </div>
+          <h3 class="font-bold text-base serif mb-1.5">Sana tu Espalda</h3>
+          <p class="text-xs text-white/50 mb-3 leading-relaxed">Protocolo completo para eliminar el dolor de espalda desde sus raíces emocionales y físicas. Técnicas de movimiento y liberación somática.</p>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-1">
+              <i data-lucide="star" class="w-3.5 h-3.5 text-yellow-400" style="fill:#facc15"></i>
+              <span class="text-xs font-bold text-white">4.9</span>
+              <span class="text-xs text-white/30 ml-0.5">(384)</span>
+            </div>
+            <span class="text-base font-black" style="color:var(--orange)">$97 <span class="text-xs font-normal text-white/40">USD</span></span>
+          </div>
+          <button class="btn-grad w-full py-2.5 rounded-xl text-sm">Ver programa</button>
+        </div>
+      </article>
+
+      <!-- Course 2 -->
+      <article class="course-card card rounded-2xl overflow-hidden mb-4">
+        <div class="relative">
+          <img src="https://flowback.infraqualia.com/assets/flowback-2.jpg" alt="Heridas Emocionales" loading="lazy"
+            class="w-full object-cover" style="aspect-ratio:16/9">
+          <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(11,14,20,.7) 0%,transparent 55%)"></div>
+        </div>
+        <div class="p-4">
+          <div class="flex items-center gap-1.5 mb-2">
+            <i data-lucide="heart" class="w-3.5 h-3.5 text-pink-400"></i>
+            <span class="text-xs text-pink-400">12 semanas · 48 clases</span>
+          </div>
+          <h3 class="font-bold text-base serif mb-1.5">Heridas Emocionales</h3>
+          <p class="text-xs text-white/50 mb-3 leading-relaxed">Un viaje profundo para identificar, procesar y liberar las heridas del pasado que limitan tu presente y tu futuro.</p>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-1">
+              <i data-lucide="star" class="w-3.5 h-3.5 text-yellow-400" style="fill:#facc15"></i>
+              <span class="text-xs font-bold text-white">4.8</span>
+              <span class="text-xs text-white/30 ml-0.5">(521)</span>
+            </div>
+            <span class="text-base font-black" style="color:var(--orange)">$147 <span class="text-xs font-normal text-white/40">USD</span></span>
+          </div>
+          <button class="btn-grad w-full py-2.5 rounded-xl text-sm">Ver programa</button>
+        </div>
+      </article>
+
+      <!-- Course 3 — Premium gold -->
+      <article class="course-card rounded-2xl overflow-hidden mb-4"
+        style="border:1px solid rgba(245,124,0,.42); background:var(--card)">
+        <div class="relative">
+          <img src="https://flowback.infraqualia.com/assets/flowback-3.jpg" alt="Certificación Flowmaster" loading="lazy"
+            class="w-full object-cover" style="aspect-ratio:16/9">
+          <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(11,14,20,.8) 0%,transparent 50%)"></div>
+          <span class="badge-gold absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full">⭐ PREMIUM</span>
+        </div>
+        <div class="p-4">
+          <div class="flex items-center gap-1.5 mb-2">
+            <i data-lucide="award" class="w-3.5 h-3.5" style="color:#FFC107"></i>
+            <span class="text-xs" style="color:#FFC107">6 meses · Certificación oficial</span>
+          </div>
+          <h3 class="font-bold text-base serif mb-1.5">Certificación Flowmaster</h3>
+          <p class="text-xs text-white/50 mb-3 leading-relaxed">Conviértete en facilitador certificado del método Flowback. Formación profesional con aval internacional y comunidad de práctica.</p>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-1">
+              <i data-lucide="star" class="w-3.5 h-3.5 text-yellow-400" style="fill:#facc15"></i>
+              <span class="text-xs font-bold text-white">5.0</span>
+              <span class="text-xs text-white/30 ml-0.5">(127)</span>
+            </div>
+            <span class="text-base font-black" style="color:#FFC107">$597 <span class="text-xs font-normal text-white/40">USD</span></span>
+          </div>
+          <button class="w-full py-2.5 rounded-xl text-sm font-bold text-white"
+            style="background:linear-gradient(135deg,#F57C00,#FFC107); transition:transform .2s, box-shadow .2s;"
+            onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 20px rgba(245,124,0,.4)'"
+            onmouseout="this.style.transform=''; this.style.boxShadow=''">Solicitar admisión</button>
+        </div>
+      </article>
+
+      <!-- Course 4 — Premium gold -->
+      <article class="course-card rounded-2xl overflow-hidden mb-4"
+        style="border:1px solid rgba(245,124,0,.42); background:var(--card)">
+        <div class="relative">
+          <img src="https://flowback.infraqualia.com/assets/flowback-1.jpg" alt="Liberación Emocional" loading="lazy"
+            class="w-full object-cover" style="aspect-ratio:16/9">
+          <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(11,14,20,.8) 0%,transparent 50%)"></div>
+          <span class="badge-gold absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full">⭐ PREMIUM</span>
+        </div>
+        <div class="p-4">
+          <div class="flex items-center gap-1.5 mb-2">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5" style="color:#FFC107"></i>
+            <span class="text-xs" style="color:#FFC107">10 semanas · Acompañamiento incluido</span>
+          </div>
+          <h3 class="font-bold text-base serif mb-1.5">Liberación Emocional</h3>
+          <p class="text-xs text-white/50 mb-3 leading-relaxed">El programa más completo de Flowback. Técnicas avanzadas de liberación, integración somática y reprogramación profunda.</p>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-1">
+              <i data-lucide="star" class="w-3.5 h-3.5 text-yellow-400" style="fill:#facc15"></i>
+              <span class="text-xs font-bold text-white">4.9</span>
+              <span class="text-xs text-white/30 ml-0.5">(298)</span>
+            </div>
+            <span class="text-base font-black" style="color:#FFC107">$297 <span class="text-xs font-normal text-white/40">USD</span></span>
+          </div>
+          <button class="w-full py-2.5 rounded-xl text-sm font-bold text-white"
+            style="background:linear-gradient(135deg,#F57C00,#FFC107); transition:transform .2s, box-shadow .2s;"
+            onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 20px rgba(245,124,0,.4)'"
+            onmouseout="this.style.transform=''; this.style.boxShadow=''">Inscribirme ahora</button>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ─── TRIBU ─── -->
+  <section id="sec-tribu" class="tab-section">
+    <div class="pt-6 pb-2">
+      <h1 class="text-2xl font-black serif mb-1">Tribu <span class="grad-text">Flowback</span></h1>
+      <p class="text-xs text-white/40 mb-5">El espacio exclusivo de nuestra comunidad</p>
+
+      <!-- Login form -->
+      <div class="card rounded-2xl p-5 mb-5">
+        <div class="flex items-center gap-3 mb-5">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style="background:linear-gradient(135deg,rgba(245,124,0,.18),rgba(56,189,248,.18))">
+            <i data-lucide="lock" class="w-5 h-5" style="color:var(--orange)"></i>
+          </div>
+          <div>
+            <p class="font-semibold text-sm text-white">Acceso miembros</p>
+            <p class="text-xs text-white/40 mt-0.5">Inicia sesión con tu cuenta</p>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-white/40 mb-1.5 block">Email</label>
+            <input type="email" placeholder="tu@email.com" class="auth-input">
+          </div>
+          <div>
+            <label class="text-xs text-white/40 mb-1.5 block">Contraseña</label>
+            <input type="password" placeholder="••••••••" class="auth-input">
+          </div>
+          <button class="btn-grad w-full py-3 rounded-xl text-sm mt-1">Iniciar sesión</button>
+        </div>
+        <p class="text-center text-xs text-white/30 mt-3 cursor-pointer hover:text-white/50 transition-colors">
+          ¿Olvidaste tu contraseña?
+        </p>
+      </div>
+
+      <!-- CTA memberships -->
+      <div class="rounded-2xl p-5 mb-5 relative overflow-hidden"
+        style="background:linear-gradient(135deg,rgba(245,124,0,.12) 0%,rgba(56,189,248,.12) 100%); border:1px solid rgba(245,124,0,.3)">
+        <p class="text-xs font-bold mb-1" style="color:var(--orange); letter-spacing:.08em">¿AÚN NO ERES MIEMBRO?</p>
+        <p class="text-lg font-black serif text-white mb-1">Únete a la Tribu</p>
+        <p class="text-xs text-white/50 mb-4 leading-relaxed">Accede a clases en vivo, cursos y nuestra comunidad privada desde $35/mes.</p>
+        <button onclick="openModal()" class="btn-grad px-6 py-2.5 rounded-xl text-sm">Ver Membresías →</button>
+      </div>
+
+      <!-- Schedule table -->
+      <h2 class="text-base font-bold serif mb-3 text-white">Horario de clases en vivo</h2>
+      <div class="card rounded-2xl p-4 mb-5 overflow-x-auto">
+        <table class="sched-table">
+          <thead>
+            <tr>
+              <th class="text-left">Hora</th>
+              <th>L</th><th>M</th><th>X</th><th>J</th><th>V</th><th>S</th><th>D</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>7:00</td>
+              <td class="has-class">Flow</td><td>—</td><td class="has-class">Flow</td><td>—</td><td class="has-class">Flow</td><td class="has-class">Flow</td><td>—</td>
+            </tr>
+            <tr>
+              <td>9:00</td>
+              <td>—</td><td class="has-class">Espalda</td><td>—</td><td class="has-class">Espalda</td><td>—</td><td class="has-class">Esp.</td><td class="has-class">Esp.</td>
+            </tr>
+            <tr>
+              <td>12:00</td>
+              <td class="has-class">Emoc.</td><td>—</td><td class="has-class">Emoc.</td><td>—</td><td class="has-class">Emoc.</td><td>—</td><td class="has-class">Emoc.</td>
+            </tr>
+            <tr>
+              <td>18:00</td>
+              <td class="has-class">Flow</td><td class="has-class">Flow</td><td>—</td><td class="has-class">Flow</td><td class="has-class">Flow</td><td>—</td><td>—</td>
+            </tr>
+            <tr>
+              <td>20:00</td>
+              <td>—</td><td class="has-class">Medit.</td><td class="has-class">Medit.</td><td>—</td><td>—</td><td class="has-class">Medit.</td><td class="has-class">Medit.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-xs text-white/30 text-center mt-3 pt-3" style="border-top:1px solid rgba(255,255,255,.05)">
+          Todas las clases via Zoom · Horario CDMX (UTC-6)
+        </p>
+      </div>
+
+      <!-- Benefits -->
+      <h2 class="text-base font-bold serif mb-3 text-white">Beneficios incluidos</h2>
+      <div class="space-y-2.5 mb-4">
+        <div class="flex items-center gap-3 p-3 rounded-xl"
+          style="background:rgba(56,189,248,.05); border:1px solid rgba(56,189,248,.1)">
+          <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(56,189,248,.12)">
+            <i data-lucide="video" class="w-4 h-4" style="color:var(--blue)"></i>
+          </div>
+          <p class="text-sm text-white/80">Clases en vivo diarias por Zoom</p>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-xl"
+          style="background:rgba(245,124,0,.05); border:1px solid rgba(245,124,0,.1)">
+          <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(245,124,0,.12)">
+            <i data-lucide="library" class="w-4 h-4" style="color:var(--orange)"></i>
+          </div>
+          <p class="text-sm text-white/80">Acceso a biblioteca de +200 grabaciones</p>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-xl"
+          style="background:rgba(139,92,246,.05); border:1px solid rgba(139,92,246,.1)">
+          <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(139,92,246,.12)">
+            <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
+          </div>
+          <p class="text-sm text-white/80">Comunidad privada de miembros activos</p>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-xl"
+          style="background:rgba(34,197,94,.05); border:1px solid rgba(34,197,94,.1)">
+          <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(34,197,94,.12)">
+            <i data-lucide="message-circle" class="w-4 h-4 text-green-400"></i>
+          </div>
+          <p class="text-sm text-white/80">Soporte directo con el equipo Flowback</p>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-xl"
+          style="background:rgba(245,124,0,.05); border:1px solid rgba(245,124,0,.1)">
+          <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(245,124,0,.12)">
+            <i data-lucide="percent" class="w-4 h-4" style="color:var(--orange)"></i>
+          </div>
+          <p class="text-sm text-white/80">Descuentos exclusivos en eventos y cursos</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══════════════════════════════════════
+     BOTTOM NAVIGATION
+══════════════════════════════════════ -->
+<nav id="bottom-nav">
+  <button class="nav-tab active" id="nav-eventos" onclick="switchTab('eventos')">
+    <div class="nav-icon-wrap"><i data-lucide="calendar-days" class="w-5 h-5"></i></div>
+    <span class="nav-label">Eventos</span>
+  </button>
+  <button class="nav-tab" id="nav-gratis" onclick="switchTab('gratis')">
+    <div class="nav-icon-wrap"><i data-lucide="gift" class="w-5 h-5"></i></div>
+    <span class="nav-label">Gratis</span>
+  </button>
+  <button class="nav-tab" id="nav-cursos" onclick="switchTab('cursos')">
+    <div class="nav-icon-wrap"><i data-lucide="graduation-cap" class="w-5 h-5"></i></div>
+    <span class="nav-label">Cursos</span>
+  </button>
+  <button class="nav-tab" id="nav-tribu" onclick="switchTab('tribu')">
+    <div class="nav-icon-wrap"><i data-lucide="crown" class="w-5 h-5"></i></div>
+    <span class="nav-label">Tribu</span>
+  </button>
+</nav>
+
+<!-- ══════════════════════════════════════
+     MEMBERSHIP MODAL
+══════════════════════════════════════ -->
+<div id="modal-overlay" role="dialog" aria-modal="true" aria-label="Membresías">
+  <div class="modal-bg" onclick="closeModal()"></div>
+  <div class="modal-sheet" id="modal-sheet">
+    <!-- Handle -->
+    <div class="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5"></div>
+
+    <div class="flex items-center justify-between mb-1">
+      <h2 class="text-xl font-black serif text-white">Elige tu membresía</h2>
+      <button onclick="closeModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-white/40 hover:text-white transition-colors"
+        style="background:rgba(255,255,255,.06)">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <p class="text-xs text-white/40 mb-5">Sin contratos · Cancela cuando quieras</p>
+
+    <!-- Basic -->
+    <div class="plan-basic rounded-2xl p-4 mb-3">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <p class="text-xs font-bold tracking-widest mb-1" style="color:var(--blue)">BÁSICA</p>
+          <div class="flex items-baseline gap-1">
+            <span class="text-3xl font-black text-white">$35</span>
+            <span class="text-sm text-white/40">USD/mes</span>
+          </div>
+        </div>
+        <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(56,189,248,.14); color:var(--blue)">Popular</span>
+      </div>
+      <ul class="space-y-2 mb-4">
+        <li class="flex items-center gap-2 text-xs text-white/65">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Clases en vivo diarias
+        </li>
+        <li class="flex items-center gap-2 text-xs text-white/65">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Acceso a +200 grabaciones
+        </li>
+        <li class="flex items-center gap-2 text-xs text-white/65">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Comunidad privada
+        </li>
+      </ul>
+      <div class="flex gap-2">
+        <button class="btn-mp flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-1.5">
+          <span class="text-xs font-black">Mercado</span><span class="text-xs font-black">Pago</span>
+        </button>
+        <button class="btn-paypal flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-0.5">
+          <span class="text-xs font-black italic" style="color:#009cde">Pay</span><span class="text-xs font-black italic" style="color:#003087">Pal</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Premium -->
+    <div class="plan-premium rounded-2xl p-4">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <p class="text-xs font-bold tracking-widest mb-1" style="color:var(--orange)">PREMIUM</p>
+          <div class="flex items-baseline gap-1">
+            <span class="text-3xl font-black text-white">$55</span>
+            <span class="text-sm text-white/40">USD/mes</span>
+          </div>
+        </div>
+        <span class="badge-gold text-xs font-bold px-2.5 py-1 rounded-full">⭐ Mejor valor</span>
+      </div>
+      <ul class="space-y-2 mb-4">
+        <li class="flex items-center gap-2 text-xs text-white/65">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Todo lo de Básica incluido
+        </li>
+        <li class="flex items-center gap-2 text-xs text-white/65">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Acceso a todos los cursos
+        </li>
+        <li class="flex items-center gap-2 text-xs text-white/65">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Mentoría mensual 1:1
+        </li>
+        <li class="flex items-center gap-2 text-xs text-white/65">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Descuentos en eventos
+        </li>
+      </ul>
+      <div class="flex gap-2">
+        <button class="btn-mp flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-1.5">
+          <span class="text-xs font-black">Mercado</span><span class="text-xs font-black">Pago</span>
+        </button>
+        <button class="btn-paypal flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-0.5">
+          <span class="text-xs font-black italic" style="color:#009cde">Pay</span><span class="text-xs font-black italic" style="color:#003087">Pal</span>
+        </button>
+      </div>
+    </div>
+
+    <p class="text-center text-xs text-white/25 mt-4 flex items-center justify-center gap-1">
+      <i data-lucide="lock" class="w-3 h-3"></i> Pago 100% seguro · SSL encriptado
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════ -->
+<script>
+  // ── Init icons
+  lucide.createIcons();
+
+  // ── Tab switching
+  const tabs = ['eventos','gratis','cursos','tribu'];
+
+  function switchTab(name) {
+    tabs.forEach(t => {
+      document.getElementById('sec-' + t).classList.toggle('active', t === name);
+      const btn = document.getElementById('nav-' + t);
+      btn.classList.toggle('active', t === name);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Modal
+  function openModal() {
+    const overlay = document.getElementById('modal-overlay');
+    const sheet   = document.getElementById('modal-sheet');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    sheet.classList.remove('animate');
+    void sheet.offsetWidth; // reflow
+    sheet.classList.add('animate');
+    lucide.createIcons(); // ensure icons inside modal are rendered
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // Close modal on Escape
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  // ── Notification banner
+  let notifVisible = false;
+
+  function showNotifBar() {
+    if (notifVisible) return;
+    document.getElementById('notif-bar').classList.add('show');
+    notifVisible = true;
+  }
+
+  function dismissNotif() {
+    document.getElementById('notif-bar').classList.remove('show');
+    notifVisible = false;
+  }
+
+  function activateNotif() {
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      Notification.requestPermission().then(p => {
+        dismissNotif();
+        if (p === 'granted') {
+          setTimeout(() => {
+            new Notification('¡Bienvenido a Flowback Hub! 🎉', {
+              body: 'Ahora recibirás notificaciones de eventos y novedades.',
+              icon: '/logo.png'
+            });
+          }, 600);
+        }
+      });
+    } else {
+      dismissNotif();
+    }
+  }
+
+  // Auto-show notif banner after 3s (only first time)
+  if (!localStorage.getItem('notif_dismissed')) {
+    setTimeout(showNotifBar, 3000);
+  }
+
+  // Store dismissal
+  document.getElementById('notif-bar').addEventListener('transitionend', function() {
+    if (!notifVisible) localStorage.setItem('notif_dismissed', '1');
+  });
+
+  // ── Lazy YouTube loader
+  function loadYT(wrapper, videoId) {
+    wrapper.innerHTML =
+      '<iframe src="https://www.youtube.com/embed/' + videoId + '?autoplay=1&rel=0" ' +
+      'allow="autoplay; encrypted-media" allowfullscreen></iframe>';
+  }
+</script>
+</body>
+</html>
