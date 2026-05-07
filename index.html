@@ -595,13 +595,21 @@ function isAdmin() {
 
 function getUserTier() {
   if (isAdmin()) return 'vip';
-  return userProfile?.tier || 'free';
+  // Normalize: DB might return 'VIP', 'Basica', ' premium ' etc.
+  return (userProfile?.tier || 'free').toLowerCase().trim();
 }
 
 function canAccess(tierRequired) {
   if (!tierRequired || tierRequired === 'free') return true;
   if (!currentUser) return false;
-  return (TIER_RANK[getUserTier()] ?? 0) >= (TIER_RANK[tierRequired] ?? 0);
+  const tier = getUserTier();
+  // Simple includes-based check — immune to TIER_RANK lookup failures
+  const map = {
+    basica:  ['basica','premium','vip'].includes(tier),
+    premium: ['premium','vip'].includes(tier),
+    vip:     tier === 'vip',
+  };
+  return map[tierRequired] ?? (TIER_RANK[tier] ?? 0) >= (TIER_RANK[tierRequired] ?? 0);
 }
 
 function escHtml(str) {
@@ -849,15 +857,18 @@ function handleSignedOut() {
 function updateUIForLoggedInUser() {
   renderNavTabs();
 
-  // If currently on tribu section, re-render it
   const tribu = document.getElementById('sec-tribu');
   if (tribu) renderTribuSection();
 
-  // Reset loaded flags for member-only sections so they re-fetch
+  // Reset loaded flags so member sections re-fetch with the new auth state
   window._loaded_agenda   = false;
   window._loaded_grabadas = false;
 
-  // If the active tab is no longer in the new nav, redirect
+  // If the user is already on a member section, reload it now
+  // (switchSection won't fire again because currentSection didn't change)
+  if (currentSection === 'agenda')   loadAgenda();
+  if (currentSection === 'grabadas') loadGrabadas();
+
   const memberTabs = ['eventos', 'clases-gratis', 'cursos', 'agenda', 'grabadas', 'tribu'];
   if (!memberTabs.includes(currentSection)) switchSection('eventos');
 }
@@ -1923,11 +1934,10 @@ async function loadAgenda() {
   const container = document.getElementById('agenda-list');
   if (!container) return;
 
-  if (!currentUser)          { container.innerHTML = renderMemberGate();           lucide.createIcons(); return; }
-  if (!canAccess('basica'))  { container.innerHTML = renderTierGate('basica','la Agenda'); lucide.createIcons(); return; }
+  if (!currentUser)         { container.innerHTML = renderMemberGate();                    lucide.createIcons(); return; }
+  if (!canAccess('basica')) { container.innerHTML = renderTierGate('basica','la Agenda'); lucide.createIcons(); return; }
 
   try {
-    // Fetch all non-free videos; filter visible ones by user's tier
     const { data: videos, error } = await sb
       .from('videos')
       .select('*')
@@ -1935,14 +1945,13 @@ async function loadAgenda() {
       .eq('is_active', true)
       .order('order_index', { nullsLast: true })
       .order('created_at', { ascending: false });
+
+    console.log('[Agenda] tier:', getUserTier(), '| videos:', videos?.length, '| error:', error);
     if (error) throw error;
 
-    // Fetch progress
     let progressMap = {};
     const { data: prog } = await sb
-      .from('video_progress')
-      .select('video_id, progress_percent')
-      .eq('user_id', currentUser.id);
+      .from('video_progress').select('video_id, progress_percent').eq('user_id', currentUser.id);
     (prog || []).forEach(p => { progressMap[p.video_id] = p.progress_percent; });
 
     if (!videos?.length) {
@@ -1954,7 +1963,8 @@ async function loadAgenda() {
       renderVideoCard({ ...v, _progress: progressMap[v.id] ?? 0 }, !canAccess(v.tier_required))
     ).join('');
     lucide.createIcons();
-  } catch {
+  } catch(err) {
+    console.error('[Agenda] error:', err);
     container.innerHTML = renderLoadError();
   }
 }
@@ -1967,8 +1977,8 @@ async function loadGrabadas() {
   const container = document.getElementById('grabadas-list');
   if (!container) return;
 
-  if (!currentUser)           { container.innerHTML = renderMemberGate();                  lucide.createIcons(); return; }
-  if (!canAccess('premium'))  { container.innerHTML = renderTierGate('premium','las Sesiones Grabadas'); lucide.createIcons(); return; }
+  if (!currentUser)          { container.innerHTML = renderMemberGate();                           lucide.createIcons(); return; }
+  if (!canAccess('premium')) { container.innerHTML = renderTierGate('premium','las Sesiones Grabadas'); lucide.createIcons(); return; }
 
   try {
     const [{ data: webinars, error: e1 }, { data: videos, error: e2 }] = await Promise.all([
@@ -1977,6 +1987,8 @@ async function loadGrabadas() {
       sb.from('videos').select('*').in('tier_required',['premium','vip']).eq('is_active',true)
         .order('order_index',{ nullsLast:true }).order('created_at',{ ascending:false }),
     ]);
+
+    console.log('[Grabadas] tier:', getUserTier(), '| webinars:', webinars?.length, '| videos:', videos?.length, '| e1:', e1, '| e2:', e2);
     if (e1 || e2) throw e1 || e2;
 
     let progressMap = {};
@@ -1996,7 +2008,8 @@ async function loadGrabadas() {
     }
     container.innerHTML = all.join('');
     lucide.createIcons();
-  } catch {
+  } catch(err) {
+    console.error('[Grabadas] error:', err);
     container.innerHTML = renderLoadError();
   }
 }
