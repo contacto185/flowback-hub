@@ -3,10 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0B0E14">
+<meta name="description" content="Flowback Hub — Tu comunidad de transformación y bienestar">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Flowback Hub</title>
+
+<link rel="manifest" href="/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
 <script>
 tailwind.config = {
   theme: {
@@ -25,6 +33,7 @@ tailwind.config = {
   }
 }
 </script>
+
 <style>
   :root {
     --bg: #0B0E14;
@@ -34,6 +43,7 @@ tailwind.config = {
     --text: #F0F4F8;
     --grad: linear-gradient(135deg, #F57C00 0%, #38BDF8 100%);
   }
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body {
@@ -63,7 +73,7 @@ tailwind.config = {
     border: 1px solid rgba(245,124,0,.1);
     transition: border-color .2s, transform .2s;
   }
-  .card:hover { border-color: rgba(245,124,0,.35); }
+  .card:hover { border-color: rgba(245,124,0,.3); }
 
   /* Buttons */
   .btn-grad {
@@ -73,18 +83,32 @@ tailwind.config = {
     border: none;
     cursor: pointer;
     transition: transform .2s, box-shadow .2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   .btn-grad:hover { transform: scale(1.02); box-shadow: 0 0 22px rgba(245,124,0,.35); }
-  .btn-mp { background: #00B1EA; color: #fff; font-weight: 700; cursor: pointer; transition: transform .2s, box-shadow .2s; }
-  .btn-mp:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(0,177,234,.4); }
+  .btn-mp  { background: #00B1EA; color: #fff; font-weight: 700; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+  .btn-mp:hover  { transform: scale(1.02); box-shadow: 0 4px 16px rgba(0,177,234,.4); }
   .btn-paypal { background: #FFC439; color: #003087; font-weight: 700; cursor: pointer; transition: transform .2s, box-shadow .2s; }
   .btn-paypal:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(255,196,57,.4); }
+  .btn-ghost {
+    background: rgba(255,255,255,.06);
+    color: rgba(240,244,248,.7);
+    border: 1px solid rgba(255,255,255,.08);
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,.1); }
 
-  /* Tabs */
+  /* Sections */
   .tab-section { display: none; }
   .tab-section.active { display: block; }
 
-  /* Bottom nav */
+  /* Main layout */
+  main { padding-top: 68px; padding-bottom: 120px; max-width: 480px; margin: 0 auto; }
+
+  /* ── Bottom navigation ── */
   #bottom-nav {
     position: fixed;
     bottom: 16px;
@@ -92,17 +116,23 @@ tailwind.config = {
     transform: translateX(-50%);
     width: calc(100% - 32px);
     max-width: 480px;
-    background: rgba(19,24,32,.88);
+    background: rgba(19,24,32,.92);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid rgba(245,124,0,.2);
     border-radius: 24px;
-    padding: 8px;
+    padding: 8px 4px;
     display: flex;
     z-index: 50;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 2px;
   }
+  #bottom-nav::-webkit-scrollbar { display: none; }
+
   .nav-tab {
     flex: 1;
+    min-width: 60px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -113,6 +143,7 @@ tailwind.config = {
     background: transparent;
     border: none;
     transition: background .2s;
+    white-space: nowrap;
   }
   .nav-icon-wrap {
     width: 34px; height: 34px;
@@ -120,30 +151,22 @@ tailwind.config = {
     border-radius: 10px;
     transition: background .2s;
   }
-  .nav-icon-wrap svg { color: rgba(240,244,248,.45); transition: color .2s; }
-  .nav-label { font-size: 10px; font-weight: 500; color: rgba(240,244,248,.45); transition: color .2s; }
+  .nav-icon-wrap svg { color: rgba(240,244,248,.4); transition: color .2s; }
+  .nav-label { font-size: 10px; font-weight: 500; color: rgba(240,244,248,.4); transition: color .2s; }
   .nav-tab.active .nav-icon-wrap { background: var(--grad); }
   .nav-tab.active .nav-icon-wrap svg { color: #fff; }
   .nav-tab.active .nav-label { color: #fff; font-weight: 600; }
 
-  /* Main layout */
-  main { padding-top: 68px; padding-bottom: 120px; max-width: 480px; margin: 0 auto; }
-
-  /* Badges */
+  /* ── Badges ── */
   .badge-presencial { background: rgba(56,189,248,.14); color: #38BDF8; border: 1px solid rgba(56,189,248,.3); }
-  .badge-online { background: rgba(245,124,0,.14); color: #F57C00; border: 1px solid rgba(245,124,0,.3); }
-  .badge-gold { background: linear-gradient(135deg,rgba(245,124,0,.2),rgba(255,193,7,.2)); color: #FFC107; border: 1px solid rgba(245,124,0,.4); }
+  .badge-online     { background: rgba(245,124,0,.14);  color: #F57C00; border: 1px solid rgba(245,124,0,.3); }
+  .badge-gold       { background: linear-gradient(135deg,rgba(245,124,0,.2),rgba(255,193,7,.2)); color: #FFC107; border: 1px solid rgba(245,124,0,.4); }
+  .badge-free       { background: rgba(34,197,94,.14); color: #22c55e; border: 1px solid rgba(34,197,94,.3); }
+  .badge-basica     { background: rgba(56,189,248,.14); color: #38BDF8; border: 1px solid rgba(56,189,248,.3); }
+  .badge-premium    { background: linear-gradient(135deg,rgba(245,124,0,.2),rgba(255,193,7,.2)); color: #FFC107; border: 1px solid rgba(245,124,0,.4); }
+  .badge-vip        { background: linear-gradient(135deg,rgba(139,92,246,.2),rgba(245,124,0,.2)); color: #a78bfa; border: 1px solid rgba(139,92,246,.4); }
 
-  /* Event / Course cards hover */
-  .event-card, .course-card { transition: border-color .2s, transform .2s; }
-  .event-card:hover { border-color: rgba(245,124,0,.5) !important; transform: translateY(-2px); }
-  .course-card:hover { border-color: rgba(56,189,248,.45) !important; transform: translateY(-2px); }
-
-  /* Resource list hover */
-  .res-row { transition: transform .2s; cursor: pointer; }
-  .res-row:hover { transform: translateX(4px); }
-
-  /* Auth input */
+  /* ── Auth inputs ── */
   .auth-input {
     background: rgba(255,255,255,.05);
     border: 1px solid rgba(255,255,255,.1);
@@ -157,16 +180,144 @@ tailwind.config = {
   }
   .auth-input:focus { outline: none; border-color: var(--orange); }
   .auth-input::placeholder { color: rgba(240,244,248,.2); }
+  .auth-input.error { border-color: #ef4444; }
 
-  /* Schedule */
+  /* ── Inline auth tabs ── */
+  .auth-tab-btn {
+    flex: 1; padding: 8px; border-radius: 10px;
+    font-size: 13px; font-weight: 500;
+    color: rgba(240,244,248,.45);
+    background: transparent; border: none; cursor: pointer;
+    transition: background .2s, color .2s;
+  }
+  .auth-tab-btn.active {
+    background: rgba(245,124,0,.15);
+    color: var(--orange);
+    font-weight: 600;
+  }
+
+  /* ── Sub-tabs (inside tribu) ── */
+  .sub-tab-btn {
+    flex: 1; padding: 8px; border-radius: 12px;
+    font-size: 12px; font-weight: 500;
+    color: rgba(240,244,248,.45);
+    background: transparent; border: none; cursor: pointer;
+    transition: background .2s, color .2s;
+  }
+  .sub-tab-btn.active {
+    background: rgba(255,255,255,.09);
+    color: var(--text);
+    font-weight: 600;
+  }
+  .sub-section { display: none; }
+  .sub-section.active { display: block; }
+
+  /* ── Event / Course card hover ── */
+  .event-card, .course-card { transition: border-color .2s, transform .2s; }
+  .event-card:hover  { border-color: rgba(245,124,0,.5) !important; transform: translateY(-2px); }
+  .course-card:hover { border-color: rgba(56,189,248,.45) !important; transform: translateY(-2px); }
+
+  /* ── Vimeo / video embed ── */
+  .vimeo-wrap {
+    position: relative; width: 100%;
+    padding-bottom: 56.25%; height: 0;
+    border-radius: 14px; overflow: hidden;
+    background: #0f1419; cursor: pointer;
+  }
+  .vimeo-wrap iframe {
+    position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
+  }
+  .vimeo-thumb {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .vimeo-play-overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(245,124,0,.07), rgba(56,189,248,.07));
+    transition: background .2s;
+  }
+  .vimeo-wrap:hover .vimeo-play-overlay { background: rgba(0,0,0,.2); }
+  .play-btn {
+    width: 54px; height: 54px;
+    background: var(--grad);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .vimeo-wrap:hover .play-btn { transform: scale(1.1); box-shadow: 0 0 24px rgba(245,124,0,.5); }
+
+  /* ── Locked content overlay ── */
+  .locked-wrap { position: relative; overflow: hidden; border-radius: 14px; }
+  .locked-wrap .locked-blur { filter: blur(4px); pointer-events: none; user-select: none; }
+  .locked-overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 8px;
+    background: rgba(11,14,20,.7);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border-radius: 14px;
+  }
+
+  /* ── Skeleton loading ── */
+  .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.08) 50%, rgba(255,255,255,.04) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 8px;
+  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .skeleton-card { height: 220px; border-radius: 16px; }
+
+  /* ── Progress bar ── */
+  .progress-bar-bg { background: rgba(255,255,255,.08); border-radius: 4px; height: 4px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--grad); border-radius: 4px; transition: width .3s; }
+
+  /* ── Resource list row ── */
+  .res-row { transition: transform .2s; cursor: pointer; }
+  .res-row:hover { transform: translateX(4px); }
+
+  /* ── Schedule table ── */
   .sched-table { width: 100%; border-collapse: separate; border-spacing: 0 3px; }
   .sched-table th { color: rgba(240,244,248,.4); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 4px 6px; text-align: center; }
   .sched-table td { background: rgba(255,255,255,.03); padding: 7px 5px; text-align: center; font-size: 11px; color: rgba(240,244,248,.7); }
   .sched-table td:first-child { border-radius: 8px 0 0 8px; color: var(--blue); font-weight: 700; font-size: 11px; padding-left: 8px; }
-  .sched-table td:last-child { border-radius: 0 8px 8px 0; }
+  .sched-table td:last-child  { border-radius: 0 8px 8px 0; }
   .sched-table .has-class { background: rgba(245,124,0,.08); color: rgba(240,244,248,.85); }
 
-  /* Modal */
+  /* ── Membership plan cards ── */
+  .plan-basic   { border: 1px solid rgba(56,189,248,.22);  background: rgba(56,189,248,.03); }
+  .plan-premium { border: 1px solid rgba(245,124,0,.45); background: linear-gradient(135deg,rgba(245,124,0,.05),rgba(56,189,248,.05)); }
+  .plan-vip     { border: 1px solid rgba(139,92,246,.45); background: linear-gradient(135deg,rgba(139,92,246,.05),rgba(245,124,0,.05)); }
+
+  /* ── Before/after card ── */
+  .ba-card { border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.05); }
+
+  /* ── Glow backgrounds ── */
+  .glow-orange { background: radial-gradient(ellipse at 50% 0%, rgba(245,124,0,.18) 0%, transparent 70%); }
+  .glow-blue   { background: radial-gradient(ellipse at 50% 0%, rgba(56,189,248,.12) 0%, transparent 70%); }
+
+  /* ── Notification banner ── */
+  #notif-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    transform: translateY(-120%);
+    transition: transform .4s cubic-bezier(.34,1.2,.64,1);
+  }
+  #notif-bar.show { transform: translateY(0); }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%) translateY(12px);
+    z-index: 300; opacity: 0; transition: opacity .3s, transform .3s;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── Modal ── */
   #modal-overlay {
     position: fixed; inset: 0; z-index: 100;
     display: none; align-items: flex-end; justify-content: center;
@@ -185,7 +336,7 @@ tailwind.config = {
     border-radius: 24px 24px 0 0;
     border-top: 1px solid rgba(245,124,0,.3);
     padding: 20px 18px env(safe-area-inset-bottom, 28px);
-    max-height: 88vh;
+    max-height: 90vh;
     overflow-y: auto;
   }
   @keyframes slideUp {
@@ -194,50 +345,20 @@ tailwind.config = {
   }
   .modal-sheet.animate { animation: slideUp .32s cubic-bezier(.34,1.4,.64,1); }
 
-  /* Notification banner */
-  #notif-bar {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-    transform: translateY(-120%);
-    transition: transform .4s cubic-bezier(.34,1.2,.64,1);
+  /* ── Spinner ── */
+  .spin {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.15);
+    border-top-color: var(--orange);
+    animation: spin .7s linear infinite;
   }
-  #notif-bar.show { transform: translateY(0); }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* YouTube placeholder */
-  .yt-wrap {
-    position: relative; width: 100%;
-    padding-bottom: 56.25%; height: 0;
-    border-radius: 14px; overflow: hidden;
-    background: #0f1419; cursor: pointer;
-  }
-  .yt-wrap iframe {
-    position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
-  }
-  .yt-placeholder {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 10px;
-    background: linear-gradient(135deg, rgba(245,124,0,.07), rgba(56,189,248,.07));
-  }
-  .yt-play {
-    width: 54px; height: 54px;
-    background: #ff0000;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    transition: transform .2s;
-  }
-  .yt-wrap:hover .yt-play { transform: scale(1.1); }
-
-  /* Before/after card */
-  .ba-card { border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.05); }
-
-  /* Membership cards */
-  .plan-basic { border: 1px solid rgba(56,189,248,.22); background: rgba(56,189,248,.03); }
-  .plan-premium { border: 1px solid rgba(245,124,0,.45); background: linear-gradient(135deg,rgba(245,124,0,.05),rgba(56,189,248,.05)); }
-
-  /* Glow backgrounds */
-  .glow-orange { background: radial-gradient(ellipse at 50% 0%, rgba(245,124,0,.18) 0%, transparent 70%); }
-  .glow-blue   { background: radial-gradient(ellipse at 50% 0%, rgba(56,189,248,.12) 0%, transparent 70%); }
+  /* ── Misc ── */
+  a { text-decoration: none; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .text-error { color: #f87171; }
+  .text-success { color: #4ade80; }
 </style>
 </head>
 <body>
@@ -265,590 +386,58 @@ tailwind.config = {
      HEADER
 ══════════════════════════════════════ -->
 <header class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-5 py-3.5"
-  style="background:rgba(11,14,20,.88); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid rgba(245,124,0,.1); max-width:100%;">
-  <div class="w-9"></div>
+  style="background:rgba(11,14,20,.88); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid rgba(245,124,0,.1);">
+
+  <!-- Left: tier badge (hidden when logged out) -->
+  <div id="header-tier" class="w-9" style="display:none">
+    <span id="header-tier-badge" class="text-xs font-bold px-2 py-0.5 rounded-full"></span>
+  </div>
+  <div id="header-tier-placeholder" class="w-9"></div>
+
+  <!-- Center: logo -->
   <div class="flex items-center">
     <img src="/logo.png" alt="Flowback Hub" style="width:120px; height:auto; display:block;"
       onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='block'">
     <span id="logo-fallback" class="text-xl font-black serif grad-text" style="display:none; letter-spacing:-.5px">Flowback Hub</span>
   </div>
-  <button onclick="showNotifBar()" class="w-9 h-9 rounded-full flex items-center justify-center"
-    style="background:rgba(245,124,0,.1); border:1px solid rgba(245,124,0,.2);">
-    <i data-lucide="bell" class="w-4 h-4" style="color:var(--orange)"></i>
-  </button>
+
+  <!-- Right: bell OR user avatar -->
+  <div class="flex items-center gap-2">
+    <button onclick="showNotifBar()" class="w-9 h-9 rounded-full flex items-center justify-center"
+      style="background:rgba(245,124,0,.1); border:1px solid rgba(245,124,0,.2);">
+      <i data-lucide="bell" class="w-4 h-4" style="color:var(--orange)"></i>
+    </button>
+    <!-- User avatar (shown when logged in) -->
+    <button id="header-avatar-btn" onclick="switchSection('tribu')" style="display:none"
+      class="w-9 h-9 rounded-full overflow-hidden border-2 flex items-center justify-center font-bold text-sm flex-shrink-0"
+      style="border-color:var(--orange)">
+      <img id="header-avatar-img" src="" alt="" class="w-full h-full object-cover" style="display:none">
+      <span id="header-avatar-initials" style="background:var(--grad); width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff;"></span>
+    </button>
+  </div>
 </header>
 
 <!-- ══════════════════════════════════════
-     MAIN CONTENT
+     MAIN CONTENT (sections injected here)
 ══════════════════════════════════════ -->
-<main class="px-4">
-
-  <!-- ─── EVENTOS ─── -->
-  <section id="sec-eventos" class="tab-section active">
-    <div class="pt-6 pb-2">
-      <h1 class="text-2xl font-black serif mb-1">Próximos <span class="grad-text">eventos</span></h1>
-      <p class="text-xs text-white/40 mb-5">Únete a nuestras experiencias transformadoras</p>
-
-      <!-- Card 1 -->
-      <article class="event-card card rounded-2xl overflow-hidden mb-4">
-        <div class="relative">
-          <img src="https://flowback.infraqualia.com/assets/flowback-1.jpg" alt="Retiro de Flow" loading="lazy"
-            class="w-full object-cover" style="aspect-ratio:16/9">
-          <span class="badge-presencial absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full">Presencial</span>
-        </div>
-        <div class="p-4">
-          <div class="flex items-center gap-1.5 mb-2 flex-wrap">
-            <i data-lucide="calendar" class="w-3.5 h-3.5 flex-shrink-0" style="color:var(--blue)"></i>
-            <span class="text-xs" style="color:var(--blue)">Sáb 15 May, 2026 · 10:00 AM</span>
-            <span class="text-white/20 mx-0.5">·</span>
-            <i data-lucide="map-pin" class="w-3.5 h-3.5 flex-shrink-0 text-white/40"></i>
-            <span class="text-xs text-white/40">Buenos Aires, AR</span>
-          </div>
-          <h3 class="font-bold text-base serif mb-1.5">Retiro de Flow y Consciencia</h3>
-          <p class="text-xs text-white/50 mb-3 leading-relaxed">Un día de inmersión profunda para reconectar con tu cuerpo, liberar bloqueos emocionales y encontrar tu flujo natural.</p>
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-1.5">
-              <div class="flex -space-x-1.5">
-                <div class="w-6 h-6 rounded-full border-2 flex-shrink-0" style="border-color:var(--card); background:var(--grad)"></div>
-                <div class="w-6 h-6 rounded-full border-2 bg-sky-500 flex-shrink-0" style="border-color:var(--card)"></div>
-                <div class="w-6 h-6 rounded-full border-2 bg-purple-500 flex-shrink-0" style="border-color:var(--card)"></div>
-              </div>
-              <span class="text-xs text-white/40">+47 asistentes</span>
-            </div>
-            <span class="text-xs font-semibold" style="color:var(--orange)">8 lugares</span>
-          </div>
-          <button class="btn-grad w-full py-2.5 rounded-xl text-sm">Reservar lugar</button>
-        </div>
-      </article>
-
-      <!-- Card 2 -->
-      <article class="event-card card rounded-2xl overflow-hidden mb-4">
-        <div class="relative">
-          <img src="https://flowback.infraqualia.com/assets/flowback-2.jpg" alt="Taller Liberación" loading="lazy"
-            class="w-full object-cover" style="aspect-ratio:16/9">
-          <span class="badge-online absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full">Online</span>
-        </div>
-        <div class="p-4">
-          <div class="flex items-center gap-1.5 mb-2 flex-wrap">
-            <i data-lucide="calendar" class="w-3.5 h-3.5 flex-shrink-0" style="color:var(--blue)"></i>
-            <span class="text-xs" style="color:var(--blue)">Mié 22 May, 2026 · 7:00 PM</span>
-            <span class="text-white/20 mx-0.5">·</span>
-            <i data-lucide="video" class="w-3.5 h-3.5 flex-shrink-0 text-white/40"></i>
-            <span class="text-xs text-white/40">Zoom</span>
-          </div>
-          <h3 class="font-bold text-base serif mb-1.5">Taller de Liberación Emocional</h3>
-          <p class="text-xs text-white/50 mb-3 leading-relaxed">Aprende técnicas probadas para soltar el peso emocional acumulado y crear espacio para lo nuevo en tu vida.</p>
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-1.5">
-              <div class="flex -space-x-1.5">
-                <div class="w-6 h-6 rounded-full border-2 flex-shrink-0 bg-sky-400" style="border-color:var(--card)"></div>
-                <div class="w-6 h-6 rounded-full border-2 flex-shrink-0 bg-green-500" style="border-color:var(--card)"></div>
-                <div class="w-6 h-6 rounded-full border-2 flex-shrink-0 bg-pink-400" style="border-color:var(--card)"></div>
-              </div>
-              <span class="text-xs text-white/40">+92 asistentes</span>
-            </div>
-            <span class="text-xs font-semibold" style="color:var(--orange)">32 lugares</span>
-          </div>
-          <button class="btn-grad w-full py-2.5 rounded-xl text-sm">Inscribirme gratis</button>
-        </div>
-      </article>
-
-      <!-- Card 3 -->
-      <article class="event-card card rounded-2xl overflow-hidden mb-4">
-        <div class="relative">
-          <img src="https://flowback.infraqualia.com/assets/flowback-3.jpg" alt="Congreso Flowback" loading="lazy"
-            class="w-full object-cover" style="aspect-ratio:16/9">
-          <span class="badge-presencial absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full">Presencial</span>
-        </div>
-        <div class="p-4">
-          <div class="flex items-center gap-1.5 mb-2 flex-wrap">
-            <i data-lucide="calendar" class="w-3.5 h-3.5 flex-shrink-0" style="color:var(--blue)"></i>
-            <span class="text-xs" style="color:var(--blue)">Dom 1 Jun, 2026 · 9:00 AM</span>
-            <span class="text-white/20 mx-0.5">·</span>
-            <i data-lucide="map-pin" class="w-3.5 h-3.5 flex-shrink-0 text-white/40"></i>
-            <span class="text-xs text-white/40">Medellín, CO</span>
-          </div>
-          <h3 class="font-bold text-base serif mb-1.5">Congreso Flowback · Edición Especial</h3>
-          <p class="text-xs text-white/50 mb-3 leading-relaxed">El encuentro presencial más grande de la comunidad. Ponentes internacionales, talleres y networking transformador.</p>
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-1.5">
-              <div class="flex -space-x-1.5">
-                <div class="w-6 h-6 rounded-full border-2 flex-shrink-0 bg-yellow-500" style="border-color:var(--card)"></div>
-                <div class="w-6 h-6 rounded-full border-2 flex-shrink-0 bg-pink-500" style="border-color:var(--card)"></div>
-                <div class="w-6 h-6 rounded-full border-2 flex-shrink-0" style="border-color:var(--card); background:var(--grad)"></div>
-              </div>
-              <span class="text-xs text-white/40">+214 asistentes</span>
-            </div>
-            <span class="text-xs font-semibold text-red-400">¡Solo 5 lugares!</span>
-          </div>
-          <button class="btn-grad w-full py-2.5 rounded-xl text-sm">Conseguir mi lugar</button>
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <!-- ─── GRATIS ─── -->
-  <section id="sec-gratis" class="tab-section">
-    <div class="pt-6 pb-2">
-      <h1 class="text-2xl font-black serif mb-1">Recursos <span class="grad-text">gratuitos</span></h1>
-      <p class="text-xs text-white/40 mb-5">Todo para empezar tu transformación hoy</p>
-
-      <!-- WhatsApp group card -->
-      <a href="https://wa.me/" target="_blank" rel="noopener"
-        class="card mb-5 rounded-2xl p-4 flex items-center gap-4 block no-underline"
-        style="border-color:rgba(37,211,102,.25); background:rgba(37,211,102,.04);">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style="background:rgba(37,211,102,.14);">
-          <svg viewBox="0 0 24 24" class="w-7 h-7" fill="#25D366">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold text-sm text-white">Grupo de WhatsApp</p>
-          <p class="text-xs text-white/40 mt-0.5">Comunidad gratuita · 3.2k miembros activos</p>
-        </div>
-        <i data-lucide="arrow-right" class="w-4 h-4 text-white/30 flex-shrink-0"></i>
-      </a>
-
-      <!-- Resources list -->
-      <h2 class="text-sm font-bold serif mb-3 text-white/80 uppercase tracking-wide">Contenido destacado</h2>
-      <div class="space-y-2.5 mb-6">
-
-        <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(245,124,0,.13)">
-            <i data-lucide="mic" class="w-5 h-5" style="color:var(--orange)"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="font-semibold text-sm text-white">Podcast Flowback</p>
-            <p class="text-xs text-white/40 mt-0.5 truncate">Episodios semanales de transformación</p>
-          </div>
-          <div class="text-right flex-shrink-0">
-            <p class="text-xs font-bold" style="color:var(--orange)">142</p>
-            <p class="text-xs text-white/30">ep.</p>
-          </div>
-        </div>
-
-        <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(255,0,0,.1)">
-            <i data-lucide="youtube" class="w-5 h-5 text-red-500"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="font-semibold text-sm text-white">Canal de YouTube</p>
-            <p class="text-xs text-white/40 mt-0.5 truncate">Videos gratuitos de bienestar y flow</p>
-          </div>
-          <div class="text-right flex-shrink-0">
-            <p class="text-xs font-bold text-white">89k</p>
-            <p class="text-xs text-white/30">subs</p>
-          </div>
-        </div>
-
-        <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(56,189,248,.12)">
-            <i data-lucide="heart-pulse" class="w-5 h-5" style="color:var(--blue)"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="font-semibold text-sm text-white">Protocolo Ansiedad</p>
-            <p class="text-xs text-white/40 mt-0.5 truncate">Guía PDF descargable gratuita</p>
-          </div>
-          <div class="text-right flex-shrink-0">
-            <p class="text-xs font-bold" style="color:var(--blue)">12k</p>
-            <p class="text-xs text-white/30">desc.</p>
-          </div>
-        </div>
-
-        <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(139,92,246,.12)">
-            <i data-lucide="sparkles" class="w-5 h-5 text-purple-400"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="font-semibold text-sm text-white">Clase Liberación Emocional</p>
-            <p class="text-xs text-white/40 mt-0.5 truncate">Masterclass gratuita · 45 min</p>
-          </div>
-          <div class="text-right flex-shrink-0">
-            <p class="text-xs font-bold text-purple-400">28k</p>
-            <p class="text-xs text-white/30">vistas</p>
-          </div>
-        </div>
-
-        <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(34,197,94,.11)">
-            <i data-lucide="zap" class="w-5 h-5 text-green-400"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="font-semibold text-sm text-white">Clase de Flow</p>
-            <p class="text-xs text-white/40 mt-0.5 truncate">Introducción al estado de flujo</p>
-          </div>
-          <div class="text-right flex-shrink-0">
-            <p class="text-xs font-bold text-green-400">19k</p>
-            <p class="text-xs text-white/30">vistas</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- CTA memberships -->
-      <div class="rounded-2xl p-5 mb-6 relative overflow-hidden"
-        style="background:linear-gradient(135deg,rgba(245,124,0,.13) 0%,rgba(56,189,248,.13) 100%); border:1px solid rgba(245,124,0,.3)">
-        <div class="absolute -top-4 -right-4 w-28 h-28 rounded-full" style="background:radial-gradient(circle,rgba(245,124,0,.25),transparent 70%)"></div>
-        <p class="text-xs font-bold mb-1" style="color:var(--orange); letter-spacing:.08em">¿LISTO PARA MÁS?</p>
-        <p class="text-lg font-black serif text-white mb-1">Accede a todo el contenido</p>
-        <p class="text-xs text-white/50 mb-4 leading-relaxed">Clases en vivo, cursos completos y una comunidad que te respalda cada día.</p>
-        <button onclick="openModal()" class="btn-grad px-6 py-2.5 rounded-xl text-sm">Ver Membresías →</button>
-      </div>
-
-      <!-- Transformaciones -->
-      <h2 class="text-base font-bold serif mb-3 text-white">Transformaciones reales</h2>
-      <div class="grid grid-cols-2 gap-3 mb-6">
-        <div class="ba-card" style="background:var(--card)">
-          <div class="h-28 flex items-center justify-center" style="background:linear-gradient(135deg,rgba(255,255,255,.03),rgba(255,255,255,.01))">
-            <p class="text-4xl font-black text-white/8 serif" style="color:rgba(255,255,255,.07)">Antes</p>
-          </div>
-          <div class="p-3">
-            <p class="text-xs text-white/55 leading-snug">Ansiedad crónica, sin energía ni dirección</p>
-            <p class="text-xs font-semibold mt-1.5" style="color:var(--blue)">→ María, 34 años</p>
-          </div>
-        </div>
-        <div class="ba-card" style="background:var(--card); border-color:rgba(245,124,0,.2)">
-          <div class="h-28 flex items-center justify-center" style="background:linear-gradient(135deg,rgba(245,124,0,.12),rgba(56,189,248,.08))">
-            <p class="text-4xl font-black serif" style="color:rgba(245,124,0,.25)">Después</p>
-          </div>
-          <div class="p-3">
-            <p class="text-xs text-white/55 leading-snug">+6 meses en Tribu Flowback</p>
-            <p class="text-xs font-semibold mt-1.5" style="color:var(--orange)">Vida plena y en flow ✓</p>
-          </div>
-        </div>
-        <div class="ba-card" style="background:var(--card)">
-          <div class="h-28 flex items-center justify-center" style="background:linear-gradient(135deg,rgba(255,255,255,.03),rgba(255,255,255,.01))">
-            <p class="text-4xl font-black serif" style="color:rgba(255,255,255,.07)">Antes</p>
-          </div>
-          <div class="p-3">
-            <p class="text-xs text-white/55 leading-snug">Dolor crónico de espalda hace 3 años</p>
-            <p class="text-xs font-semibold mt-1.5" style="color:var(--blue)">→ Carlos, 41 años</p>
-          </div>
-        </div>
-        <div class="ba-card" style="background:var(--card); border-color:rgba(245,124,0,.2)">
-          <div class="h-28 flex items-center justify-center" style="background:linear-gradient(135deg,rgba(245,124,0,.1),rgba(34,197,94,.08))">
-            <p class="text-4xl font-black serif" style="color:rgba(245,124,0,.25)">Después</p>
-          </div>
-          <div class="p-3">
-            <p class="text-xs text-white/55 leading-snug">+3 meses en el programa</p>
-            <p class="text-xs font-semibold mt-1.5" style="color:var(--orange)">Sin dolor, activo ✓</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Video testimonials -->
-      <h2 class="text-base font-bold serif mb-3 text-white">Testimonios en video</h2>
-      <div class="space-y-4 mb-6">
-        <div>
-          <div class="yt-wrap" onclick="loadYT(this,'VIDEO_ID_1')">
-            <div class="yt-placeholder">
-              <div class="yt-play">
-                <svg viewBox="0 0 24 24" class="w-6 h-6 ml-1" fill="white"><path d="M8 5v14l11-7z"/></svg>
-              </div>
-              <p class="text-xs text-white/50">Toca para reproducir</p>
-            </div>
-          </div>
-          <p class="text-xs text-white/35 mt-2 px-1">"Flowback cambió completamente mi vida" — Laura, México</p>
-        </div>
-        <div>
-          <div class="yt-wrap" onclick="loadYT(this,'VIDEO_ID_2')">
-            <div class="yt-placeholder">
-              <div class="yt-play">
-                <svg viewBox="0 0 24 24" class="w-6 h-6 ml-1" fill="white"><path d="M8 5v14l11-7z"/></svg>
-              </div>
-              <p class="text-xs text-white/50">Toca para reproducir</p>
-            </div>
-          </div>
-          <p class="text-xs text-white/35 mt-2 px-1">"En 3 meses liberé lo que cargué por años" — Diego, Colombia</p>
-        </div>
-      </div>
-
-      <!-- WhatsApp human support banner -->
-      <div class="rounded-2xl p-4 flex items-center gap-4"
-        style="background:rgba(37,211,102,.06); border:1px solid rgba(37,211,102,.2)">
-        <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center" style="background:rgba(37,211,102,.15)">
-          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="#25D366">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-semibold text-white">Atención humana</p>
-          <p class="text-xs text-white/40 mt-0.5">Nuestro equipo responde en menos de 2h</p>
-        </div>
-        <a href="https://wa.me/" target="_blank" rel="noopener"
-          class="text-xs font-bold px-3.5 py-2 rounded-xl flex-shrink-0 text-white"
-          style="background:#25D366">Escribir</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ─── CURSOS ─── -->
-  <section id="sec-cursos" class="tab-section">
-    <div class="pt-6 pb-2">
-      <h1 class="text-2xl font-black serif mb-1">Nuestros <span class="grad-text">cursos</span></h1>
-      <p class="text-xs text-white/40 mb-5">Programas de transformación profunda</p>
-
-      <!-- Course 1 -->
-      <article class="course-card card rounded-2xl overflow-hidden mb-4">
-        <div class="relative">
-          <img src="https://flowback.infraqualia.com/assets/flowback-1.jpg" alt="Sana tu Espalda" loading="lazy"
-            class="w-full object-cover" style="aspect-ratio:16/9">
-          <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(11,14,20,.7) 0%,transparent 55%)"></div>
-        </div>
-        <div class="p-4">
-          <div class="flex items-center gap-1.5 mb-2">
-            <i data-lucide="activity" class="w-3.5 h-3.5" style="color:var(--blue)"></i>
-            <span class="text-xs" style="color:var(--blue)">8 semanas · 32 clases</span>
-          </div>
-          <h3 class="font-bold text-base serif mb-1.5">Sana tu Espalda</h3>
-          <p class="text-xs text-white/50 mb-3 leading-relaxed">Protocolo completo para eliminar el dolor de espalda desde sus raíces emocionales y físicas. Técnicas de movimiento y liberación somática.</p>
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-1">
-              <i data-lucide="star" class="w-3.5 h-3.5 text-yellow-400" style="fill:#facc15"></i>
-              <span class="text-xs font-bold text-white">4.9</span>
-              <span class="text-xs text-white/30 ml-0.5">(384)</span>
-            </div>
-            <span class="text-base font-black" style="color:var(--orange)">$97 <span class="text-xs font-normal text-white/40">USD</span></span>
-          </div>
-          <button class="btn-grad w-full py-2.5 rounded-xl text-sm">Ver programa</button>
-        </div>
-      </article>
-
-      <!-- Course 2 -->
-      <article class="course-card card rounded-2xl overflow-hidden mb-4">
-        <div class="relative">
-          <img src="https://flowback.infraqualia.com/assets/flowback-2.jpg" alt="Heridas Emocionales" loading="lazy"
-            class="w-full object-cover" style="aspect-ratio:16/9">
-          <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(11,14,20,.7) 0%,transparent 55%)"></div>
-        </div>
-        <div class="p-4">
-          <div class="flex items-center gap-1.5 mb-2">
-            <i data-lucide="heart" class="w-3.5 h-3.5 text-pink-400"></i>
-            <span class="text-xs text-pink-400">12 semanas · 48 clases</span>
-          </div>
-          <h3 class="font-bold text-base serif mb-1.5">Heridas Emocionales</h3>
-          <p class="text-xs text-white/50 mb-3 leading-relaxed">Un viaje profundo para identificar, procesar y liberar las heridas del pasado que limitan tu presente y tu futuro.</p>
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-1">
-              <i data-lucide="star" class="w-3.5 h-3.5 text-yellow-400" style="fill:#facc15"></i>
-              <span class="text-xs font-bold text-white">4.8</span>
-              <span class="text-xs text-white/30 ml-0.5">(521)</span>
-            </div>
-            <span class="text-base font-black" style="color:var(--orange)">$147 <span class="text-xs font-normal text-white/40">USD</span></span>
-          </div>
-          <button class="btn-grad w-full py-2.5 rounded-xl text-sm">Ver programa</button>
-        </div>
-      </article>
-
-      <!-- Course 3 — Premium gold -->
-      <article class="course-card rounded-2xl overflow-hidden mb-4"
-        style="border:1px solid rgba(245,124,0,.42); background:var(--card)">
-        <div class="relative">
-          <img src="https://flowback.infraqualia.com/assets/flowback-3.jpg" alt="Certificación Flowmaster" loading="lazy"
-            class="w-full object-cover" style="aspect-ratio:16/9">
-          <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(11,14,20,.8) 0%,transparent 50%)"></div>
-          <span class="badge-gold absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full">⭐ PREMIUM</span>
-        </div>
-        <div class="p-4">
-          <div class="flex items-center gap-1.5 mb-2">
-            <i data-lucide="award" class="w-3.5 h-3.5" style="color:#FFC107"></i>
-            <span class="text-xs" style="color:#FFC107">6 meses · Certificación oficial</span>
-          </div>
-          <h3 class="font-bold text-base serif mb-1.5">Certificación Flowmaster</h3>
-          <p class="text-xs text-white/50 mb-3 leading-relaxed">Conviértete en facilitador certificado del método Flowback. Formación profesional con aval internacional y comunidad de práctica.</p>
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-1">
-              <i data-lucide="star" class="w-3.5 h-3.5 text-yellow-400" style="fill:#facc15"></i>
-              <span class="text-xs font-bold text-white">5.0</span>
-              <span class="text-xs text-white/30 ml-0.5">(127)</span>
-            </div>
-            <span class="text-base font-black" style="color:#FFC107">$597 <span class="text-xs font-normal text-white/40">USD</span></span>
-          </div>
-          <button class="w-full py-2.5 rounded-xl text-sm font-bold text-white"
-            style="background:linear-gradient(135deg,#F57C00,#FFC107); transition:transform .2s, box-shadow .2s;"
-            onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 20px rgba(245,124,0,.4)'"
-            onmouseout="this.style.transform=''; this.style.boxShadow=''">Solicitar admisión</button>
-        </div>
-      </article>
-
-      <!-- Course 4 — Premium gold -->
-      <article class="course-card rounded-2xl overflow-hidden mb-4"
-        style="border:1px solid rgba(245,124,0,.42); background:var(--card)">
-        <div class="relative">
-          <img src="https://flowback.infraqualia.com/assets/flowback-1.jpg" alt="Liberación Emocional" loading="lazy"
-            class="w-full object-cover" style="aspect-ratio:16/9">
-          <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(11,14,20,.8) 0%,transparent 50%)"></div>
-          <span class="badge-gold absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full">⭐ PREMIUM</span>
-        </div>
-        <div class="p-4">
-          <div class="flex items-center gap-1.5 mb-2">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5" style="color:#FFC107"></i>
-            <span class="text-xs" style="color:#FFC107">10 semanas · Acompañamiento incluido</span>
-          </div>
-          <h3 class="font-bold text-base serif mb-1.5">Liberación Emocional</h3>
-          <p class="text-xs text-white/50 mb-3 leading-relaxed">El programa más completo de Flowback. Técnicas avanzadas de liberación, integración somática y reprogramación profunda.</p>
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-1">
-              <i data-lucide="star" class="w-3.5 h-3.5 text-yellow-400" style="fill:#facc15"></i>
-              <span class="text-xs font-bold text-white">4.9</span>
-              <span class="text-xs text-white/30 ml-0.5">(298)</span>
-            </div>
-            <span class="text-base font-black" style="color:#FFC107">$297 <span class="text-xs font-normal text-white/40">USD</span></span>
-          </div>
-          <button class="w-full py-2.5 rounded-xl text-sm font-bold text-white"
-            style="background:linear-gradient(135deg,#F57C00,#FFC107); transition:transform .2s, box-shadow .2s;"
-            onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 20px rgba(245,124,0,.4)'"
-            onmouseout="this.style.transform=''; this.style.boxShadow=''">Inscribirme ahora</button>
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <!-- ─── TRIBU ─── -->
-  <section id="sec-tribu" class="tab-section">
-    <div class="pt-6 pb-2">
-      <h1 class="text-2xl font-black serif mb-1">Tribu <span class="grad-text">Flowback</span></h1>
-      <p class="text-xs text-white/40 mb-5">El espacio exclusivo de nuestra comunidad</p>
-
-      <!-- Login form -->
-      <div class="card rounded-2xl p-5 mb-5">
-        <div class="flex items-center gap-3 mb-5">
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style="background:linear-gradient(135deg,rgba(245,124,0,.18),rgba(56,189,248,.18))">
-            <i data-lucide="lock" class="w-5 h-5" style="color:var(--orange)"></i>
-          </div>
-          <div>
-            <p class="font-semibold text-sm text-white">Acceso miembros</p>
-            <p class="text-xs text-white/40 mt-0.5">Inicia sesión con tu cuenta</p>
-          </div>
-        </div>
-        <div class="space-y-3">
-          <div>
-            <label class="text-xs text-white/40 mb-1.5 block">Email</label>
-            <input type="email" placeholder="tu@email.com" class="auth-input">
-          </div>
-          <div>
-            <label class="text-xs text-white/40 mb-1.5 block">Contraseña</label>
-            <input type="password" placeholder="••••••••" class="auth-input">
-          </div>
-          <button class="btn-grad w-full py-3 rounded-xl text-sm mt-1">Iniciar sesión</button>
-        </div>
-        <p class="text-center text-xs text-white/30 mt-3 cursor-pointer hover:text-white/50 transition-colors">
-          ¿Olvidaste tu contraseña?
-        </p>
-      </div>
-
-      <!-- CTA memberships -->
-      <div class="rounded-2xl p-5 mb-5 relative overflow-hidden"
-        style="background:linear-gradient(135deg,rgba(245,124,0,.12) 0%,rgba(56,189,248,.12) 100%); border:1px solid rgba(245,124,0,.3)">
-        <p class="text-xs font-bold mb-1" style="color:var(--orange); letter-spacing:.08em">¿AÚN NO ERES MIEMBRO?</p>
-        <p class="text-lg font-black serif text-white mb-1">Únete a la Tribu</p>
-        <p class="text-xs text-white/50 mb-4 leading-relaxed">Accede a clases en vivo, cursos y nuestra comunidad privada desde $35/mes.</p>
-        <button onclick="openModal()" class="btn-grad px-6 py-2.5 rounded-xl text-sm">Ver Membresías →</button>
-      </div>
-
-      <!-- Schedule table -->
-      <h2 class="text-base font-bold serif mb-3 text-white">Horario de clases en vivo</h2>
-      <div class="card rounded-2xl p-4 mb-5 overflow-x-auto">
-        <table class="sched-table">
-          <thead>
-            <tr>
-              <th class="text-left">Hora</th>
-              <th>L</th><th>M</th><th>X</th><th>J</th><th>V</th><th>S</th><th>D</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>7:00</td>
-              <td class="has-class">Flow</td><td>—</td><td class="has-class">Flow</td><td>—</td><td class="has-class">Flow</td><td class="has-class">Flow</td><td>—</td>
-            </tr>
-            <tr>
-              <td>9:00</td>
-              <td>—</td><td class="has-class">Espalda</td><td>—</td><td class="has-class">Espalda</td><td>—</td><td class="has-class">Esp.</td><td class="has-class">Esp.</td>
-            </tr>
-            <tr>
-              <td>12:00</td>
-              <td class="has-class">Emoc.</td><td>—</td><td class="has-class">Emoc.</td><td>—</td><td class="has-class">Emoc.</td><td>—</td><td class="has-class">Emoc.</td>
-            </tr>
-            <tr>
-              <td>18:00</td>
-              <td class="has-class">Flow</td><td class="has-class">Flow</td><td>—</td><td class="has-class">Flow</td><td class="has-class">Flow</td><td>—</td><td>—</td>
-            </tr>
-            <tr>
-              <td>20:00</td>
-              <td>—</td><td class="has-class">Medit.</td><td class="has-class">Medit.</td><td>—</td><td>—</td><td class="has-class">Medit.</td><td class="has-class">Medit.</td>
-            </tr>
-          </tbody>
-        </table>
-        <p class="text-xs text-white/30 text-center mt-3 pt-3" style="border-top:1px solid rgba(255,255,255,.05)">
-          Todas las clases via Zoom · Horario CDMX (UTC-6)
-        </p>
-      </div>
-
-      <!-- Benefits -->
-      <h2 class="text-base font-bold serif mb-3 text-white">Beneficios incluidos</h2>
-      <div class="space-y-2.5 mb-4">
-        <div class="flex items-center gap-3 p-3 rounded-xl"
-          style="background:rgba(56,189,248,.05); border:1px solid rgba(56,189,248,.1)">
-          <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(56,189,248,.12)">
-            <i data-lucide="video" class="w-4 h-4" style="color:var(--blue)"></i>
-          </div>
-          <p class="text-sm text-white/80">Clases en vivo diarias por Zoom</p>
-        </div>
-        <div class="flex items-center gap-3 p-3 rounded-xl"
-          style="background:rgba(245,124,0,.05); border:1px solid rgba(245,124,0,.1)">
-          <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(245,124,0,.12)">
-            <i data-lucide="library" class="w-4 h-4" style="color:var(--orange)"></i>
-          </div>
-          <p class="text-sm text-white/80">Acceso a biblioteca de +200 grabaciones</p>
-        </div>
-        <div class="flex items-center gap-3 p-3 rounded-xl"
-          style="background:rgba(139,92,246,.05); border:1px solid rgba(139,92,246,.1)">
-          <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(139,92,246,.12)">
-            <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
-          </div>
-          <p class="text-sm text-white/80">Comunidad privada de miembros activos</p>
-        </div>
-        <div class="flex items-center gap-3 p-3 rounded-xl"
-          style="background:rgba(34,197,94,.05); border:1px solid rgba(34,197,94,.1)">
-          <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(34,197,94,.12)">
-            <i data-lucide="message-circle" class="w-4 h-4 text-green-400"></i>
-          </div>
-          <p class="text-sm text-white/80">Soporte directo con el equipo Flowback</p>
-        </div>
-        <div class="flex items-center gap-3 p-3 rounded-xl"
-          style="background:rgba(245,124,0,.05); border:1px solid rgba(245,124,0,.1)">
-          <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(245,124,0,.12)">
-            <i data-lucide="percent" class="w-4 h-4" style="color:var(--orange)"></i>
-          </div>
-          <p class="text-sm text-white/80">Descuentos exclusivos en eventos y cursos</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
+<main class="px-4" id="main-content">
+  <!-- Sections will be rendered here by JS -->
+  <!-- sec-eventos, sec-clases-gratis, sec-cursos, sec-tribu -->
 </main>
+
+<!-- ══════════════════════════════════════
+     TOAST NOTIFICATION
+══════════════════════════════════════ -->
+<div id="toast">
+  <div id="toast-inner" class="px-4 py-2.5 rounded-2xl text-sm font-medium text-white shadow-xl"
+    style="background:#131820; border:1px solid rgba(245,124,0,.3)"></div>
+</div>
 
 <!-- ══════════════════════════════════════
      BOTTOM NAVIGATION
 ══════════════════════════════════════ -->
 <nav id="bottom-nav">
-  <button class="nav-tab active" id="nav-eventos" onclick="switchTab('eventos')">
-    <div class="nav-icon-wrap"><i data-lucide="calendar-days" class="w-5 h-5"></i></div>
-    <span class="nav-label">Eventos</span>
-  </button>
-  <button class="nav-tab" id="nav-gratis" onclick="switchTab('gratis')">
-    <div class="nav-icon-wrap"><i data-lucide="gift" class="w-5 h-5"></i></div>
-    <span class="nav-label">Gratis</span>
-  </button>
-  <button class="nav-tab" id="nav-cursos" onclick="switchTab('cursos')">
-    <div class="nav-icon-wrap"><i data-lucide="graduation-cap" class="w-5 h-5"></i></div>
-    <span class="nav-label">Cursos</span>
-  </button>
-  <button class="nav-tab" id="nav-tribu" onclick="switchTab('tribu')">
-    <div class="nav-icon-wrap"><i data-lucide="crown" class="w-5 h-5"></i></div>
-    <span class="nav-label">Tribu</span>
-  </button>
+  <!-- Tabs rendered dynamically by renderNavTabs() -->
 </nav>
 
 <!-- ══════════════════════════════════════
@@ -857,9 +446,7 @@ tailwind.config = {
 <div id="modal-overlay" role="dialog" aria-modal="true" aria-label="Membresías">
   <div class="modal-bg" onclick="closeModal()"></div>
   <div class="modal-sheet" id="modal-sheet">
-    <!-- Handle -->
     <div class="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5"></div>
-
     <div class="flex items-center justify-between mb-1">
       <h2 class="text-xl font-black serif text-white">Elige tu membresía</h2>
       <button onclick="closeModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-white/40 hover:text-white transition-colors"
@@ -869,7 +456,7 @@ tailwind.config = {
     </div>
     <p class="text-xs text-white/40 mb-5">Sin contratos · Cancela cuando quieras</p>
 
-    <!-- Basic -->
+    <!-- Básica -->
     <div class="plan-basic rounded-2xl p-4 mb-3">
       <div class="flex items-start justify-between mb-3">
         <div>
@@ -882,18 +469,12 @@ tailwind.config = {
         <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(56,189,248,.14); color:var(--blue)">Popular</span>
       </div>
       <ul class="space-y-2 mb-4">
-        <li class="flex items-center gap-2 text-xs text-white/65">
-          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Clases en vivo diarias
-        </li>
-        <li class="flex items-center gap-2 text-xs text-white/65">
-          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Acceso a +200 grabaciones
-        </li>
-        <li class="flex items-center gap-2 text-xs text-white/65">
-          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Comunidad privada
-        </li>
+        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Clases en vivo diarias</li>
+        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Acceso a +200 grabaciones</li>
+        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Comunidad privada</li>
       </ul>
       <div class="flex gap-2">
-        <button class="btn-mp flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-1.5">
+        <button class="btn-mp flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-1">
           <span class="text-xs font-black">Mercado</span><span class="text-xs font-black">Pago</span>
         </button>
         <button class="btn-paypal flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-0.5">
@@ -903,7 +484,7 @@ tailwind.config = {
     </div>
 
     <!-- Premium -->
-    <div class="plan-premium rounded-2xl p-4">
+    <div class="plan-premium rounded-2xl p-4 mb-3">
       <div class="flex items-start justify-between mb-3">
         <div>
           <p class="text-xs font-bold tracking-widest mb-1" style="color:var(--orange)">PREMIUM</p>
@@ -915,21 +496,41 @@ tailwind.config = {
         <span class="badge-gold text-xs font-bold px-2.5 py-1 rounded-full">⭐ Mejor valor</span>
       </div>
       <ul class="space-y-2 mb-4">
-        <li class="flex items-center gap-2 text-xs text-white/65">
-          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Todo lo de Básica incluido
-        </li>
-        <li class="flex items-center gap-2 text-xs text-white/65">
-          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Acceso a todos los cursos
-        </li>
-        <li class="flex items-center gap-2 text-xs text-white/65">
-          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Mentoría mensual 1:1
-        </li>
-        <li class="flex items-center gap-2 text-xs text-white/65">
-          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Descuentos en eventos
-        </li>
+        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Todo lo de Básica</li>
+        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Acceso a todos los cursos</li>
+        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Mentoría mensual 1:1</li>
+        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Descuentos en eventos</li>
       </ul>
       <div class="flex gap-2">
-        <button class="btn-mp flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-1.5">
+        <button class="btn-mp flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-1">
+          <span class="text-xs font-black">Mercado</span><span class="text-xs font-black">Pago</span>
+        </button>
+        <button class="btn-paypal flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-0.5">
+          <span class="text-xs font-black italic" style="color:#009cde">Pay</span><span class="text-xs font-black italic" style="color:#003087">Pal</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- VIP -->
+    <div class="plan-vip rounded-2xl p-4">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <p class="text-xs font-bold tracking-widest mb-1" style="color:#a78bfa">VIP</p>
+          <div class="flex items-baseline gap-1">
+            <span class="text-3xl font-black text-white">$95</span>
+            <span class="text-sm text-white/40">USD/mes</span>
+          </div>
+        </div>
+        <span class="text-xs font-bold px-2.5 py-1 rounded-full" style="background:rgba(139,92,246,.2); color:#a78bfa; border:1px solid rgba(139,92,246,.4)">💎 Exclusivo</span>
+      </div>
+      <ul class="space-y-2 mb-4">
+        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Todo lo de Premium</li>
+        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Sesiones privadas ilimitadas</li>
+        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Acceso a retiros presenciales</li>
+        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Grupo VIP directo con Jimmy</li>
+      </ul>
+      <div class="flex gap-2">
+        <button class="btn-mp flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-1">
           <span class="text-xs font-black">Mercado</span><span class="text-xs font-black">Pago</span>
         </button>
         <button class="btn-paypal flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-0.5">
@@ -948,89 +549,1542 @@ tailwind.config = {
      JAVASCRIPT
 ══════════════════════════════════════ -->
 <script>
-  // ── Init icons
+/* ═══════════════════════════════════════════
+   CONFIGURATION
+═══════════════════════════════════════════ */
+const SUPABASE_URL  = 'https://wvxcqavtjtgvxdvtuvvd.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2eGNxYXZ0anRndnhkdnR1dnZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMDc3MjYsImV4cCI6MjA5MTY4MzcyNn0.o8KY2-HrYpf747tvZDZKqXjpXf-8daeEs7RLY71a-6g';
+const ADMIN_EMAILS  = ['hi@wapnix.com', 'hi@monkeia.com', 'contacto@flowback.cl'];
+const TIER_RANK     = { free: 0, basica: 1, premium: 2, vip: 3 };
+
+/* ═══════════════════════════════════════════
+   APP STATE
+═══════════════════════════════════════════ */
+let sb            = null;
+let currentUser   = null;
+let userProfile   = null;
+let currentSection = 'eventos';
+let notifVisible  = false;
+
+/* ═══════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════ */
+function isAdmin() {
+  return !!(currentUser && ADMIN_EMAILS.includes(currentUser.email));
+}
+
+function getUserTier() {
+  if (isAdmin()) return 'vip';
+  return userProfile?.tier || 'free';
+}
+
+function canAccess(tierRequired) {
+  if (!tierRequired || tierRequired === 'free') return true;
+  if (!currentUser) return false;
+  return (TIER_RANK[getUserTier()] ?? 0) >= (TIER_RANK[tierRequired] ?? 0);
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function extractVimeoId(url) {
+  if (!url) return null;
+  const m = String(url).match(/(?:vimeo\.com\/(?:video\/)?|^)(\d+)/);
+  return m ? m[1] : null;
+}
+
+function formatEventDate(dateStr, timeStr) {
+  if (!dateStr) return '';
+  try {
+    const d   = new Date(dateStr + 'T00:00:00');
+    const day = d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    return timeStr ? `${day} · ${timeStr.slice(0,5)}` : day;
+  } catch { return dateStr; }
+}
+
+function formatDuration(hours) {
+  if (!hours) return '';
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  if (h && m) return `${h}h ${m}min`;
+  if (h) return `${h}h`;
+  return `${m}min`;
+}
+
+function tierLabel(tier) {
+  const map = { free: 'Gratis', basica: 'Básica', premium: 'Premium', vip: 'VIP' };
+  return map[tier] || tier || '';
+}
+
+function getInitials(name, email) {
+  if (name) {
+    const parts = name.trim().split(' ');
+    return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
+  }
+  return (email?.[0] || '?').toUpperCase();
+}
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+function showToast(msg, isError = false) {
+  const toast = document.getElementById('toast');
+  const inner = document.getElementById('toast-inner');
+  inner.textContent = msg;
+  inner.style.borderColor = isError ? 'rgba(239,68,68,.4)' : 'rgba(245,124,0,.3)';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3200);
+}
+
+/* ═══════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════ */
+function openModal() {
+  const overlay = document.getElementById('modal-overlay');
+  const sheet   = document.getElementById('modal-sheet');
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  sheet.classList.remove('animate');
+  void sheet.offsetWidth;
+  sheet.classList.add('animate');
+  lucide.createIcons();
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ═══════════════════════════════════════════
+   NOTIFICATION BANNER
+═══════════════════════════════════════════ */
+function showNotifBar() {
+  if (notifVisible) return;
+  document.getElementById('notif-bar').classList.add('show');
+  notifVisible = true;
+}
+function dismissNotif() {
+  document.getElementById('notif-bar').classList.remove('show');
+  notifVisible = false;
+  localStorage.setItem('notif_dismissed', '1');
+}
+function activateNotif() {
+  if ('Notification' in window && Notification.permission !== 'granted') {
+    Notification.requestPermission().then(p => {
+      dismissNotif();
+      if (p === 'granted') {
+        setTimeout(() => {
+          new Notification('¡Bienvenido a Flowback Hub!', {
+            body: 'Ahora recibirás notificaciones de eventos y novedades.',
+            icon: '/logo.png'
+          });
+        }, 600);
+      }
+    });
+  } else {
+    dismissNotif();
+  }
+}
+
+/* ═══════════════════════════════════════════
+   NAV TABS — dynamic per auth state
+═══════════════════════════════════════════ */
+function renderNavTabs() {
+  const tier    = getUserTier();
+  const loggedIn = !!currentUser;
+
+  // Define tabs based on auth state
+  // Logged out: 4 tabs  |  Logged in: up to 5 tabs
+  const tabs = loggedIn
+    ? [
+        { id: 'clases-gratis', icon: 'gift',            label: 'Clases' },
+        { id: 'eventos',       icon: 'calendar-days',   label: 'Eventos' },
+        { id: 'cursos',        icon: 'graduation-cap',  label: 'Cursos' },
+        ...(canAccess('basica') ? [
+          { id: 'agenda',    icon: 'video',        label: 'Agenda' },
+          { id: 'grabadas',  icon: 'play-circle',  label: 'Grabadas' },
+        ] : []),
+        { id: 'tribu', icon: 'user-circle', label: 'Mi cuenta' },
+      ]
+    : [
+        { id: 'eventos',      icon: 'calendar-days',  label: 'Eventos' },
+        { id: 'clases-gratis',icon: 'gift',            label: 'Gratis' },
+        { id: 'cursos',       icon: 'graduation-cap', label: 'Cursos' },
+        { id: 'tribu',        icon: 'crown',          label: 'Tribu' },
+      ];
+
+  const nav = document.getElementById('bottom-nav');
+  nav.innerHTML = tabs.map(t => `
+    <button class="nav-tab${currentSection === t.id ? ' active' : ''}" id="nav-${t.id}" onclick="switchSection('${t.id}')">
+      <div class="nav-icon-wrap"><i data-lucide="${t.icon}" class="w-5 h-5"></i></div>
+      <span class="nav-label">${t.label}</span>
+    </button>
+  `).join('');
+
+  lucide.createIcons();
+}
+
+/* ═══════════════════════════════════════════
+   SECTION SWITCHING
+═══════════════════════════════════════════ */
+const ALL_SECTIONS = ['eventos', 'clases-gratis', 'cursos', 'tribu', 'agenda', 'grabadas'];
+
+function switchSection(name) {
+  currentSection = name;
+
+  ALL_SECTIONS.forEach(id => {
+    const el = document.getElementById('sec-' + id);
+    if (el) el.classList.toggle('active', id === name);
+  });
+
+  // Update active tab in nav
+  ALL_SECTIONS.forEach(id => {
+    const btn = document.getElementById('nav-' + id);
+    if (btn) btn.classList.toggle('active', id === name);
+  });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Lazy-load section data on first visit
+  if (name === 'eventos'      && !window._loaded_eventos)       loadEventos();
+  if (name === 'clases-gratis'&& !window._loaded_clases)        loadClasesGratis();
+  if (name === 'cursos'       && !window._loaded_cursos)        loadCursos();
+  if (name === 'agenda'       && !window._loaded_agenda)        loadAgenda();
+  if (name === 'grabadas'     && !window._loaded_grabadas)      loadGrabadas();
+}
+
+/* ═══════════════════════════════════════════
+   HEADER UPDATE
+═══════════════════════════════════════════ */
+function updateHeader() {
+  const tierEl    = document.getElementById('header-tier');
+  const tierBadge = document.getElementById('header-tier-badge');
+  const tierPH    = document.getElementById('header-tier-placeholder');
+  const avatarBtn = document.getElementById('header-avatar-btn');
+  const avatarImg = document.getElementById('header-avatar-img');
+  const initials  = document.getElementById('header-avatar-initials');
+
+  if (currentUser) {
+    const tier = getUserTier();
+
+    // Tier badge
+    tierEl.style.display = 'block';
+    tierPH.style.display = 'none';
+    tierBadge.textContent = tierLabel(tier).toUpperCase();
+    tierBadge.className = `text-xs font-bold px-2 py-0.5 rounded-full badge-${tier}`;
+
+    // Avatar
+    avatarBtn.style.display = 'flex';
+    if (userProfile?.avatar_url) {
+      avatarImg.src = userProfile.avatar_url;
+      avatarImg.style.display = 'block';
+      initials.style.display  = 'none';
+    } else {
+      avatarImg.style.display = 'none';
+      initials.style.display  = 'flex';
+      initials.textContent    = getInitials(userProfile?.full_name, currentUser.email);
+    }
+  } else {
+    tierEl.style.display    = 'none';
+    tierPH.style.display    = 'block';
+    avatarBtn.style.display = 'none';
+  }
+}
+
+/* ═══════════════════════════════════════════
+   AUTH STATE CHANGE HANDLERS
+═══════════════════════════════════════════ */
+async function handleSignedIn(user) {
+  currentUser = user;
+
+  // Fetch profile
+  const { data: profile } = await sb
+    .from('profiles')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+  userProfile = profile;
+
+  updateHeader();
+  updateUIForLoggedInUser();
+}
+
+function handleSignedOut() {
+  currentUser  = null;
+  userProfile  = null;
+  updateHeader();
+  updateUIForLoggedOutUser();
+}
+
+/* ═══════════════════════════════════════════
+   UI STATE: LOGGED IN
+═══════════════════════════════════════════ */
+function updateUIForLoggedInUser() {
+  renderNavTabs();
+
+  // If currently on tribu section, re-render it
+  const tribu = document.getElementById('sec-tribu');
+  if (tribu) renderTribuSection();
+
+  // Reset loaded flags for member-only sections so they re-fetch
+  window._loaded_agenda   = false;
+  window._loaded_grabadas = false;
+
+  // If the active tab is no longer in the new nav, redirect
+  const memberTabs = ['eventos', 'clases-gratis', 'cursos', 'agenda', 'grabadas', 'tribu'];
+  if (!memberTabs.includes(currentSection)) switchSection('eventos');
+}
+
+/* ═══════════════════════════════════════════
+   UI STATE: LOGGED OUT
+═══════════════════════════════════════════ */
+function updateUIForLoggedOutUser() {
+  renderNavTabs();
+
+  const tribu = document.getElementById('sec-tribu');
+  if (tribu) renderTribuSection();
+
+  // If on a member-only section, redirect to tribu
+  if (['agenda', 'grabadas'].includes(currentSection)) {
+    switchSection('tribu');
+  }
+}
+
+/* ═══════════════════════════════════════════
+   SECTION HTML INJECTION
+   (each section renders its own skeleton shell;
+    data-loading functions fill in the content)
+═══════════════════════════════════════════ */
+function injectSectionShells() {
+  document.getElementById('main-content').innerHTML = `
+    <!-- EVENTOS -->
+    <section id="sec-eventos" class="tab-section active">
+      <div class="pt-6 pb-2">
+        <h1 class="text-2xl font-black serif mb-1">Próximos <span class="grad-text">eventos</span></h1>
+        <p class="text-xs text-white/40 mb-5">Únete a nuestras experiencias transformadoras</p>
+        <div id="eventos-list">
+          ${skeletonCards(3)}
+        </div>
+      </div>
+    </section>
+
+    <!-- CLASES GRATIS -->
+    <section id="sec-clases-gratis" class="tab-section">
+      <div class="pt-6 pb-2">
+        <h1 class="text-2xl font-black serif mb-1">Clases <span class="grad-text">gratuitas</span></h1>
+        <p class="text-xs text-white/40 mb-5">Comienza tu transformación hoy, sin costo</p>
+        <div id="clases-list">
+          ${skeletonCards(4)}
+        </div>
+        <!-- Static resources + CTA below, always visible -->
+        <div id="clases-static-content"></div>
+      </div>
+    </section>
+
+    <!-- CURSOS -->
+    <section id="sec-cursos" class="tab-section">
+      <div class="pt-6 pb-2">
+        <h1 class="text-2xl font-black serif mb-1">Nuestros <span class="grad-text">cursos</span></h1>
+        <p class="text-xs text-white/40 mb-5">Programas de transformación profunda</p>
+        <div id="cursos-list">
+          ${skeletonCards(3)}
+        </div>
+      </div>
+    </section>
+
+    <!-- TRIBU (auth hub / member area) -->
+    <section id="sec-tribu" class="tab-section">
+      <div id="tribu-content" class="pt-6 pb-2">
+        <!-- Rendered by renderTribuSection() -->
+        ${skeletonCards(2)}
+      </div>
+    </section>
+
+    <!-- AGENDA (members) -->
+    <section id="sec-agenda" class="tab-section">
+      <div class="pt-6 pb-2">
+        <h1 class="text-2xl font-black serif mb-1">Tu <span class="grad-text">agenda</span></h1>
+        <p class="text-xs text-white/40 mb-5">Clases grabadas de tu membresía</p>
+        <div id="agenda-list">
+          ${skeletonCards(4)}
+        </div>
+      </div>
+    </section>
+
+    <!-- GRABADAS (premium) -->
+    <section id="sec-grabadas" class="tab-section">
+      <div class="pt-6 pb-2">
+        <h1 class="text-2xl font-black serif mb-1">Sesiones <span class="grad-text">grabadas</span></h1>
+        <p class="text-xs text-white/40 mb-5">Contenido exclusivo premium y VIP</p>
+        <div id="grabadas-list">
+          ${skeletonCards(4)}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function skeletonCards(n) {
+  return Array.from({ length: n }, () =>
+    `<div class="skeleton skeleton-card mb-4"></div>`
+  ).join('');
+}
+
+/* ═══════════════════════════════════════════
+   TRIBU SECTION RENDERER
+   (called whenever auth state changes)
+═══════════════════════════════════════════ */
+function renderTribuSection() {
+  const container = document.getElementById('tribu-content');
+  if (!container) return;
+
+  if (currentUser) {
+    renderTribuMember(container);
+  } else {
+    renderTribuAuth(container);
+  }
+  lucide.createIcons();
+}
+
+function renderTribuAuth(container) {
+  container.innerHTML = `
+    <h1 class="text-2xl font-black serif mb-1">Tribu <span class="grad-text">Flowback</span></h1>
+    <p class="text-xs text-white/40 mb-5">El espacio exclusivo de nuestra comunidad</p>
+
+    <!-- Auth tabs -->
+    <div class="card rounded-2xl p-5 mb-5">
+      <div class="flex gap-1 p-1 rounded-xl mb-5" style="background:rgba(255,255,255,.04)">
+        <button class="auth-tab-btn active" id="auth-tab-login"    onclick="showAuthForm('login')">Iniciar sesión</button>
+        <button class="auth-tab-btn"        id="auth-tab-register" onclick="showAuthForm('register')">Crear cuenta</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <div id="auth-form-login">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style="background:linear-gradient(135deg,rgba(245,124,0,.18),rgba(56,189,248,.18))">
+            <i data-lucide="lock" class="w-5 h-5" style="color:var(--orange)"></i>
+          </div>
+          <div>
+            <p class="font-semibold text-sm text-white">Acceso miembros</p>
+            <p class="text-xs text-white/40">Inicia sesión con tu cuenta</p>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-white/40 mb-1.5 block">Email</label>
+            <input type="email" id="login-email" placeholder="tu@email.com" class="auth-input" autocomplete="email">
+          </div>
+          <div>
+            <label class="text-xs text-white/40 mb-1.5 block">Contraseña</label>
+            <input type="password" id="login-password" placeholder="••••••••" class="auth-input" autocomplete="current-password">
+          </div>
+          <div id="login-error" class="text-xs text-error" style="display:none"></div>
+          <button id="login-btn" onclick="doLogin()" class="btn-grad w-full py-3 rounded-xl text-sm mt-1">Iniciar sesión</button>
+        </div>
+        <p class="text-center text-xs text-white/30 mt-3 cursor-pointer hover:text-white/60 transition-colors"
+          onclick="showAuthForm('forgot')">¿Olvidaste tu contraseña?</p>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div id="auth-form-register" style="display:none">
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-white/40 mb-1.5 block">Nombre completo</label>
+            <input type="text" id="reg-name" placeholder="Tu nombre" class="auth-input" autocomplete="name">
+          </div>
+          <div>
+            <label class="text-xs text-white/40 mb-1.5 block">Email</label>
+            <input type="email" id="reg-email" placeholder="tu@email.com" class="auth-input" autocomplete="email">
+          </div>
+          <div>
+            <label class="text-xs text-white/40 mb-1.5 block">Contraseña</label>
+            <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres" class="auth-input" autocomplete="new-password">
+          </div>
+          <div id="reg-error" class="text-xs text-error" style="display:none"></div>
+          <button id="reg-btn" onclick="doRegister()" class="btn-grad w-full py-3 rounded-xl text-sm mt-1">Crear cuenta gratis</button>
+        </div>
+        <p class="text-center text-xs text-white/30 mt-3">
+          Al registrarte aceptas nuestros <span class="text-white/50 cursor-pointer">Términos de uso</span>
+        </p>
+      </div>
+
+      <!-- FORGOT PASSWORD FORM -->
+      <div id="auth-form-forgot" style="display:none">
+        <div class="flex items-center gap-3 mb-4">
+          <button onclick="showAuthForm('login')" class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            style="background:rgba(255,255,255,.06)">
+            <i data-lucide="arrow-left" class="w-4 h-4 text-white/60"></i>
+          </button>
+          <div>
+            <p class="font-semibold text-sm text-white">Recuperar contraseña</p>
+            <p class="text-xs text-white/40">Te enviaremos un enlace al email</p>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-white/40 mb-1.5 block">Email</label>
+            <input type="email" id="forgot-email" placeholder="tu@email.com" class="auth-input">
+          </div>
+          <div id="forgot-msg" class="text-xs" style="display:none"></div>
+          <button id="forgot-btn" onclick="doForgotPassword()" class="btn-grad w-full py-3 rounded-xl text-sm">Enviar enlace</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Membership CTA -->
+    <div class="rounded-2xl p-5 mb-5 relative overflow-hidden"
+      style="background:linear-gradient(135deg,rgba(245,124,0,.12) 0%,rgba(56,189,248,.12) 100%); border:1px solid rgba(245,124,0,.3)">
+      <div class="absolute -top-4 -right-4 w-28 h-28 rounded-full"
+        style="background:radial-gradient(circle,rgba(245,124,0,.25),transparent 70%)"></div>
+      <p class="text-xs font-bold mb-1" style="color:var(--orange); letter-spacing:.08em">¿AÚN NO ERES MIEMBRO?</p>
+      <p class="text-lg font-black serif text-white mb-1">Únete a la Tribu</p>
+      <p class="text-xs text-white/50 mb-4 leading-relaxed">Accede a clases en vivo, cursos y nuestra comunidad privada desde $35/mes.</p>
+      <button onclick="openModal()" class="btn-grad px-6 py-2.5 rounded-xl text-sm">Ver Membresías →</button>
+    </div>
+
+    <!-- Schedule teaser -->
+    <h2 class="text-base font-bold serif mb-3 text-white">Horario de clases en vivo</h2>
+    <div class="card rounded-2xl p-4 mb-5 overflow-x-auto">
+      <table class="sched-table">
+        <thead>
+          <tr>
+            <th class="text-left">Hora</th>
+            <th>L</th><th>M</th><th>X</th><th>J</th><th>V</th><th>S</th><th>D</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>7:00</td><td class="has-class">Flow</td><td>—</td><td class="has-class">Flow</td><td>—</td><td class="has-class">Flow</td><td class="has-class">Flow</td><td>—</td></tr>
+          <tr><td>9:00</td><td>—</td><td class="has-class">Espalda</td><td>—</td><td class="has-class">Espalda</td><td>—</td><td class="has-class">Esp.</td><td class="has-class">Esp.</td></tr>
+          <tr><td>12:00</td><td class="has-class">Emoc.</td><td>—</td><td class="has-class">Emoc.</td><td>—</td><td class="has-class">Emoc.</td><td>—</td><td class="has-class">Emoc.</td></tr>
+          <tr><td>18:00</td><td class="has-class">Flow</td><td class="has-class">Flow</td><td>—</td><td class="has-class">Flow</td><td class="has-class">Flow</td><td>—</td><td>—</td></tr>
+          <tr><td>20:00</td><td>—</td><td class="has-class">Medit.</td><td class="has-class">Medit.</td><td>—</td><td>—</td><td class="has-class">Medit.</td><td class="has-class">Medit.</td></tr>
+        </tbody>
+      </table>
+      <p class="text-xs text-white/30 text-center mt-3 pt-3" style="border-top:1px solid rgba(255,255,255,.05)">
+        Todas las clases via Zoom · Horario CDMX (UTC-6)
+      </p>
+    </div>
+
+    <!-- Benefits -->
+    <h2 class="text-base font-bold serif mb-3 text-white">Beneficios incluidos</h2>
+    <div class="space-y-2.5">
+      <div class="flex items-center gap-3 p-3 rounded-xl" style="background:rgba(56,189,248,.05); border:1px solid rgba(56,189,248,.1)">
+        <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(56,189,248,.12)">
+          <i data-lucide="video" class="w-4 h-4" style="color:var(--blue)"></i>
+        </div>
+        <p class="text-sm text-white/80">Clases en vivo diarias por Zoom</p>
+      </div>
+      <div class="flex items-center gap-3 p-3 rounded-xl" style="background:rgba(245,124,0,.05); border:1px solid rgba(245,124,0,.1)">
+        <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(245,124,0,.12)">
+          <i data-lucide="library" class="w-4 h-4" style="color:var(--orange)"></i>
+        </div>
+        <p class="text-sm text-white/80">Acceso a biblioteca de +200 grabaciones</p>
+      </div>
+      <div class="flex items-center gap-3 p-3 rounded-xl" style="background:rgba(139,92,246,.05); border:1px solid rgba(139,92,246,.1)">
+        <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(139,92,246,.12)">
+          <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
+        </div>
+        <p class="text-sm text-white/80">Comunidad privada de miembros activos</p>
+      </div>
+    </div>
+  `;
+}
+
+function renderTribuMember(container) {
+  const tier       = getUserTier();
+  const name       = userProfile?.full_name || currentUser.email.split('@')[0];
+  const initials   = getInitials(userProfile?.full_name, currentUser.email);
+  const avatarUrl  = userProfile?.avatar_url;
+  const canMember  = canAccess('basica');
+  const canPremium = canAccess('premium');
+
+  container.innerHTML = `
+    <h1 class="text-2xl font-black serif mb-5">Tribu <span class="grad-text">Flowback</span></h1>
+
+    <!-- User hero card -->
+    <div class="card rounded-2xl p-5 mb-5">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 font-bold text-lg"
+          style="${avatarUrl ? '' : 'background:var(--grad);'} color:#fff; flex-shrink:0">
+          ${avatarUrl
+            ? `<img src="${escHtml(avatarUrl)}" alt="" class="w-full h-full object-cover">`
+            : `<span style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--grad)">${escHtml(initials)}</span>`}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <p class="font-bold text-white truncate">${escHtml(name)}</p>
+            <button onclick="openEditName()" class="flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center"
+              style="background:rgba(255,255,255,.07)">
+              <i data-lucide="pencil" class="w-3 h-3 text-white/50"></i>
+            </button>
+          </div>
+          <p class="text-xs text-white/40 truncate mt-0.5">${escHtml(currentUser.email)}</p>
+          <span class="badge-${tier} text-xs font-bold px-2.5 py-0.5 rounded-full mt-1.5 inline-block">${tierLabel(tier)}</span>
+        </div>
+        <button onclick="doSignOut()" class="btn-ghost text-xs px-3 py-2 rounded-xl flex-shrink-0 flex items-center gap-1.5">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>Salir
+        </button>
+      </div>
+      <!-- Inline edit name area -->
+      <div id="edit-name-row"></div>
+    </div>
+
+    <!-- Sub-nav -->
+    <div class="flex gap-1 p-1 rounded-2xl mb-5" style="background:rgba(255,255,255,.05)">
+      <button class="sub-tab-btn active" id="sub-tab-cuenta" onclick="showSubTab('cuenta')">Mi cuenta</button>
+      ${canMember ? `<button class="sub-tab-btn" id="sub-tab-acceso" onclick="showSubTab('acceso')">Acceso</button>` : ''}
+      <button class="sub-tab-btn" id="sub-tab-planes" onclick="showSubTab('planes')">
+        ${tier === 'free' ? 'Ver planes' : 'Mi plan'}
+      </button>
+    </div>
+
+    <!-- ── Sub: Mi cuenta ── -->
+    <div id="sub-cuenta" class="sub-section active">
+      <div class="space-y-3 mb-5">
+        <!-- Cambiar contraseña -->
+        <div class="card rounded-xl p-4 flex items-center gap-3 cursor-pointer hover:border-orange-500/30 transition-colors"
+          onclick="openChangePasswordFlow()">
+          <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(245,124,0,.12)">
+            <i data-lucide="key" class="w-4 h-4" style="color:var(--orange)"></i>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm text-white font-medium">Cambiar contraseña</p>
+            <p class="text-xs text-white/35 mt-0.5">Te enviaremos un enlace al email</p>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-white/30"></i>
+        </div>
+
+        <!-- Admin badge -->
+        ${isAdmin() ? `
+        <div class="card rounded-xl p-4 flex items-center gap-3"
+          style="border-color:rgba(245,124,0,.3); background:rgba(245,124,0,.04)">
+          <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(245,124,0,.15)">
+            <i data-lucide="shield" class="w-4 h-4" style="color:var(--orange)"></i>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-semibold" style="color:var(--orange)">Administrador</p>
+            <p class="text-xs text-white/40">Acceso total a Flowback Hub</p>
+          </div>
+        </div>` : ''}
+
+        <!-- Plan actual -->
+        <div class="card rounded-xl p-4">
+          <div class="flex items-center justify-between mb-1">
+            <p class="text-sm font-medium text-white/70">Plan actual</p>
+            <span class="badge-${tier} text-xs font-bold px-2.5 py-0.5 rounded-full">${tierLabel(tier)}</span>
+          </div>
+          ${tier === 'free'
+            ? `<p class="text-xs text-white/40">Actualiza para acceder a clases en vivo, grabaciones y más.</p>
+               <button onclick="showSubTab('planes')" class="btn-grad w-full py-2 rounded-xl text-xs mt-3">Ver planes de membresía →</button>`
+            : `<p class="text-xs text-white/40">Membresía activa — gracias por ser parte de la Tribu.</p>`
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sub: Acceso rápido ── -->
+    ${canMember ? `
+    <div id="sub-acceso" class="sub-section">
+      <div class="space-y-3">
+        <button onclick="switchSection('agenda')" class="w-full card rounded-xl p-4 flex items-center gap-3 text-left">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(56,189,248,.12)">
+            <i data-lucide="video" class="w-5 h-5" style="color:var(--blue)"></i>
+          </div>
+          <div class="flex-1">
+            <p class="font-semibold text-sm text-white">Agenda de clases</p>
+            <p class="text-xs text-white/40 mt-0.5">Clases grabadas de tu membresía</p>
+          </div>
+          <i data-lucide="arrow-right" class="w-4 h-4 text-white/30"></i>
+        </button>
+        ${canPremium ? `
+        <button onclick="switchSection('grabadas')" class="w-full card rounded-xl p-4 flex items-center gap-3 text-left">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(245,124,0,.12)">
+            <i data-lucide="play-circle" class="w-5 h-5" style="color:var(--orange)"></i>
+          </div>
+          <div class="flex-1">
+            <p class="font-semibold text-sm text-white">Sesiones grabadas</p>
+            <p class="text-xs text-white/40 mt-0.5">Contenido exclusivo Premium y VIP</p>
+          </div>
+          <i data-lucide="arrow-right" class="w-4 h-4 text-white/30"></i>
+        </button>` : `
+        <div class="card rounded-xl p-4 flex items-center gap-3" style="opacity:.6">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(245,124,0,.08)">
+            <i data-lucide="lock" class="w-5 h-5 text-white/30"></i>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm text-white/50">Sesiones grabadas</p>
+            <p class="text-xs text-white/30 mt-0.5">Requiere membresía Premium</p>
+          </div>
+        </div>`}
+      </div>
+    </div>` : ''}
+
+    <!-- ── Sub: Planes ── -->
+    <div id="sub-planes" class="sub-section">
+      ${renderPlanesContent(tier)}
+    </div>
+  `;
+}
+
+/* Planes de membresía con precios CLP */
+function renderPlanesContent(currentTierVal) {
+  const plans = [
+    {
+      id:      'basica',
+      label:   'BÁSICA',
+      emoji:   '🌱',
+      price:   '$35.000',
+      period:  'mes',
+      color:   'var(--blue)',
+      badge:   'badge-basica',
+      badgeTxt:'Popular',
+      features:['Clases en vivo diarias por Zoom','Acceso a +200 grabaciones','Comunidad privada de miembros','Soporte del equipo Flowback'],
+      style:   'plan-basic',
+    },
+    {
+      id:      'premium',
+      label:   'PREMIUM',
+      emoji:   '⭐',
+      price:   '$65.000',
+      period:  'trimestre',
+      color:   'var(--orange)',
+      badge:   'badge-premium',
+      badgeTxt:'Mejor valor',
+      features:['Todo lo de Básica incluido','Acceso a todos los cursos','Sesiones grabadas exclusivas','Mentoría mensual 1:1','Descuentos en eventos'],
+      style:   'plan-premium',
+    },
+    {
+      id:      'vip',
+      label:   'VIP',
+      emoji:   '💎',
+      price:   '$120.000',
+      period:  'semestre',
+      color:   '#a78bfa',
+      badge:   'badge-vip',
+      badgeTxt:'Exclusivo',
+      features:['Todo lo de Premium','Sesiones privadas ilimitadas','Acceso a retiros presenciales','Grupo VIP con Jimmy','Prioridad en eventos'],
+      style:   'plan-vip',
+    },
+  ];
+
+  const isMember = currentTierVal !== 'free';
+  let html = '';
+
+  if (isMember) {
+    html += `
+    <div class="card rounded-2xl p-5 mb-4 flex items-center gap-4"
+      style="border-color:rgba(34,197,94,.3); background:rgba(34,197,94,.04)">
+      <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(34,197,94,.15)">
+        <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+      </div>
+      <div class="flex-1">
+        <p class="font-semibold text-sm text-white">Membresía ${tierLabel(currentTierVal)} activa</p>
+        <p class="text-xs text-white/40 mt-0.5">Gracias por ser parte de la Tribu Flowback</p>
+      </div>
+    </div>`;
+  }
+
+  if (currentTierVal !== 'vip') {
+    html += `<p class="text-xs font-bold text-white/40 uppercase tracking-wider mb-3">${isMember ? 'Actualiza tu plan' : 'Elige tu membresía'}</p>`;
+  }
+
+  plans.forEach(p => {
+    const isCurrentPlan = p.id === currentTierVal;
+    const isLower       = TIER_RANK[p.id] < TIER_RANK[currentTierVal];
+    if (isLower) return; // don't show downgrade options
+
+    html += `
+    <div class="${p.style} rounded-2xl p-4 mb-3 ${isCurrentPlan ? 'opacity-80' : ''}">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <p class="text-xs font-bold tracking-widest mb-1" style="color:${p.color}">${p.emoji} ${p.label}</p>
+          <div class="flex items-baseline gap-1">
+            <span class="text-3xl font-black text-white">${p.price}</span>
+            <span class="text-xs text-white/40">/ ${p.period}</span>
+          </div>
+        </div>
+        <span class="${p.badge} text-xs font-bold px-2.5 py-1 rounded-full">${p.badgeTxt}</span>
+      </div>
+      <ul class="space-y-1.5 mb-4">
+        ${p.features.map(f => `
+        <li class="flex items-center gap-2 text-xs text-white/65">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>${f}
+        </li>`).join('')}
+      </ul>
+      ${isCurrentPlan
+        ? `<div class="w-full py-2.5 rounded-xl text-sm text-center font-semibold"
+              style="background:rgba(34,197,94,.12); color:#4ade80; border:1px solid rgba(34,197,94,.3)">
+            ✓ Tu plan actual
+           </div>`
+        : `<button class="btn-mp w-full py-2.5 rounded-xl text-sm font-bold"
+              onclick="showToast('Redirigiendo a MercadoPago…')">
+            Suscribirme con MercadoPago
+           </button>`
+      }
+    </div>`;
+  });
+
+  if (currentTierVal === 'vip') {
+    html += `
+    <div class="text-center py-6">
+      <p class="text-2xl mb-2">💎</p>
+      <p class="font-bold text-white mb-1">Estás en el plan máximo</p>
+      <p class="text-xs text-white/40">Tienes acceso completo a todo Flowback Hub</p>
+    </div>`;
+  }
+
+  return html;
+}
+
+/* ═══════════════════════════════════════════
+   AUTH FORM SWITCHING (inside tribu)
+═══════════════════════════════════════════ */
+function showAuthForm(form) {
+  ['login', 'register', 'forgot'].forEach(f => {
+    const el = document.getElementById('auth-form-' + f);
+    if (el) el.style.display = f === form ? 'block' : 'none';
+  });
+  ['login', 'register'].forEach(f => {
+    const btn = document.getElementById('auth-tab-' + f);
+    if (btn) btn.classList.toggle('active', f === form);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   MEMBER SUB-TAB SWITCHING
+═══════════════════════════════════════════ */
+function showSubTab(name) {
+  ['cuenta', 'acceso', 'planes'].forEach(t => {
+    const el  = document.getElementById('sub-' + t);
+    const btn = document.getElementById('sub-tab-' + t);
+    if (el)  el.classList.toggle('active', t === name);
+    if (btn) btn.classList.toggle('active', t === name);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   AUTH ACTIONS
+═══════════════════════════════════════════ */
+async function doLogin() {
+  const email    = document.getElementById('login-email')?.value.trim();
+  const password = document.getElementById('login-password')?.value;
+  const errEl    = document.getElementById('login-error');
+  const btn      = document.getElementById('login-btn');
+  if (!email || !password) { showAuthError(errEl, 'Completa todos los campos'); return; }
+
+  setLoading(btn, true);
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  setLoading(btn, false);
+
+  if (error) {
+    showAuthError(errEl, translateAuthError(error.message));
+  } else {
+    errEl && (errEl.style.display = 'none');
+    showToast('¡Bienvenido de vuelta!');
+  }
+}
+
+async function doRegister() {
+  const name     = document.getElementById('reg-name')?.value.trim();
+  const email    = document.getElementById('reg-email')?.value.trim();
+  const password = document.getElementById('reg-password')?.value;
+  const errEl    = document.getElementById('reg-error');
+  const btn      = document.getElementById('reg-btn');
+
+  if (!name || !email || !password) { showAuthError(errEl, 'Completa todos los campos'); return; }
+  if (password.length < 6) { showAuthError(errEl, 'La contraseña debe tener al menos 6 caracteres'); return; }
+
+  setLoading(btn, true);
+  const { data, error } = await sb.auth.signUp({
+    email, password,
+    options: { data: { full_name: name } }
+  });
+  setLoading(btn, false);
+
+  if (error) {
+    showAuthError(errEl, translateAuthError(error.message));
+  } else if (data.user && !data.session) {
+    // Email confirmation required
+    errEl && (errEl.style.display = 'none');
+    showToast('¡Cuenta creada! Revisa tu email para confirmar.');
+  } else {
+    errEl && (errEl.style.display = 'none');
+    showToast('¡Bienvenido a Flowback Hub!');
+  }
+}
+
+async function doForgotPassword() {
+  const email = document.getElementById('forgot-email')?.value.trim();
+  const msgEl = document.getElementById('forgot-msg');
+  const btn   = document.getElementById('forgot-btn');
+  if (!email) { showMsg(msgEl, 'Ingresa tu email', true); return; }
+
+  setLoading(btn, true);
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin
+  });
+  setLoading(btn, false);
+
+  if (error) {
+    showMsg(msgEl, translateAuthError(error.message), true);
+  } else {
+    showMsg(msgEl, '¡Listo! Revisa tu email para resetear tu contraseña.', false);
+    btn.disabled = true;
+  }
+}
+
+async function doSignOut() {
+  await sb.auth.signOut();
+  switchSection('eventos');
+  showToast('Sesión cerrada');
+}
+
+function openChangePasswordFlow() {
+  showToast('Revisa tu email — te enviamos el enlace para cambiar contraseña.');
+  sb.auth.resetPasswordForEmail(currentUser.email, { redirectTo: window.location.origin });
+}
+
+/* ── Auth UI helpers ── */
+function showAuthError(el, msg) {
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function showMsg(el, msg, isError) {
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `text-xs ${isError ? 'text-error' : 'text-success'}`;
+  el.style.display = 'block';
+}
+function setLoading(btn, loading) {
+  if (!btn) return;
+  btn.disabled = loading;
+  if (loading) {
+    btn._origText = btn.textContent;
+    btn.innerHTML = '<div class="spin mx-auto"></div>';
+  } else {
+    btn.innerHTML = btn._origText || btn.innerHTML;
+  }
+}
+function translateAuthError(msg) {
+  if (!msg) return 'Error desconocido';
+  if (msg.includes('Invalid login'))        return 'Email o contraseña incorrectos';
+  if (msg.includes('Email not confirmed'))  return 'Confirma tu email antes de iniciar sesión';
+  if (msg.includes('already registered'))  return 'Este email ya tiene una cuenta';
+  if (msg.includes('rate limit'))           return 'Demasiados intentos. Espera un momento.';
+  if (msg.includes('password'))             return 'La contraseña debe tener al menos 6 caracteres';
+  return msg;
+}
+
+/* ═══════════════════════════════════════════
+   RENDER HELPERS — shared card builders
+═══════════════════════════════════════════ */
+
+/** Vimeo card: click-to-play with optional progress bar */
+function renderVideoCard(video, locked = false) {
+  const vimeoId = extractVimeoId(video.vimeo_url);
+  const thumb   = video.thumbnail_url;
+  const progress= video._progress ?? 0;
+
+  const thumbHtml = thumb
+    ? `<img class="vimeo-thumb" src="${escHtml(thumb)}" alt="${escHtml(video.title)}" loading="lazy" onerror="this.style.display='none'">`
+    : `<div class="vimeo-thumb" style="background:linear-gradient(135deg,rgba(245,124,0,.08),rgba(56,189,248,.08))"></div>`;
+
+  if (locked) {
+    return `
+    <article class="card rounded-2xl overflow-hidden mb-4">
+      <div class="locked-wrap">
+        <div class="vimeo-wrap locked-blur" style="pointer-events:none">
+          ${thumbHtml}
+          <div class="vimeo-play-overlay">
+            <div class="play-btn"><svg viewBox="0 0 24 24" class="w-6 h-6 ml-1" fill="white"><path d="M8 5v14l11-7z"/></svg></div>
+          </div>
+        </div>
+        <div class="locked-overlay">
+          <i data-lucide="lock" class="w-7 h-7 text-white/50"></i>
+          <p class="text-xs text-white/60 text-center">Requiere membresía <strong>${escHtml(tierLabel(video.tier_required))}</strong></p>
+          <button onclick="openModal()" class="btn-grad text-xs px-4 py-2 rounded-xl mt-1">Ver planes</button>
+        </div>
+      </div>
+      <div class="p-4">
+        <h3 class="font-bold text-sm serif text-white/50 mb-1">${escHtml(video.title)}</h3>
+        ${video.duration ? `<p class="text-xs text-white/25">${escHtml(video.duration)}</p>` : ''}
+      </div>
+    </article>`;
+  }
+
+  return `
+  <article class="card rounded-2xl overflow-hidden mb-4">
+    <div class="vimeo-wrap" onclick="playVimeo(this,'${escHtml(vimeoId || '')}')">
+      ${thumbHtml}
+      <div class="vimeo-play-overlay">
+        <div class="play-btn"><svg viewBox="0 0 24 24" class="w-6 h-6 ml-1" fill="white"><path d="M8 5v14l11-7z"/></svg></div>
+        ${video.duration ? `<p class="text-xs text-white/60">${escHtml(video.duration)}</p>` : ''}
+      </div>
+    </div>
+    ${progress > 0 ? `
+    <div class="px-4 pt-3 pb-0">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%"></div></div>
+      <p class="text-xs text-white/30 mt-1">${progress}% completado</p>
+    </div>` : ''}
+    <div class="p-4 ${progress > 0 ? 'pt-2' : ''}">
+      <h3 class="font-bold text-sm serif mb-1">${escHtml(video.title)}</h3>
+      ${video.description ? `<p class="text-xs text-white/50 leading-relaxed line-clamp-2">${escHtml(video.description)}</p>` : ''}
+    </div>
+  </article>`;
+}
+
+function playVimeo(wrapper, videoId) {
+  if (!videoId) { showToast('Video no disponible', true); return; }
+  wrapper.innerHTML = `<iframe
+    src="https://player.vimeo.com/video/${videoId}?autoplay=1&color=F57C00&title=0&byline=0&portrait=0"
+    allow="autoplay; fullscreen; picture-in-picture" allowfullscreen
+    style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>`;
+}
+
+function renderEmptyState(icon, title, subtitle) {
+  return `
+  <div class="text-center py-14">
+    <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+      style="background:rgba(245,124,0,.1)">
+      <i data-lucide="${icon}" class="w-7 h-7" style="color:var(--orange)"></i>
+    </div>
+    <p class="font-semibold text-white/60 mb-1">${title}</p>
+    <p class="text-xs text-white/30">${subtitle}</p>
+  </div>`;
+}
+
+function renderLoadError() {
+  return `<div class="text-center py-10 text-white/30 text-sm">Error al cargar el contenido. Intenta de nuevo.</div>`;
+}
+
+/* ═══════════════════════════════════════════
+   LOAD EVENTOS (events + webinars merged)
+═══════════════════════════════════════════ */
+async function loadEventos() {
+  window._loaded_eventos = true;
+  const container = document.getElementById('eventos-list');
+  if (!container) return;
+
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const [{ data: events, error: e1 }, { data: webinars, error: e2 }] = await Promise.all([
+      sb.from('events').select('*').eq('is_active', true).gte('event_date', today).order('event_date').order('event_time'),
+      sb.from('webinars').select('*').eq('is_active', true).gte('date', today).order('date').order('time'),
+    ]);
+    if (e1 || e2) throw e1 || e2;
+
+    const combined = [
+      ...(events   || []).map(e => ({ ...e, _src: 'event',   _date: e.event_date, _time: e.event_time   })),
+      ...(webinars || []).map(w => ({ ...w, _src: 'webinar', _date: w.date,        _time: w.time         })),
+    ].sort((a, b) => (a._date + (a._time || '')).localeCompare(b._date + (b._time || '')));
+
+    if (!combined.length) {
+      container.innerHTML = renderEmptyState('calendar-x', 'No hay eventos próximos', 'Vuelve pronto para ver nuevas fechas');
+      lucide.createIcons(); return;
+    }
+
+    container.innerHTML = combined.map(renderEventCard).join('');
+    lucide.createIcons();
+  } catch {
+    container.innerHTML = renderLoadError();
+  }
+}
+
+function renderEventCard(e) {
+  const isOnline  = e._src === 'webinar' || e.type === 'online';
+  const badgeCls  = isOnline ? 'badge-online' : 'badge-presencial';
+  const badgeTxt  = isOnline ? 'Online' : 'Presencial';
+  const locIcon   = isOnline ? 'video' : 'map-pin';
+  const locLabel  = isOnline ? 'Zoom' : escHtml(e.location || '');
+  const dateLabel = escHtml(formatEventDate(e._date, e._time));
+  const thumb     = e.thumbnail_url || 'https://flowback.infraqualia.com/assets/flowback-1.jpg';
+  const isMember  = e.tier_required && e.tier_required !== 'free';
+  const hasLink   = isOnline && e.zoom_url;
+  const ctaHtml   = hasLink
+    ? `<a href="${escHtml(e.zoom_url)}" target="_blank" rel="noopener" class="btn-grad w-full py-2.5 rounded-xl text-sm text-center block">Unirme al Zoom</a>`
+    : `<button class="btn-grad w-full py-2.5 rounded-xl text-sm">Reservar lugar</button>`;
+
+  return `
+  <article class="event-card card rounded-2xl overflow-hidden mb-4">
+    <div class="relative">
+      <img src="${escHtml(thumb)}" alt="${escHtml(e.title)}" loading="lazy"
+        class="w-full object-cover" style="aspect-ratio:16/9"
+        onerror="this.src='https://flowback.infraqualia.com/assets/flowback-1.jpg'">
+      <span class="${badgeCls} absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full">${badgeTxt}</span>
+      ${isMember ? `<span class="badge-gold absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full">Miembros</span>` : ''}
+    </div>
+    <div class="p-4">
+      <div class="flex items-center gap-1.5 mb-2 flex-wrap">
+        <i data-lucide="calendar" class="w-3.5 h-3.5 flex-shrink-0" style="color:var(--blue)"></i>
+        <span class="text-xs" style="color:var(--blue)">${dateLabel}</span>
+        ${locLabel ? `<span class="text-white/20 mx-0.5">·</span>
+        <i data-lucide="${locIcon}" class="w-3.5 h-3.5 flex-shrink-0 text-white/40"></i>
+        <span class="text-xs text-white/40">${locLabel}</span>` : ''}
+      </div>
+      <h3 class="font-bold text-base serif mb-1.5">${escHtml(e.title)}</h3>
+      ${e.description ? `<p class="text-xs text-white/50 mb-3 leading-relaxed">${escHtml(e.description)}</p>` : '<div class="mb-3"></div>'}
+      ${e.duration ? `<p class="text-xs text-white/30 mb-3">Duración: ${escHtml(e.duration)}</p>` : ''}
+      ${ctaHtml}
+    </div>
+  </article>`;
+}
+
+/* ═══════════════════════════════════════════
+   LOAD CLASES GRATIS (free Vimeo videos)
+═══════════════════════════════════════════ */
+async function loadClasesGratis() {
+  window._loaded_clases = true;
+  const container = document.getElementById('clases-list');
+  if (!container) return;
+
+  try {
+    const { data: videos, error } = await sb
+      .from('videos')
+      .select('*')
+      .eq('tier_required', 'free')
+      .eq('is_active', true)
+      .order('order_index', { nullsLast: true })
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    if (!videos?.length) {
+      container.innerHTML = renderEmptyState('video-off', 'Sin clases por ahora', 'Próximamente nuevas clases gratuitas');
+      lucide.createIcons();
+    } else {
+      container.innerHTML = videos.map(v => renderVideoCard(v, false)).join('');
+      lucide.createIcons();
+    }
+
+    // Inject static resources section below the dynamic videos
+    renderClasesStaticContent();
+  } catch {
+    container.innerHTML = renderLoadError();
+    renderClasesStaticContent();
+  }
+}
+
+function renderClasesStaticContent() {
+  const el = document.getElementById('clases-static-content');
+  if (!el) return;
+  el.innerHTML = `
+    <!-- WhatsApp CTA -->
+    <a href="https://wa.me/" target="_blank" rel="noopener"
+      class="card mb-5 rounded-2xl p-4 flex items-center gap-4 block"
+      style="border-color:rgba(37,211,102,.25); background:rgba(37,211,102,.04);">
+      <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:rgba(37,211,102,.14);">
+        <svg viewBox="0 0 24 24" class="w-7 h-7" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-semibold text-sm text-white">Grupo de WhatsApp</p>
+        <p class="text-xs text-white/40 mt-0.5">Comunidad gratuita · Únete ahora</p>
+      </div>
+      <i data-lucide="arrow-right" class="w-4 h-4 text-white/30 flex-shrink-0"></i>
+    </a>
+
+    <!-- Recursos destacados -->
+    <h2 class="text-sm font-bold serif mb-3 text-white/80 uppercase tracking-wide">Recursos destacados</h2>
+    <div class="space-y-2.5 mb-6">
+      <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(245,124,0,.13)">
+          <i data-lucide="mic" class="w-5 h-5" style="color:var(--orange)"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold text-sm text-white">Podcast Flowback</p>
+          <p class="text-xs text-white/40 mt-0.5">Episodios semanales de transformación</p>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <p class="text-xs font-bold" style="color:var(--orange)">142</p>
+          <p class="text-xs text-white/30">ep.</p>
+        </div>
+      </div>
+      <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(255,0,0,.1)">
+          <i data-lucide="youtube" class="w-5 h-5 text-red-500"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold text-sm text-white">Canal de YouTube</p>
+          <p class="text-xs text-white/40 mt-0.5">Videos gratuitos de bienestar y flow</p>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <p class="text-xs font-bold text-white">89k</p>
+          <p class="text-xs text-white/30">subs</p>
+        </div>
+      </div>
+      <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(56,189,248,.12)">
+          <i data-lucide="heart-pulse" class="w-5 h-5" style="color:var(--blue)"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold text-sm text-white">Protocolo Ansiedad</p>
+          <p class="text-xs text-white/40 mt-0.5">Guía PDF descargable gratuita</p>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <p class="text-xs font-bold" style="color:var(--blue)">12k</p>
+          <p class="text-xs text-white/30">desc.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA membresías -->
+    <div class="rounded-2xl p-5 mb-6 relative overflow-hidden"
+      style="background:linear-gradient(135deg,rgba(245,124,0,.13) 0%,rgba(56,189,248,.13) 100%); border:1px solid rgba(245,124,0,.3)">
+      <div class="absolute -top-4 -right-4 w-28 h-28 rounded-full"
+        style="background:radial-gradient(circle,rgba(245,124,0,.25),transparent 70%)"></div>
+      <p class="text-xs font-bold mb-1" style="color:var(--orange); letter-spacing:.08em">¿LISTO PARA MÁS?</p>
+      <p class="text-lg font-black serif text-white mb-1">Accede a todo el contenido</p>
+      <p class="text-xs text-white/50 mb-4 leading-relaxed">Clases en vivo, cursos completos y una comunidad que te respalda cada día.</p>
+      <button onclick="openModal()" class="btn-grad px-6 py-2.5 rounded-xl text-sm">Ver Membresías →</button>
+    </div>
+
+    <!-- Soporte WhatsApp -->
+    <div class="rounded-2xl p-4 flex items-center gap-4"
+      style="background:rgba(37,211,102,.06); border:1px solid rgba(37,211,102,.2)">
+      <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center" style="background:rgba(37,211,102,.15)">
+        <svg viewBox="0 0 24 24" class="w-5 h-5" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-white">Atención humana</p>
+        <p class="text-xs text-white/40 mt-0.5">Nuestro equipo responde en menos de 2h</p>
+      </div>
+      <a href="https://wa.me/" target="_blank" rel="noopener"
+        class="text-xs font-bold px-3.5 py-2 rounded-xl flex-shrink-0 text-white"
+        style="background:#25D366">Escribir</a>
+    </div>
+  `;
+  lucide.createIcons();
+}
+
+/* ═══════════════════════════════════════════
+   LOAD CURSOS
+═══════════════════════════════════════════ */
+async function loadCursos() {
+  window._loaded_cursos = true;
+  const container = document.getElementById('cursos-list');
+  if (!container) return;
+
+  try {
+    const { data: courses, error } = await sb
+      .from('courses')
+      .select('*')
+      .eq('is_active', true)
+      .order('order_index', { nullsLast: true })
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    // If user is logged in, fetch their purchases
+    let purchasedIds = new Set();
+    if (currentUser) {
+      const { data: purchases } = await sb
+        .from('course_purchases')
+        .select('course_id')
+        .eq('user_id', currentUser.id);
+      purchasedIds = new Set((purchases || []).map(p => p.course_id));
+    }
+
+    if (!courses?.length) {
+      container.innerHTML = renderEmptyState('graduation-cap', 'Sin cursos disponibles', 'Próximamente nuevos programas');
+      lucide.createIcons(); return;
+    }
+
+    container.innerHTML = courses.map(c => renderCourseCard(c, purchasedIds.has(c.id))).join('');
+    lucide.createIcons();
+  } catch {
+    container.innerHTML = renderLoadError();
+  }
+}
+
+function renderCourseCard(c, purchased = false) {
+  const thumb    = c.thumbnail_url || 'https://flowback.infraqualia.com/assets/flowback-1.jpg';
+  const isGold   = c.tier_required === 'premium' || c.tier_required === 'vip';
+  const price    = c.price ? `${c.price} ${c.currency || 'USD'}` : 'Gratis';
+  const duration = c.duration_hours ? formatDuration(c.duration_hours) : null;
+
+  const ctaHtml = purchased
+    ? `<button class="w-full py-2.5 rounded-xl text-sm font-semibold text-white"
+        style="background:rgba(34,197,94,.18); border:1px solid rgba(34,197,94,.3); color:#4ade80;">
+        ✓ Curso adquirido — Ver contenido
+       </button>`
+    : c.landing_url
+      ? `<a href="${escHtml(c.landing_url)}" target="_blank" rel="noopener"
+          class="btn-grad w-full py-2.5 rounded-xl text-sm text-center block">Ver programa</a>`
+      : `<button onclick="openModal()" class="btn-grad w-full py-2.5 rounded-xl text-sm">Ver programa</button>`;
+
+  return `
+  <article class="course-card rounded-2xl overflow-hidden mb-4"
+    style="background:var(--card); border:1px solid ${isGold ? 'rgba(245,124,0,.42)' : 'rgba(56,189,248,.2)'};">
+    <div class="relative">
+      <img src="${escHtml(thumb)}" alt="${escHtml(c.title)}" loading="lazy"
+        class="w-full object-cover" style="aspect-ratio:16/9"
+        onerror="this.src='https://flowback.infraqualia.com/assets/flowback-1.jpg'">
+      <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(11,14,20,.75) 0%,transparent 55%)"></div>
+      ${isGold ? `<span class="badge-gold absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full">⭐ PREMIUM</span>` : ''}
+      ${purchased ? `<span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full"
+        style="background:rgba(34,197,94,.2); color:#4ade80; border:1px solid rgba(34,197,94,.4)">✓ Tuyo</span>` : ''}
+    </div>
+    <div class="p-4">
+      ${duration || c.instructor ? `
+      <div class="flex items-center gap-2 mb-2 flex-wrap">
+        ${duration ? `<span class="flex items-center gap-1 text-xs" style="color:${isGold ? '#FFC107' : 'var(--blue)'}">
+          <i data-lucide="clock" class="w-3.5 h-3.5"></i>${duration}</span>` : ''}
+        ${c.instructor ? `<span class="text-white/25 mx-0.5">·</span>
+          <span class="text-xs text-white/40">${escHtml(c.instructor)}</span>` : ''}
+      </div>` : ''}
+      <h3 class="font-bold text-base serif mb-1.5">${escHtml(c.title)}</h3>
+      ${c.description ? `<p class="text-xs text-white/50 mb-3 leading-relaxed line-clamp-3">${escHtml(c.description)}</p>` : '<div class="mb-3"></div>'}
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-base font-black" style="color:${isGold ? '#FFC107' : 'var(--orange)'}">
+          ${escHtml(price)}
+        </span>
+      </div>
+      ${ctaHtml}
+    </div>
+  </article>`;
+}
+
+/* ═══════════════════════════════════════════
+   TIER / AUTH GATES
+═══════════════════════════════════════════ */
+function renderMemberGate() {
+  return `
+  <div class="card rounded-2xl p-8 text-center mt-4">
+    <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+      style="background:linear-gradient(135deg,rgba(245,124,0,.18),rgba(56,189,248,.18))">
+      <i data-lucide="lock" class="w-7 h-7" style="color:var(--orange)"></i>
+    </div>
+    <p class="font-bold text-white mb-1">Inicia sesión para continuar</p>
+    <p class="text-xs text-white/40 mb-4">Necesitas una cuenta para acceder a este contenido</p>
+    <button onclick="switchSection('tribu')" class="btn-grad px-6 py-2.5 rounded-xl text-sm">
+      Iniciar sesión →
+    </button>
+  </div>`;
+}
+
+function renderTierGate(requiredTier, sectionName) {
+  const labels = { basica: 'Básica', premium: 'Premium', vip: 'VIP' };
+  return `
+  <div class="card rounded-2xl p-8 text-center mt-4">
+    <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+      style="background:linear-gradient(135deg,rgba(245,124,0,.18),rgba(56,189,248,.18))">
+      <i data-lucide="crown" class="w-7 h-7" style="color:var(--orange)"></i>
+    </div>
+    <p class="font-bold text-white mb-1">Membresía ${labels[requiredTier]} requerida</p>
+    <p class="text-xs text-white/40 mb-4">Necesitas al menos la membresía ${labels[requiredTier]} para ver ${sectionName}</p>
+    <button onclick="switchSection('tribu'); setTimeout(()=>showSubTab('planes'),120)"
+      class="btn-grad px-6 py-2.5 rounded-xl text-sm">Ver planes →</button>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════
+   LOAD AGENDA (member videos, basica+)
+═══════════════════════════════════════════ */
+async function loadAgenda() {
+  window._loaded_agenda = true;
+  const container = document.getElementById('agenda-list');
+  if (!container) return;
+
+  if (!currentUser)          { container.innerHTML = renderMemberGate();           lucide.createIcons(); return; }
+  if (!canAccess('basica'))  { container.innerHTML = renderTierGate('basica','la Agenda'); lucide.createIcons(); return; }
+
+  try {
+    // Fetch all non-free videos; filter visible ones by user's tier
+    const { data: videos, error } = await sb
+      .from('videos')
+      .select('*')
+      .neq('tier_required', 'free')
+      .eq('is_active', true)
+      .order('order_index', { nullsLast: true })
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    // Fetch progress
+    let progressMap = {};
+    const { data: prog } = await sb
+      .from('video_progress')
+      .select('video_id, progress_percent')
+      .eq('user_id', currentUser.id);
+    (prog || []).forEach(p => { progressMap[p.video_id] = p.progress_percent; });
+
+    if (!videos?.length) {
+      container.innerHTML = renderEmptyState('video-off', 'Sin clases aún', 'Próximamente nuevo contenido para miembros');
+      lucide.createIcons(); return;
+    }
+
+    container.innerHTML = videos.map(v =>
+      renderVideoCard({ ...v, _progress: progressMap[v.id] ?? 0 }, !canAccess(v.tier_required))
+    ).join('');
+    lucide.createIcons();
+  } catch {
+    container.innerHTML = renderLoadError();
+  }
+}
+
+/* ═══════════════════════════════════════════
+   LOAD GRABADAS (webinars grabadas + premium/vip videos)
+═══════════════════════════════════════════ */
+async function loadGrabadas() {
+  window._loaded_grabadas = true;
+  const container = document.getElementById('grabadas-list');
+  if (!container) return;
+
+  if (!currentUser)           { container.innerHTML = renderMemberGate();                  lucide.createIcons(); return; }
+  if (!canAccess('premium'))  { container.innerHTML = renderTierGate('premium','las Sesiones Grabadas'); lucide.createIcons(); return; }
+
+  try {
+    const [{ data: webinars, error: e1 }, { data: videos, error: e2 }] = await Promise.all([
+      sb.from('webinars').select('*').eq('type','grabada').eq('is_active',true)
+        .order('date', { ascending: false }),
+      sb.from('videos').select('*').in('tier_required',['premium','vip']).eq('is_active',true)
+        .order('order_index',{ nullsLast:true }).order('created_at',{ ascending:false }),
+    ]);
+    if (e1 || e2) throw e1 || e2;
+
+    let progressMap = {};
+    const { data: prog } = await sb
+      .from('video_progress').select('video_id, progress_percent').eq('user_id', currentUser.id);
+    (prog || []).forEach(p => { progressMap[p.video_id] = p.progress_percent; });
+
+    const webinarCards = (webinars || []).map(renderGrabadaWebinarCard);
+    const videoCards   = (videos   || []).map(v =>
+      renderVideoCard({ ...v, _progress: progressMap[v.id] ?? 0 }, !canAccess(v.tier_required))
+    );
+
+    const all = [...webinarCards, ...videoCards];
+    if (!all.length) {
+      container.innerHTML = renderEmptyState('play-circle', 'Sin sesiones aún', 'Próximamente nuevo contenido exclusivo');
+      lucide.createIcons(); return;
+    }
+    container.innerHTML = all.join('');
+    lucide.createIcons();
+  } catch {
+    container.innerHTML = renderLoadError();
+  }
+}
+
+function renderGrabadaWebinarCard(w) {
+  const dateLabel = formatEventDate(w.date, w.time);
+  const zoomUrl   = w.zoom_url;
+  return `
+  <article class="card rounded-2xl overflow-hidden mb-4">
+    <div class="p-4 pb-3">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="badge-online text-xs font-semibold px-2.5 py-0.5 rounded-full">Grabación</span>
+        ${w.duration ? `<span class="text-xs text-white/35">${escHtml(w.duration)}</span>` : ''}
+      </div>
+      <h3 class="font-bold text-base serif mb-1">${escHtml(w.title)}</h3>
+      ${w.description ? `<p class="text-xs text-white/50 mb-3 leading-relaxed line-clamp-2">${escHtml(w.description)}</p>` : '<div class="mb-3"></div>'}
+      <div class="flex items-center gap-1.5 mb-3">
+        <i data-lucide="calendar" class="w-3.5 h-3.5 flex-shrink-0" style="color:var(--blue)"></i>
+        <span class="text-xs" style="color:var(--blue)">${dateLabel}</span>
+      </div>
+      ${zoomUrl
+        ? `<a href="${escHtml(zoomUrl)}" target="_blank" rel="noopener"
+            class="btn-grad w-full py-2.5 rounded-xl text-sm text-center block">Ver grabación</a>`
+        : `<button class="w-full py-2.5 rounded-xl text-sm font-medium text-white/40 cursor-default"
+            style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08)">Próximamente</button>`
+      }
+    </div>
+  </article>`;
+}
+
+/* ═══════════════════════════════════════════
+   CUENTA — edit name
+═══════════════════════════════════════════ */
+function openEditName() {
+  const current = userProfile?.full_name || '';
+  const row = document.getElementById('edit-name-row');
+  if (!row) return;
+  row.innerHTML = `
+    <div class="flex gap-2 mt-2">
+      <input id="edit-name-input" class="auth-input flex-1 py-2 text-sm" value="${escHtml(current)}" placeholder="Tu nombre">
+      <button onclick="saveName()" class="btn-grad px-4 py-2 rounded-xl text-sm">Guardar</button>
+      <button onclick="cancelEditName()" class="btn-ghost px-3 py-2 rounded-xl text-sm">✕</button>
+    </div>
+    <div id="edit-name-msg" class="text-xs mt-1" style="display:none"></div>`;
+}
+
+function cancelEditName() {
+  const row = document.getElementById('edit-name-row');
+  if (row) row.innerHTML = '';
+}
+
+async function saveName() {
+  const input = document.getElementById('edit-name-input');
+  const msgEl = document.getElementById('edit-name-msg');
+  const name  = input?.value.trim();
+  if (!name) return;
+
+  const { error } = await sb
+    .from('profiles')
+    .update({ full_name: name })
+    .eq('user_id', currentUser.id);
+
+  if (error) {
+    if (msgEl) { msgEl.textContent = 'Error al guardar'; msgEl.className = 'text-xs mt-1 text-error'; msgEl.style.display = 'block'; }
+  } else {
+    if (userProfile) userProfile.full_name = name;
+    updateHeader();
+    showToast('Nombre actualizado');
+    // refresh tribu section
+    const c = document.getElementById('tribu-content');
+    if (c) { renderTribuMember(c); lucide.createIcons(); }
+  }
+}
+
+/* ═══════════════════════════════════════════
+   APP INITIALIZATION
+═══════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', async () => {
+  // 1. Init Supabase
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // 2. Inject section shells into DOM
+  injectSectionShells();
+
+  // 3. Render initial nav (logged-out state)
+  renderNavTabs();
+
+  // 4. Set first active section
+  const el = document.getElementById('sec-eventos');
+  if (el) el.classList.add('active');
+
+  // 5. Render tribu section (logged-out form)
+  renderTribuSection();
+
+  // 6. Init Lucide icons
   lucide.createIcons();
 
-  // ── Tab switching
-  const tabs = ['eventos','gratis','cursos','tribu'];
+  // 7. Check existing session
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) await handleSignedIn(session.user);
 
-  function switchTab(name) {
-    tabs.forEach(t => {
-      document.getElementById('sec-' + t).classList.toggle('active', t === name);
-      const btn = document.getElementById('nav-' + t);
-      btn.classList.toggle('active', t === name);
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  // ── Modal
-  function openModal() {
-    const overlay = document.getElementById('modal-overlay');
-    const sheet   = document.getElementById('modal-sheet');
-    overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
-    sheet.classList.remove('animate');
-    void sheet.offsetWidth; // reflow
-    sheet.classList.add('animate');
-    lucide.createIcons(); // ensure icons inside modal are rendered
-  }
-
-  function closeModal() {
-    document.getElementById('modal-overlay').classList.remove('open');
-    document.body.style.overflow = '';
-  }
-
-  // Close modal on Escape
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
-
-  // ── Notification banner
-  let notifVisible = false;
-
-  function showNotifBar() {
-    if (notifVisible) return;
-    document.getElementById('notif-bar').classList.add('show');
-    notifVisible = true;
-  }
-
-  function dismissNotif() {
-    document.getElementById('notif-bar').classList.remove('show');
-    notifVisible = false;
-  }
-
-  function activateNotif() {
-    if ('Notification' in window && Notification.permission !== 'granted') {
-      Notification.requestPermission().then(p => {
-        dismissNotif();
-        if (p === 'granted') {
-          setTimeout(() => {
-            new Notification('¡Bienvenido a Flowback Hub! 🎉', {
-              body: 'Ahora recibirás notificaciones de eventos y novedades.',
-              icon: '/logo.png'
-            });
-          }, 600);
-        }
-      });
-    } else {
-      dismissNotif();
+  // 8. Listen for auth state changes
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN')  await handleSignedIn(session.user);
+    if (event === 'SIGNED_OUT') handleSignedOut();
+    if (event === 'PASSWORD_RECOVERY') {
+      showToast('Puedes cambiar tu contraseña ahora');
     }
-  }
+  });
 
-  // Auto-show notif banner after 3s (only first time)
+  // 9. Load initial public sections
+  loadEventos();
+  loadClasesGratis();
+  loadCursos();
+
+  // 10. Auto-show notification banner after 3s (first visit only)
   if (!localStorage.getItem('notif_dismissed')) {
     setTimeout(showNotifBar, 3000);
   }
-
-  // Store dismissal
-  document.getElementById('notif-bar').addEventListener('transitionend', function() {
-    if (!notifVisible) localStorage.setItem('notif_dismissed', '1');
-  });
-
-  // ── Lazy YouTube loader
-  function loadYT(wrapper, videoId) {
-    wrapper.innerHTML =
-      '<iframe src="https://www.youtube.com/embed/' + videoId + '?autoplay=1&rel=0" ' +
-      'allow="autoplay; encrypted-media" allowfullscreen></iframe>';
-  }
+});
 </script>
 </body>
 </html>
