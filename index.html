@@ -574,7 +574,7 @@ tailwind.config = {
 ═══════════════════════════════════════════ */
 const SUPABASE_URL  = 'https://wvxcqavtjtgvxdvtuvvd.supabase.co';
 const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2eGNxYXZ0anRndnhkdnR1dnZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMDc3MjYsImV4cCI6MjA5MTY4MzcyNn0.o8KY2-HrYpf747tvZDZKqXjpXf-8daeEs7RLY71a-6g';
-const ADMIN_EMAILS  = ['hi@wapnix.com', 'hi@monkeia.com', 'contacto@flowback.cl'];
+const ADMIN_EMAILS  = ['hi@wapnix.com', 'hi@monkeia.com', 'contacto@flowback.cl', 'jimmylavinfeldman@gmail.com'];
 const TIER_RANK     = { free: 0, basica: 1, premium: 2, vip: 3 };
 
 /* ═══════════════════════════════════════════
@@ -2279,7 +2279,7 @@ async function _loadAdminTab({ queryFn, label, type, cols, emptyIcon }) {
          <p class="text-xs text-white/50 mb-3 font-mono">${escHtml(err?.message || String(err))}</p>
          <p class="text-xs text-white/25 mb-4 leading-relaxed">
            Si es un error de permisos (42501 / PGRST301), agregá en Supabase una policy<br>
-           <code class="text-orange-400/70">FOR SELECT USING (auth.email() IN ('hi@wapnix.com',...))</code>
+           <code class="text-orange-400/70">FOR SELECT USING (auth.email() IN ('hi@wapnix.com','hi@monkeia.com','contacto@flowback.cl','jimmylavinfeldman@gmail.com'))</code>
          </p>
          <button onclick="switchAdminTab(_adminCurrentTab)"
            class="btn-grad text-xs px-4 py-2 rounded-xl">Reintentar</button>
