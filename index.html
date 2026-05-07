@@ -2232,72 +2232,91 @@ function renderAdminItemRow(fields, item, type) {
   </div>`;
 }
 
-/* ── TAB: Videos ── */
-async function loadAdminVideos() {
+/* ── Shared admin tab loader ──
+   Logs data/error, shows real error message, always shows Agregar button.
+   RLS returning [] is handled: user sees empty state + Agregar, not stuck skeletons. */
+async function _loadAdminTab({ queryFn, label, type, cols, emptyIcon }) {
   const c = document.getElementById('admin-tab-content');
+  if (!c) return;
   c.innerHTML = skeletonCards(3);
   try {
-    const { data, error } = await sb.from('videos').select('*').order('order_index',{nullsLast:true}).order('created_at',{ascending:false});
+    const { data, error } = await queryFn();
+    console.log(`[Admin ${label}]`, { count: data?.length ?? 'null', error });
     if (error) throw error;
-    c.innerHTML = renderAdminListHeader('Videos', 'video') +
+
+    c.innerHTML = renderAdminListHeader(label, type) +
       (data?.length
-        ? data.map(v => renderAdminItemRow(
-            [{key:'title'},{key:'tier_required'},{key:'duration'}], v, 'video'
-          )).join('')
-        : renderEmptyState('video-off','Sin videos','Agrega el primero'));
+        ? data.map(v => renderAdminItemRow(cols, v, type)).join('')
+        : `<div class="card rounded-2xl p-8 text-center mt-1">
+             <i data-lucide="${emptyIcon}" class="w-8 h-8 mx-auto mb-3 text-white/20"></i>
+             <p class="font-medium text-white/50 mb-1">Sin ${label.toLowerCase()} aún</p>
+             <p class="text-xs text-white/25 mb-4">
+               La tabla está vacía o la policy RLS bloquea el SELECT.<br>
+               Verificá en Supabase → Authentication → Policies.
+             </p>
+           </div>`);
     lucide.createIcons();
-  } catch { c.innerHTML = renderLoadError(); }
+  } catch(err) {
+    console.error(`[Admin ${label}] error:`, err);
+    c.innerHTML = renderAdminListHeader(label, type) +
+      `<div class="card rounded-2xl p-6 text-center mt-1"
+          style="border-color:rgba(245,124,0,.3);">
+         <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-3 text-orange-400"></i>
+         <p class="font-semibold text-white mb-1">Error al cargar ${label}</p>
+         <p class="text-xs text-white/50 mb-3 font-mono">${escHtml(err?.message || String(err))}</p>
+         <p class="text-xs text-white/25 mb-4 leading-relaxed">
+           Si es un error de permisos (42501 / PGRST301), agregá en Supabase una policy<br>
+           <code class="text-orange-400/70">FOR SELECT USING (auth.email() IN ('hi@wapnix.com',...))</code>
+         </p>
+         <button onclick="switchAdminTab(_adminCurrentTab)"
+           class="btn-grad text-xs px-4 py-2 rounded-xl">Reintentar</button>
+       </div>`;
+    lucide.createIcons();
+  }
+}
+
+/* ── TAB: Videos ── */
+function loadAdminVideos() {
+  return _loadAdminTab({
+    queryFn:   () => sb.from('videos').select('*').order('order_index',{nullsLast:true}).order('created_at',{ascending:false}),
+    label:     'Videos',
+    type:      'video',
+    cols:      [{key:'title'},{key:'tier_required'},{key:'duration'}],
+    emptyIcon: 'video-off',
+  });
 }
 
 /* ── TAB: Eventos ── */
-async function loadAdminEventos() {
-  const c = document.getElementById('admin-tab-content');
-  c.innerHTML = skeletonCards(3);
-  try {
-    const { data, error } = await sb.from('events').select('*').order('event_date',{ascending:false});
-    if (error) throw error;
-    c.innerHTML = renderAdminListHeader('Eventos', 'evento') +
-      (data?.length
-        ? data.map(v => renderAdminItemRow(
-            [{key:'title'},{key:'event_date'},{key:'type'}], v, 'evento'
-          )).join('')
-        : renderEmptyState('calendar-x','Sin eventos','Agrega el primero'));
-    lucide.createIcons();
-  } catch { c.innerHTML = renderLoadError(); }
+function loadAdminEventos() {
+  return _loadAdminTab({
+    queryFn:   () => sb.from('events').select('*').order('event_date',{ascending:false}),
+    label:     'Eventos',
+    type:      'evento',
+    cols:      [{key:'title'},{key:'event_date'},{key:'type'}],
+    emptyIcon: 'calendar-x',
+  });
 }
 
 /* ── TAB: Cursos ── */
-async function loadAdminCursos() {
-  const c = document.getElementById('admin-tab-content');
-  c.innerHTML = skeletonCards(3);
-  try {
-    const { data, error } = await sb.from('courses').select('*').order('order_index',{nullsLast:true}).order('created_at',{ascending:false});
-    if (error) throw error;
-    c.innerHTML = renderAdminListHeader('Cursos', 'curso') +
-      (data?.length
-        ? data.map(v => renderAdminItemRow(
-            [{key:'title'},{key:'price'},{key:'tier_required'}], v, 'curso'
-          )).join('')
-        : renderEmptyState('graduation-cap','Sin cursos','Agrega el primero'));
-    lucide.createIcons();
-  } catch { c.innerHTML = renderLoadError(); }
+function loadAdminCursos() {
+  return _loadAdminTab({
+    queryFn:   () => sb.from('courses').select('*').order('order_index',{nullsLast:true}).order('created_at',{ascending:false}),
+    label:     'Cursos',
+    type:      'curso',
+    cols:      [{key:'title'},{key:'price'},{key:'tier_required'}],
+    emptyIcon: 'graduation-cap',
+  });
 }
 
 /* ── TAB: Webinars ── */
-async function loadAdminWebinars() {
-  const c = document.getElementById('admin-tab-content');
-  c.innerHTML = skeletonCards(3);
-  try {
-    const { data, error } = await sb.from('webinars').select('*').order('date',{ascending:false});
-    if (error) throw error;
-    c.innerHTML = renderAdminListHeader('Webinars', 'webinar') +
-      (data?.length
-        ? data.map(v => renderAdminItemRow(
-            [{key:'title'},{key:'date'},{key:'type'}], v, 'webinar'
-          )).join('')
-        : renderEmptyState('radio','Sin webinars','Agrega el primero'));
-    lucide.createIcons();
-  } catch { c.innerHTML = renderLoadError(); }
+function loadAdminWebinars() {
+  return _loadAdminTab({
+    queryFn:   () => sb.from('webinars').select('*').order('date',{ascending:false}),
+    label:     'Webinars',
+    type:      'webinar',
+    cols:      [{key:'title'},{key:'date'},{key:'type'}],
+    emptyIcon: 'radio',
+  });
 }
 
 /* ── TAB: Usuarios ── */
@@ -2332,14 +2351,30 @@ async function loadAdminUsuarios() {
       </div>
     </div>`).join('');
 
+    console.log('[Admin Usuarios]', { count: data?.length ?? 'null', error });
     c.innerHTML = `
       <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-bold text-white/60 uppercase tracking-wide">Usuarios <span class="text-white/30 font-normal">(${data?.length ?? 0})</span></p>
+        <p class="text-sm font-bold text-white/60 uppercase tracking-wide">
+          Usuarios <span class="text-white/30 font-normal">(${data?.length ?? 0})</span>
+        </p>
         <span class="text-xs text-white/30 italic">Email: requiere service role</span>
       </div>
-      ${rows || renderEmptyState('users','Sin usuarios','')}`;
+      ${rows || `<div class="card rounded-2xl p-8 text-center">
+        <i data-lucide="users" class="w-8 h-8 mx-auto mb-3 text-white/20"></i>
+        <p class="font-medium text-white/50 mb-1">Sin usuarios aún</p>
+        <p class="text-xs text-white/25">O la policy RLS bloquea SELECT en profiles</p>
+      </div>`}`;
     lucide.createIcons();
-  } catch { c.innerHTML = renderLoadError(); }
+  } catch(err) {
+    console.error('[Admin Usuarios] error:', err);
+    c.innerHTML = `<div class="card rounded-2xl p-6 text-center mt-1" style="border-color:rgba(245,124,0,.3);">
+      <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-3 text-orange-400"></i>
+      <p class="font-semibold text-white mb-1">Error al cargar Usuarios</p>
+      <p class="text-xs text-white/50 mb-3 font-mono">${escHtml(err?.message || String(err))}</p>
+      <button onclick="switchAdminTab('usuarios')" class="btn-grad text-xs px-4 py-2 rounded-xl">Reintentar</button>
+    </div>`;
+    lucide.createIcons();
+  }
 }
 
 async function changeUserTier(userId, newTier) {
