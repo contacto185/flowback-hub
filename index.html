@@ -1470,7 +1470,12 @@ async function doForgotPassword() {
 
 async function doSignOut() {
   await sb.auth.signOut();
-  switchSection('eventos');
+  // Clear state immediately — don't wait for onAuthStateChange
+  currentUser  = null;
+  userProfile  = null;
+  updateHeader();
+  updateUIForLoggedOutUser();
+  switchSection('clases-gratis');
   showToast('Sesión cerrada');
 }
 
