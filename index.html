@@ -546,6 +546,26 @@ tailwind.config = {
 </div>
 
 <!-- ══════════════════════════════════════
+     ADMIN FORM MODAL
+══════════════════════════════════════ -->
+<div id="admin-modal-overlay" role="dialog" aria-modal="true"
+  style="position:fixed;inset:0;z-index:150;display:none;align-items:flex-end;justify-content:center;">
+  <div class="modal-bg" onclick="closeAdminModal()"></div>
+  <div class="modal-sheet" id="admin-modal-sheet" style="max-height:92vh;">
+    <div class="w-10 h-1 rounded-full bg-white/20 mx-auto mb-4"></div>
+    <div class="flex items-center justify-between mb-4">
+      <h2 id="admin-modal-title" class="text-lg font-black serif text-white"></h2>
+      <button onclick="closeAdminModal()"
+        class="w-8 h-8 rounded-full flex items-center justify-center text-white/40"
+        style="background:rgba(255,255,255,.06)">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div id="admin-modal-body"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
      JAVASCRIPT
 ══════════════════════════════════════ -->
 <script>
@@ -704,20 +724,21 @@ function renderNavTabs() {
   // Logged out: 4 tabs  |  Logged in: up to 5 tabs
   const tabs = loggedIn
     ? [
-        { id: 'clases-gratis', icon: 'gift',            label: 'Clases' },
-        { id: 'eventos',       icon: 'calendar-days',   label: 'Eventos' },
-        { id: 'cursos',        icon: 'graduation-cap',  label: 'Cursos' },
+        { id: 'clases-gratis', icon: 'gift',           label: 'Clases'  },
+        { id: 'eventos',       icon: 'calendar-days',  label: 'Eventos' },
+        { id: 'cursos',        icon: 'graduation-cap', label: 'Cursos'  },
         ...(canAccess('basica') ? [
-          { id: 'agenda',    icon: 'video',        label: 'Agenda' },
-          { id: 'grabadas',  icon: 'play-circle',  label: 'Grabadas' },
+          { id: 'agenda',   icon: 'video',       label: 'Agenda'   },
+          { id: 'grabadas', icon: 'play-circle', label: 'Grabadas' },
         ] : []),
         { id: 'tribu', icon: 'user-circle', label: 'Mi cuenta' },
+        ...(isAdmin() ? [{ id: 'admin', icon: 'shield', label: 'Admin' }] : []),
       ]
     : [
-        { id: 'eventos',      icon: 'calendar-days',  label: 'Eventos' },
-        { id: 'clases-gratis',icon: 'gift',            label: 'Gratis' },
-        { id: 'cursos',       icon: 'graduation-cap', label: 'Cursos' },
-        { id: 'tribu',        icon: 'crown',          label: 'Tribu' },
+        { id: 'eventos',       icon: 'calendar-days',  label: 'Eventos' },
+        { id: 'clases-gratis', icon: 'gift',            label: 'Gratis'  },
+        { id: 'cursos',        icon: 'graduation-cap',  label: 'Cursos'  },
+        { id: 'tribu',         icon: 'crown',           label: 'Tribu'   },
       ];
 
   const nav = document.getElementById('bottom-nav');
@@ -734,7 +755,7 @@ function renderNavTabs() {
 /* ═══════════════════════════════════════════
    SECTION SWITCHING
 ═══════════════════════════════════════════ */
-const ALL_SECTIONS = ['eventos', 'clases-gratis', 'cursos', 'tribu', 'agenda', 'grabadas'];
+const ALL_SECTIONS = ['eventos', 'clases-gratis', 'cursos', 'tribu', 'agenda', 'grabadas', 'admin'];
 
 function switchSection(name) {
   currentSection = name;
@@ -744,7 +765,6 @@ function switchSection(name) {
     if (el) el.classList.toggle('active', id === name);
   });
 
-  // Update active tab in nav
   ALL_SECTIONS.forEach(id => {
     const btn = document.getElementById('nav-' + id);
     if (btn) btn.classList.toggle('active', id === name);
@@ -752,12 +772,12 @@ function switchSection(name) {
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
-  // Lazy-load section data on first visit
-  if (name === 'eventos'      && !window._loaded_eventos)       loadEventos();
-  if (name === 'clases-gratis'&& !window._loaded_clases)        loadClasesGratis();
-  if (name === 'cursos'       && !window._loaded_cursos)        loadCursos();
-  if (name === 'agenda'       && !window._loaded_agenda)        loadAgenda();
-  if (name === 'grabadas'     && !window._loaded_grabadas)      loadGrabadas();
+  if (name === 'eventos'      && !window._loaded_eventos)   loadEventos();
+  if (name === 'clases-gratis'&& !window._loaded_clases)    loadClasesGratis();
+  if (name === 'cursos'       && !window._loaded_cursos)    loadCursos();
+  if (name === 'agenda'       && !window._loaded_agenda)    loadAgenda();
+  if (name === 'grabadas'     && !window._loaded_grabadas)  loadGrabadas();
+  if (name === 'admin'        && !window._loaded_admin)     loadAdmin();
 }
 
 /* ═══════════════════════════════════════════
@@ -926,6 +946,13 @@ function injectSectionShells() {
         <div id="grabadas-list">
           ${skeletonCards(4)}
         </div>
+      </div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="sec-admin" class="tab-section">
+      <div id="admin-content" class="pt-6 pb-2">
+        ${skeletonCards(3)}
       </div>
     </section>
   `;
@@ -2036,6 +2063,420 @@ async function saveName() {
     // refresh tribu section
     const c = document.getElementById('tribu-content');
     if (c) { renderTribuMember(c); lucide.createIcons(); }
+  }
+}
+
+/* ═══════════════════════════════════════════
+   ██████╗  ADMIN PANEL
+═══════════════════════════════════════════ */
+
+/* ── Form schema per entity ── */
+const ADMIN_FORMS = {
+  video: {
+    table: 'videos', title: 'Video',
+    fields: [
+      { key:'title',         label:'Título',              type:'text',     required:true },
+      { key:'description',   label:'Descripción',         type:'textarea' },
+      { key:'vimeo_url',     label:'URL Vimeo',           type:'text',     placeholder:'https://vimeo.com/...' },
+      { key:'duration',      label:'Duración',            type:'text',     placeholder:'ej: 45 min' },
+      { key:'thumbnail_url', label:'Thumbnail URL',       type:'text' },
+      { key:'tier_required', label:'Tier',                type:'select',   options:['free','basica','premium','vip'] },
+      { key:'order_index',   label:'Orden',               type:'number' },
+      { key:'is_active',     label:'Activo',              type:'toggle' },
+    ]
+  },
+  evento: {
+    table: 'events', title: 'Evento',
+    fields: [
+      { key:'title',         label:'Título',              type:'text',     required:true },
+      { key:'description',   label:'Descripción',         type:'textarea' },
+      { key:'event_date',    label:'Fecha',               type:'date' },
+      { key:'event_time',    label:'Hora',                type:'time' },
+      { key:'duration',      label:'Duración',            type:'text',     placeholder:'ej: 2h' },
+      { key:'type',          label:'Tipo',                type:'select',   options:['online','presencial'] },
+      { key:'zoom_url',      label:'URL Zoom',            type:'text' },
+      { key:'location',      label:'Lugar',               type:'text' },
+      { key:'thumbnail_url', label:'Thumbnail URL',       type:'text' },
+      { key:'tier_required', label:'Tier',                type:'select',   options:['free','basica','premium','vip'] },
+      { key:'is_active',     label:'Activo',              type:'toggle' },
+    ]
+  },
+  curso: {
+    table: 'courses', title: 'Curso',
+    fields: [
+      { key:'title',          label:'Título',             type:'text',     required:true },
+      { key:'description',    label:'Descripción',        type:'textarea' },
+      { key:'thumbnail_url',  label:'Thumbnail URL',      type:'text' },
+      { key:'instructor',     label:'Instructor',         type:'text' },
+      { key:'duration_hours', label:'Duración (horas)',   type:'number',   placeholder:'ej: 8' },
+      { key:'tier_required',  label:'Tier',               type:'select',   options:['free','basica','premium','vip'] },
+      { key:'price',          label:'Precio',             type:'number',   placeholder:'ej: 35000' },
+      { key:'currency',       label:'Moneda',             type:'text',     placeholder:'CLP', defaultValue:'CLP' },
+      { key:'vimeo_url',      label:'Vimeo preview URL',  type:'text' },
+      { key:'landing_url',    label:'Landing page URL',   type:'text' },
+      { key:'order_index',    label:'Orden',              type:'number' },
+      { key:'is_active',      label:'Activo',             type:'toggle' },
+    ]
+  },
+  webinar: {
+    table: 'webinars', title: 'Webinar',
+    fields: [
+      { key:'title',         label:'Título',              type:'text',     required:true },
+      { key:'description',   label:'Descripción',         type:'textarea' },
+      { key:'date',          label:'Fecha',               type:'date' },
+      { key:'time',          label:'Hora',                type:'time' },
+      { key:'duration',      label:'Duración',            type:'text',     placeholder:'ej: 1h 30min' },
+      { key:'type',          label:'Tipo',                type:'select',   options:['online','grabada'] },
+      { key:'zoom_url',      label:'URL Zoom / YouTube',  type:'text' },
+      { key:'tier_required', label:'Tier',                type:'select',   options:['free','basica','premium','vip'] },
+      { key:'is_active',     label:'Activo',              type:'toggle' },
+    ]
+  },
+};
+
+let _adminCurrentTab  = 'videos';
+let _adminEditType    = null;   // 'video' | 'evento' | 'curso' | 'webinar'
+let _adminEditItem    = null;   // null = new, object = editing
+
+/* ── Main loader ── */
+async function loadAdmin() {
+  window._loaded_admin = true;
+  if (!isAdmin()) {
+    document.getElementById('admin-content').innerHTML =
+      renderEmptyState('shield-off', 'Acceso denegado', 'Esta sección es solo para administradores');
+    lucide.createIcons(); return;
+  }
+  renderAdminShell();
+  switchAdminTab('videos');
+}
+
+function renderAdminShell() {
+  const c = document.getElementById('admin-content');
+  if (!c) return;
+  c.innerHTML = `
+    <h1 class="text-2xl font-black serif mb-1">Panel <span class="grad-text">Admin</span></h1>
+    <p class="text-xs text-white/40 mb-4">Gestión de contenido · Solo admins</p>
+
+    <div class="flex gap-1 p-1 rounded-2xl mb-5 overflow-x-auto" style="background:rgba(255,255,255,.05);scrollbar-width:none;">
+      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-videos"   onclick="switchAdminTab('videos')">Videos</button>
+      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-eventos"  onclick="switchAdminTab('eventos')">Eventos</button>
+      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-cursos"   onclick="switchAdminTab('cursos')">Cursos</button>
+      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-webinars" onclick="switchAdminTab('webinars')">Webinars</button>
+      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-usuarios" onclick="switchAdminTab('usuarios')">Usuarios</button>
+    </div>
+
+    <div id="admin-tab-content">${skeletonCards(3)}</div>
+  `;
+}
+
+function switchAdminTab(tab) {
+  _adminCurrentTab = tab;
+  ['videos','eventos','cursos','webinars','usuarios'].forEach(t => {
+    const btn = document.getElementById('admin-tab-' + t);
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  const loaders = {
+    videos:   loadAdminVideos,
+    eventos:  loadAdminEventos,
+    cursos:   loadAdminCursos,
+    webinars: loadAdminWebinars,
+    usuarios: loadAdminUsuarios,
+  };
+  loaders[tab]?.();
+}
+
+/* ── Generic list renderer ── */
+function renderAdminListHeader(label, type) {
+  return `
+  <div class="flex items-center justify-between mb-4">
+    <p class="text-sm font-bold text-white/60 uppercase tracking-wide">${label}</p>
+    <button onclick="openAdminForm('${type}', null)"
+      class="btn-grad text-xs px-3 py-2 rounded-xl flex items-center gap-1.5">
+      <i data-lucide="plus" class="w-3.5 h-3.5"></i>Agregar
+    </button>
+  </div>`;
+}
+
+function renderAdminItemRow(fields, item, type) {
+  const [col1, col2, col3] = fields;
+  const val1 = item[col1.key] ?? '—';
+  const val2 = col2 ? (item[col2.key] ?? '—') : '';
+  const val3 = col3 ? (item[col3.key] ?? '') : '';
+  const activeDot = item.is_active !== false
+    ? '<span class="w-2 h-2 rounded-full bg-green-400 inline-block flex-shrink-0"></span>'
+    : '<span class="w-2 h-2 rounded-full bg-red-400/60 inline-block flex-shrink-0"></span>';
+
+  return `
+  <div class="card rounded-xl p-3.5 mb-2.5 flex items-center gap-3">
+    ${activeDot}
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-medium text-white truncate">${escHtml(String(val1))}</p>
+      <p class="text-xs text-white/40 mt-0.5 truncate">${escHtml(String(val2))}${val3 ? ' · ' + escHtml(String(val3)) : ''}</p>
+    </div>
+    <div class="flex gap-2 flex-shrink-0">
+      <button onclick="openAdminForm('${type}', ${JSON.stringify(item).replace(/"/g,'&quot;')})"
+        class="btn-ghost text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1">
+        <i data-lucide="pencil" class="w-3 h-3"></i>
+      </button>
+      <button onclick="confirmDeleteAdmin('${type}', '${item.id}')"
+        class="text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-red-400/70"
+        style="background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.15);">
+        <i data-lucide="trash-2" class="w-3 h-3"></i>
+      </button>
+    </div>
+  </div>`;
+}
+
+/* ── TAB: Videos ── */
+async function loadAdminVideos() {
+  const c = document.getElementById('admin-tab-content');
+  c.innerHTML = skeletonCards(3);
+  try {
+    const { data, error } = await sb.from('videos').select('*').order('order_index',{nullsLast:true}).order('created_at',{ascending:false});
+    if (error) throw error;
+    c.innerHTML = renderAdminListHeader('Videos', 'video') +
+      (data?.length
+        ? data.map(v => renderAdminItemRow(
+            [{key:'title'},{key:'tier_required'},{key:'duration'}], v, 'video'
+          )).join('')
+        : renderEmptyState('video-off','Sin videos','Agrega el primero'));
+    lucide.createIcons();
+  } catch { c.innerHTML = renderLoadError(); }
+}
+
+/* ── TAB: Eventos ── */
+async function loadAdminEventos() {
+  const c = document.getElementById('admin-tab-content');
+  c.innerHTML = skeletonCards(3);
+  try {
+    const { data, error } = await sb.from('events').select('*').order('event_date',{ascending:false});
+    if (error) throw error;
+    c.innerHTML = renderAdminListHeader('Eventos', 'evento') +
+      (data?.length
+        ? data.map(v => renderAdminItemRow(
+            [{key:'title'},{key:'event_date'},{key:'type'}], v, 'evento'
+          )).join('')
+        : renderEmptyState('calendar-x','Sin eventos','Agrega el primero'));
+    lucide.createIcons();
+  } catch { c.innerHTML = renderLoadError(); }
+}
+
+/* ── TAB: Cursos ── */
+async function loadAdminCursos() {
+  const c = document.getElementById('admin-tab-content');
+  c.innerHTML = skeletonCards(3);
+  try {
+    const { data, error } = await sb.from('courses').select('*').order('order_index',{nullsLast:true}).order('created_at',{ascending:false});
+    if (error) throw error;
+    c.innerHTML = renderAdminListHeader('Cursos', 'curso') +
+      (data?.length
+        ? data.map(v => renderAdminItemRow(
+            [{key:'title'},{key:'price'},{key:'tier_required'}], v, 'curso'
+          )).join('')
+        : renderEmptyState('graduation-cap','Sin cursos','Agrega el primero'));
+    lucide.createIcons();
+  } catch { c.innerHTML = renderLoadError(); }
+}
+
+/* ── TAB: Webinars ── */
+async function loadAdminWebinars() {
+  const c = document.getElementById('admin-tab-content');
+  c.innerHTML = skeletonCards(3);
+  try {
+    const { data, error } = await sb.from('webinars').select('*').order('date',{ascending:false});
+    if (error) throw error;
+    c.innerHTML = renderAdminListHeader('Webinars', 'webinar') +
+      (data?.length
+        ? data.map(v => renderAdminItemRow(
+            [{key:'title'},{key:'date'},{key:'type'}], v, 'webinar'
+          )).join('')
+        : renderEmptyState('radio','Sin webinars','Agrega el primero'));
+    lucide.createIcons();
+  } catch { c.innerHTML = renderLoadError(); }
+}
+
+/* ── TAB: Usuarios ── */
+async function loadAdminUsuarios() {
+  const c = document.getElementById('admin-tab-content');
+  c.innerHTML = skeletonCards(3);
+  try {
+    // TODO: Para obtener emails necesitás la service role key (auth.admin.listUsers).
+    // Desde el cliente anon solo se puede leer la tabla profiles.
+    const { data, error } = await sb
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    const rows = (data || []).map(p => `
+    <div class="card rounded-xl p-3.5 mb-2.5">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-sm"
+          style="background:var(--grad); color:#fff">${escHtml(getInitials(p.full_name,''))}</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-white truncate">${escHtml(p.full_name || '(sin nombre)')}</p>
+          <p class="text-xs text-white/30 truncate mt-0.5">ID: ${escHtml(p.user_id?.slice(0,8))}…</p>
+        </div>
+        <select onchange="changeUserTier('${p.user_id}', this.value)"
+          class="auth-input text-xs py-1.5 px-2 w-28 rounded-lg"
+          style="background:rgba(255,255,255,.05);">
+          ${['free','basica','premium','vip'].map(t =>
+            `<option value="${t}"${p.tier === t ? ' selected' : ''}>${tierLabel(t)}</option>`
+          ).join('')}
+        </select>
+      </div>
+    </div>`).join('');
+
+    c.innerHTML = `
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-bold text-white/60 uppercase tracking-wide">Usuarios <span class="text-white/30 font-normal">(${data?.length ?? 0})</span></p>
+        <span class="text-xs text-white/30 italic">Email: requiere service role</span>
+      </div>
+      ${rows || renderEmptyState('users','Sin usuarios','')}`;
+    lucide.createIcons();
+  } catch { c.innerHTML = renderLoadError(); }
+}
+
+async function changeUserTier(userId, newTier) {
+  const { error } = await sb.from('profiles').update({ tier: newTier }).eq('user_id', userId);
+  if (error) showToast('Error al actualizar tier', true);
+  else showToast(`Tier actualizado a ${tierLabel(newTier)}`);
+}
+
+/* ═══════════════════════════════════════════
+   ADMIN FORM — open / render / save / delete
+═══════════════════════════════════════════ */
+function openAdminForm(type, item) {
+  _adminEditType = type;
+  _adminEditItem = item;
+
+  const schema = ADMIN_FORMS[type];
+  if (!schema) return;
+
+  document.getElementById('admin-modal-title').textContent =
+    (item ? 'Editar' : 'Agregar') + ' ' + schema.title;
+
+  document.getElementById('admin-modal-body').innerHTML =
+    renderAdminFormFields(schema.fields, item) +
+    `<div id="admin-form-error" class="text-xs text-error mb-3" style="display:none"></div>
+     <button id="admin-save-btn" onclick="saveAdminForm()"
+       class="btn-grad w-full py-3 rounded-xl text-sm mb-3">
+       ${item ? 'Guardar cambios' : 'Crear ' + schema.title}
+     </button>`;
+
+  const overlay = document.getElementById('admin-modal-overlay');
+  const sheet   = document.getElementById('admin-modal-sheet');
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  sheet.classList.remove('animate');
+  void sheet.offsetWidth;
+  sheet.classList.add('animate');
+  lucide.createIcons();
+}
+
+function closeAdminModal() {
+  document.getElementById('admin-modal-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+  _adminEditType = null;
+  _adminEditItem = null;
+}
+
+function renderAdminFormFields(fields, item) {
+  return fields.map(f => {
+    const val = item?.[f.key] ?? f.defaultValue ?? '';
+
+    if (f.type === 'toggle') {
+      const checked = item ? (item[f.key] !== false) : true;
+      return `
+      <div class="flex items-center justify-between py-3 border-b border-white/5">
+        <label class="text-sm text-white/70">${f.label}</label>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="af_${f.key}" class="sr-only peer" ${checked ? 'checked' : ''}>
+          <div class="w-10 h-5 rounded-full peer-checked:bg-orange-500 bg-white/10 peer-focus:outline-none transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+        </label>
+      </div>`;
+    }
+
+    if (f.type === 'select') {
+      return `
+      <div class="mb-3">
+        <label class="text-xs text-white/40 mb-1.5 block">${f.label}${f.required ? ' *' : ''}</label>
+        <select id="af_${f.key}" class="auth-input">
+          ${f.options.map(o => `<option value="${o}"${val === o ? ' selected' : ''}>${o}</option>`).join('')}
+        </select>
+      </div>`;
+    }
+
+    if (f.type === 'textarea') {
+      return `
+      <div class="mb-3">
+        <label class="text-xs text-white/40 mb-1.5 block">${f.label}</label>
+        <textarea id="af_${f.key}" rows="3" class="auth-input" style="resize:vertical;" placeholder="${f.placeholder || ''}">${escHtml(String(val))}</textarea>
+      </div>`;
+    }
+
+    return `
+    <div class="mb-3">
+      <label class="text-xs text-white/40 mb-1.5 block">${f.label}${f.required ? ' *' : ''}</label>
+      <input type="${f.type}" id="af_${f.key}" class="auth-input"
+        value="${escHtml(String(val))}" placeholder="${f.placeholder || ''}">
+    </div>`;
+  }).join('');
+}
+
+async function saveAdminForm() {
+  const schema = ADMIN_FORMS[_adminEditType];
+  if (!schema) return;
+
+  const errEl = document.getElementById('admin-form-error');
+  const btn   = document.getElementById('admin-save-btn');
+
+  // Collect values
+  const payload = {};
+  for (const f of schema.fields) {
+    const el = document.getElementById('af_' + f.key);
+    if (!el) continue;
+    if (f.type === 'toggle')  payload[f.key] = el.checked;
+    else if (f.type === 'number') payload[f.key] = el.value !== '' ? Number(el.value) : null;
+    else payload[f.key] = el.value.trim() || null;
+
+    if (f.required && !payload[f.key]) {
+      errEl.textContent = `El campo "${f.label}" es obligatorio`;
+      errEl.style.display = 'block'; return;
+    }
+  }
+  errEl.style.display = 'none';
+
+  setLoading(btn, true);
+  let error;
+  if (_adminEditItem?.id) {
+    ({ error } = await sb.from(schema.table).update(payload).eq('id', _adminEditItem.id));
+  } else {
+    ({ error } = await sb.from(schema.table).insert(payload));
+  }
+  setLoading(btn, false);
+
+  if (error) {
+    errEl.textContent = error.message || 'Error al guardar';
+    errEl.style.display = 'block';
+  } else {
+    closeAdminModal();
+    showToast(`${schema.title} ${_adminEditItem ? 'actualizado' : 'creado'} ✓`);
+    // Reload current tab
+    switchAdminTab(_adminCurrentTab);
+  }
+}
+
+async function confirmDeleteAdmin(type, id) {
+  const schema = ADMIN_FORMS[type];
+  if (!schema) return;
+  if (!confirm(`¿Eliminar este ${schema.title}? Esta acción no se puede deshacer.`)) return;
+
+  const { error } = await sb.from(schema.table).delete().eq('id', id);
+  if (error) showToast('Error al eliminar: ' + error.message, true);
+  else {
+    showToast(`${schema.title} eliminado`);
+    switchAdminTab(_adminCurrentTab);
   }
 }
 
