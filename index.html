@@ -590,7 +590,8 @@ let notifVisible  = false;
    HELPERS
 ═══════════════════════════════════════════ */
 function isAdmin() {
-  return !!(currentUser && ADMIN_EMAILS.includes(currentUser.email));
+  const email = (currentUser?.email || '').toLowerCase().trim();
+  return !!email && ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email);
 }
 
 function getUserTier() {
@@ -842,6 +843,7 @@ async function handleSignedIn(user) {
 
   updateHeader();
   updateUIForLoggedInUser();
+  if (isAdmin()) switchSection('admin');
 }
 
 function handleSignedOut() {
@@ -869,7 +871,7 @@ function updateUIForLoggedInUser() {
   if (currentSection === 'agenda')   loadAgenda();
   if (currentSection === 'grabadas') loadGrabadas();
 
-  const memberTabs = ['eventos', 'clases-gratis', 'cursos', 'agenda', 'grabadas', 'tribu'];
+  const memberTabs = ['eventos', 'clases-gratis', 'cursos', 'agenda', 'grabadas', 'tribu', 'admin'];
   if (!memberTabs.includes(currentSection)) switchSection('eventos');
 }
 
