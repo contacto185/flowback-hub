@@ -2357,9 +2357,10 @@ async function loadAdminUsuarios() {
         <select onchange="changeUserTier('${p.user_id}', this.value)"
           class="auth-input text-xs py-1.5 px-2 w-28 rounded-lg"
           style="background:rgba(255,255,255,.05);">
-          ${['free','basica','premium','vip'].map(t =>
-            `<option value="${t}"${p.tier === t ? ' selected' : ''}>${tierLabel(t)}</option>`
-          ).join('')}
+          <option value="free"${(p.tier||'').toLowerCase().trim()==='free'?' selected':''}>Gratis</option>
+          <option value="basica"${(p.tier||'').toLowerCase().trim()==='basica'?' selected':''}>Básica</option>
+          <option value="premium"${(p.tier||'').toLowerCase().trim()==='premium'?' selected':''}>Premium</option>
+          <option value="vip"${(p.tier||'').toLowerCase().trim()==='vip'?' selected':''}>VIP</option>
         </select>
       </div>
     </div>`).join('');
@@ -2392,8 +2393,9 @@ async function loadAdminUsuarios() {
 
 async function changeUserTier(userId, newTier) {
   const { error } = await sb.from('profiles').update({ tier: newTier }).eq('user_id', userId);
-  if (error) showToast('Error al actualizar tier', true);
-  else showToast(`Tier actualizado a ${tierLabel(newTier)}`);
+  if (error) { showToast('Error al actualizar tier', true); return; }
+  showToast(`Tier actualizado a ${tierLabel(newTier)}`);
+  loadAdminUsuarios();
 }
 
 /* ═══════════════════════════════════════════
