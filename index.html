@@ -2466,10 +2466,7 @@ async function _loadAdminTab({ queryFn, label, type, cols, emptyIcon }) {
         : `<div class="card rounded-2xl p-8 text-center mt-1">
              <i data-lucide="${emptyIcon}" class="w-8 h-8 mx-auto mb-3 text-white/20"></i>
              <p class="font-medium text-white/50 mb-1">Sin ${label.toLowerCase()} aún</p>
-             <p class="text-xs text-white/25 mb-4">
-               La tabla está vacía o la policy RLS bloquea el SELECT.<br>
-               Verificá en Supabase → Authentication → Policies.
-             </p>
+             <p class="text-xs text-white/25">Agregá contenido con el botón <span class="text-white/40">+ Agregar</span></p>
            </div>`);
     lucide.createIcons();
   } catch(err) {
@@ -2563,7 +2560,7 @@ async function loadAdminCursos() {
         : `<div class="card rounded-2xl p-8 text-center mt-1">
              <i data-lucide="graduation-cap" class="w-8 h-8 mx-auto mb-3 text-white/20"></i>
              <p class="font-medium text-white/50 mb-1">Sin cursos aún</p>
-             <p class="text-xs text-white/25">La tabla está vacía o la policy RLS bloquea el SELECT.</p>
+             <p class="text-xs text-white/25">Agregá contenido con el botón <span class="text-white/40">+ Agregar</span></p>
            </div>`);
     lucide.createIcons();
   } catch(err) {
@@ -2717,7 +2714,7 @@ async function loadAdminUsuarios() {
       ${rows || `<div class="card rounded-2xl p-8 text-center">
         <i data-lucide="users" class="w-8 h-8 mx-auto mb-3 text-white/20"></i>
         <p class="font-medium text-white/50 mb-1">Sin usuarios aún</p>
-        <p class="text-xs text-white/25">O la policy RLS bloquea SELECT en profiles</p>
+        <p class="text-xs text-white/25">Cuando alguien se registre va a aparecer acá</p>
       </div>`}`;
     lucide.createIcons();
   } catch(err) {
