@@ -2868,26 +2868,30 @@ async function saveAdminForm() {
   }
   setLoading(btn, false);
 
-  console.error('[saveAdminForm] insert error:', error);
-  console.log('[saveAdminForm] insert data:', data);
+  console.log('[' + _adminEditType + ' insert] data:', data, 'error:', error);
 
   // Silent RLS rejection: no error but empty data means the policy blocked the write
   if (!error && (!data || data.length === 0)) {
-    error = { message: 'No se guardó (posible bloqueo por RLS). Revisá las policies de la tabla ' + schema.table + '.' };
+    error = {
+      message: 'No se guardó (posible bloqueo por RLS). Revisá las policies de la tabla ' + schema.table + '.',
+      code: 'RLS_SILENT'
+    };
   }
 
   if (error) {
     console.error('[saveAdminForm] error:', error, 'payload:', payload);
+    alert('Error: ' + (error.message || 'desconocido') + ' | Code: ' + (error.code || 'n/a'));
     errEl.textContent = error.message || 'Error al guardar';
     errEl.style.display = 'block';
+    return;
+  }
+
+  closeAdminModal();
+  showToast(`${schema.title} ${_adminEditItem ? 'actualizado' : 'creado'} ✓`);
+  if (_adminEditType === 'leccion') {
+    loadAdminLecciones(_adminLessonsCourseId, _adminLessonsCourseTitle);
   } else {
-    closeAdminModal();
-    showToast(`${schema.title} ${_adminEditItem ? 'actualizado' : 'creado'} ✓`);
-    if (_adminEditType === 'leccion') {
-      loadAdminLecciones(_adminLessonsCourseId, _adminLessonsCourseTitle);
-    } else {
-      switchAdminTab(_adminCurrentTab);
-    }
+    switchAdminTab(_adminCurrentTab);
   }
 }
 
