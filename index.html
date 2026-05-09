@@ -1955,7 +1955,7 @@ function renderCourseDetail(course, lessons, purchased, progressMap) {
         return `
         <div class="flex items-center gap-3 py-3 border-b border-white/5 last:border-0
           ${unlocked ? 'cursor-pointer active:opacity-70' : 'opacity-50'}"
-          ${unlocked ? `onclick="playLesson('${escHtml(l.vimeo_url||'')}', '${escHtml(l.title||'').replace(/'/g,"\\'")}', '${l.id}')"` : ''}>
+          ${unlocked ? `onclick="playLesson('${l.id}')"` : ''}>
           <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
             style="${done ? 'background:rgba(34,197,94,.18);color:#4ade80;' : 'background:rgba(255,255,255,.07);color:rgba(255,255,255,.4);'}">
             ${done ? '✓' : (i + 1)}
@@ -2037,12 +2037,70 @@ function renderCourseDetail(course, lessons, purchased, progressMap) {
   </div>`;
 }
 
-async function playLesson(vimeoUrl, title, lessonId) {
-  const videoId = extractVimeoId(vimeoUrl);
-  if (!videoId) { showToast('Video no disponible', true); return; }
+async function playLesson(lessonId) {
+  const { data: lesson, error } = await sb.from('lessons').select('*').eq('id', lessonId).single();
+  if (error || !lesson) { showToast('Lección no disponible', true); return; }
 
-  // Remove stale overlay if any
+  const type  = lesson.content_type || 'video';
+  const title = lesson.title || '';
+
   document.getElementById('lesson-player-overlay')?.remove();
+
+  let body = '';
+  if (type === 'video') {
+    const videoId = extractVimeoId(lesson.vimeo_url);
+    if (!videoId) { showToast('Video no disponible', true); return; }
+    body = `
+      <div class="flex-1 relative">
+        <iframe
+          src="https://player.vimeo.com/video/${videoId}?autoplay=1&color=F57C00&title=0&byline=0&portrait=0"
+          style="position:absolute;inset:0;width:100%;height:100%;"
+          allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+      </div>`;
+  } else if (type === 'audio') {
+    const url = await _resolveStorageUrl(lesson.audio_url, 'course-materials');
+    if (!url) { showToast('Audio no disponible', true); return; }
+    const thumb = lesson.thumbnail_url || '';
+    body = `
+      <div class="flex-1 flex items-center justify-center p-6">
+        <div class="w-full max-w-md text-center">
+          ${thumb
+            ? `<img src="${escHtml(thumb)}" alt="" class="w-48 h-48 mx-auto mb-6 rounded-2xl object-cover">`
+            : `<div class="w-48 h-48 mx-auto mb-6 rounded-2xl flex items-center justify-center" style="background:linear-gradient(135deg,rgba(245,124,0,.2),rgba(56,189,248,.2));">
+                 <i data-lucide="music" class="w-16 h-16 text-white/50"></i>
+               </div>`}
+          ${lesson.description ? `<p class="text-sm text-white/60 mb-5 leading-relaxed">${escHtml(lesson.description)}</p>` : ''}
+          <audio controls autoplay class="w-full" style="filter:invert(1) hue-rotate(180deg);">
+            <source src="${escHtml(url)}">
+            Tu navegador no soporta audio HTML5.
+          </audio>
+        </div>
+      </div>`;
+  } else if (type === 'pdf') {
+    const url = await _resolveStorageUrl(lesson.pdf_url, 'course-materials');
+    if (!url) { showToast('PDF no disponible', true); return; }
+    body = `
+      <div class="flex-1 flex items-center justify-center p-6">
+        <div class="w-full max-w-md text-center">
+          <div class="w-24 h-24 mx-auto mb-5 rounded-2xl flex items-center justify-center"
+            style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.2);">
+            <i data-lucide="file-text" class="w-12 h-12 text-red-400/80"></i>
+          </div>
+          <h2 class="text-xl font-black serif mb-2 text-white">${escHtml(title)}</h2>
+          ${lesson.description ? `<p class="text-sm text-white/60 mb-6 leading-relaxed">${escHtml(lesson.description)}</p>` : ''}
+          <div class="flex flex-col gap-2">
+            <a href="${escHtml(url)}" target="_blank" rel="noopener"
+              class="btn-grad py-3 rounded-xl text-sm flex items-center justify-center gap-2">
+              <i data-lucide="external-link" class="w-4 h-4"></i> Ver PDF
+            </a>
+            <a href="${escHtml(url)}" download
+              class="btn-ghost py-3 rounded-xl text-sm flex items-center justify-center gap-2">
+              <i data-lucide="download" class="w-4 h-4"></i> Descargar
+            </a>
+          </div>
+        </div>
+      </div>`;
+  }
 
   const overlay = document.createElement('div');
   overlay.id = 'lesson-player-overlay';
@@ -2056,15 +2114,20 @@ async function playLesson(vimeoUrl, title, lessonId) {
       </button>
       <p class="font-semibold text-sm text-white truncate">${escHtml(title)}</p>
     </div>
-    <div class="flex-1 relative">
-      <iframe
-        src="https://player.vimeo.com/video/${videoId}?autoplay=1&color=F57C00&title=0&byline=0&portrait=0"
-        style="position:absolute;inset:0;width:100%;height:100%;"
-        allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
-    </div>`;
+    ${body}`;
   document.body.appendChild(overlay);
   document.body.style.overflow = 'hidden';
   lucide.createIcons();
+}
+
+/* Resolve a stored URL: if it's already a full http(s) URL, return as-is;
+   otherwise treat as private storage path and create a 1-hour signed URL. */
+async function _resolveStorageUrl(stored, bucket) {
+  if (!stored) return null;
+  if (/^https?:\/\//i.test(stored)) return stored;
+  const { data, error } = await sb.storage.from(bucket).createSignedUrl(stored, 3600);
+  if (error) { console.error('[signed url] error:', error); return null; }
+  return data?.signedUrl || null;
 }
 
 async function closeLessonPlayer(lessonId) {
@@ -2342,13 +2405,17 @@ const ADMIN_FORMS = {
   leccion: {
     table: 'lessons', title: 'Lección',
     fields: [
-      { key:'title',           label:'Título',            type:'text',     required:true },
-      { key:'description',     label:'Descripción',       type:'textarea' },
-      { key:'vimeo_url',       label:'Vimeo URL/ID',      type:'text',     required:true, placeholder:'https://vimeo.com/... o solo el ID' },
-      { key:'duration',        label:'Duración (minutos)',type:'number',   placeholder:'ej: 45' },
-      { key:'order_index',     label:'Orden',             type:'number',   placeholder:'1, 2, 3...' },
+      { key:'title',           label:'Título',             type:'text',     required:true },
+      { key:'description',     label:'Descripción',        type:'textarea' },
+      { key:'content_type',    label:'Tipo de contenido',  type:'select',   options:['video','audio','pdf'], defaultValue:'video' },
+      { key:'vimeo_url',       label:'Vimeo URL/ID',       type:'text',     placeholder:'https://vimeo.com/... o solo el ID', showIf:{ content_type:['video'] } },
+      { key:'audio_url',       label:'Archivo de audio',   type:'file',     bucket:'course-materials', accept:'audio/*',         icon:'music',     pathPrefix:'lessons', storeMode:'path',      showIf:{ content_type:['audio'] } },
+      { key:'pdf_url',         label:'Archivo PDF',        type:'file',     bucket:'course-materials', accept:'application/pdf', icon:'file-text', pathPrefix:'lessons', storeMode:'path',      showIf:{ content_type:['pdf']   } },
+      { key:'thumbnail_url',   label:'Thumbnail (imagen)', type:'file',     bucket:'thumbnails',       accept:'image/*',         icon:'image',     pathPrefix:'lessons', storeMode:'publicUrl' },
+      { key:'duration',        label:'Duración (minutos)', type:'number',   placeholder:'ej: 45' },
+      { key:'order_index',     label:'Orden',              type:'number',   placeholder:'1, 2, 3...' },
       { key:'is_free_preview', label:'Vista previa gratis',type:'toggle' },
-      { key:'is_active',       label:'Activo',            type:'toggle' },
+      { key:'is_active',       label:'Activo',             type:'toggle' },
     ]
   },
 };
@@ -2739,6 +2806,118 @@ async function changeUserTier(userId, newTier) {
 /* ═══════════════════════════════════════════
    ADMIN FORM — open / render / save / delete
 ═══════════════════════════════════════════ */
+
+/* ── File upload helpers (Supabase Storage) ── */
+function _chooseAdminFile(btn) {
+  let opts;
+  try { opts = JSON.parse(btn.getAttribute('data-fileopts') || '{}'); }
+  catch { opts = {}; }
+  const input = document.createElement('input');
+  input.type = 'file';
+  if (opts.accept) input.accept = opts.accept;
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    await _uploadAdminFile(opts, file);
+  };
+  input.click();
+}
+
+function _clearAdminUpload(key) {
+  const hidden = document.getElementById('af_' + key);
+  const widget = document.getElementById('af_' + key + '_widget');
+  const fields = ADMIN_FORMS[_adminEditType]?.fields || [];
+  const f = fields.find(x => x.key === key);
+  if (hidden) hidden.value = '';
+  if (widget && f) {
+    widget.innerHTML = _renderFileWidget(f, '');
+    lucide.createIcons();
+  }
+}
+
+async function _uploadAdminFile(opts, file) {
+  const { key, bucket, pathPrefix, storeMode } = opts;
+  const progEl  = document.getElementById('af_' + key + '_progress');
+  const bar     = progEl?.querySelector('.af-progress-bar');
+  const labelEl = progEl?.querySelector('.af-progress-label');
+  const widget  = document.getElementById('af_' + key + '_widget');
+  const hidden  = document.getElementById('af_' + key);
+
+  // Path: lessons/{course_id}/{timestamp}-{filename}  (course-materials)
+  // or    lessons/{timestamp}-{filename}              (thumbnails)
+  const safeName  = file.name.replace(/[^\w.\-]+/g, '_');
+  const courseId  = _adminLessonsCourseId || 'general';
+  const ts        = Date.now();
+  const path = bucket === 'course-materials'
+    ? `${pathPrefix}/${courseId}/${ts}-${safeName}`
+    : `${pathPrefix}/${ts}-${safeName}`;
+
+  // Show progress UI, hide upload button
+  if (widget) widget.style.display = 'none';
+  if (progEl) progEl.classList.remove('hidden');
+  if (bar) bar.style.width = '0%';
+  if (labelEl) labelEl.textContent = `Subiendo ${safeName}…`;
+
+  try {
+    await _uploadToBucketWithProgress(bucket, path, file, pct => {
+      if (bar) bar.style.width = pct + '%';
+      if (labelEl) labelEl.textContent = `Subiendo ${safeName}… ${pct}%`;
+    });
+
+    // Resolve the value to store
+    let stored;
+    if (storeMode === 'publicUrl') {
+      const { data } = sb.storage.from(bucket).getPublicUrl(path);
+      stored = data?.publicUrl || path;
+    } else {
+      stored = path;
+    }
+    if (hidden) hidden.value = stored;
+
+    // Refresh widget into "filled" state
+    if (widget) {
+      const fields = ADMIN_FORMS[_adminEditType]?.fields || [];
+      const f = fields.find(x => x.key === key);
+      widget.innerHTML = _renderFileWidget(f, stored);
+      widget.style.display = '';
+      lucide.createIcons();
+    }
+    if (progEl) progEl.classList.add('hidden');
+  } catch (err) {
+    console.error('[upload] error:', err);
+    alert('Error al subir: ' + (err?.message || err));
+    if (progEl) progEl.classList.add('hidden');
+    if (widget) widget.style.display = '';
+  }
+}
+
+function _uploadToBucketWithProgress(bucket, path, file, onProgress) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      const token = session?.access_token || SUPABASE_KEY;
+      const url   = `${SUPABASE_URL}/storage/v1/object/${bucket}/${encodeURI(path)}`;
+      const xhr   = new XMLHttpRequest();
+      xhr.upload.onprogress = e => {
+        if (e.lengthComputable && onProgress) {
+          onProgress(Math.round(e.loaded / e.total * 100));
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve(xhr.responseText);
+        else reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText}`));
+      };
+      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.open('POST', url);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.setRequestHeader('apikey', SUPABASE_KEY);
+      xhr.setRequestHeader('x-upsert', 'true');
+      if (file.type) xhr.setRequestHeader('Content-Type', file.type);
+      xhr.send(file);
+    } catch (e) { reject(e); }
+  });
+}
+
 function openAdminForm(type, item) {
   _adminEditType = type;
   _adminEditItem = item;
@@ -2764,6 +2943,7 @@ function openAdminForm(type, item) {
   sheet.classList.remove('animate');
   void sheet.offsetWidth;
   sheet.classList.add('animate');
+  _updateAdminFormVisibility();
   lucide.createIcons();
 }
 
@@ -2777,11 +2957,14 @@ function closeAdminModal() {
 function renderAdminFormFields(fields, item) {
   return fields.map(f => {
     const val = item?.[f.key] ?? f.defaultValue ?? '';
+    const showIfAttrs = f.showIf
+      ? ` data-showif-key="${escHtml(Object.keys(f.showIf)[0])}" data-showif-vals="${escHtml(Object.values(f.showIf)[0].join(','))}"`
+      : '';
 
     if (f.type === 'toggle') {
       const checked = item ? (item[f.key] !== false) : true;
       return `
-      <div class="flex items-center justify-between py-3 border-b border-white/5">
+      <div class="flex items-center justify-between py-3 border-b border-white/5"${showIfAttrs}>
         <label class="text-sm text-white/70">${f.label}</label>
         <label class="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" id="af_${f.key}" class="sr-only peer" ${checked ? 'checked' : ''}>
@@ -2792,9 +2975,9 @@ function renderAdminFormFields(fields, item) {
 
     if (f.type === 'select') {
       return `
-      <div class="mb-3">
+      <div class="mb-3"${showIfAttrs}>
         <label class="text-xs text-white/40 mb-1.5 block">${f.label}${f.required ? ' *' : ''}</label>
-        <select id="af_${f.key}" class="auth-input">
+        <select id="af_${f.key}" class="auth-input"${f.key === 'content_type' ? ' onchange="_updateAdminFormVisibility()"' : ''}>
           ${f.options.map(o => `<option value="${o}"${val === o ? ' selected' : ''}>${o}</option>`).join('')}
         </select>
       </div>`;
@@ -2802,19 +2985,69 @@ function renderAdminFormFields(fields, item) {
 
     if (f.type === 'textarea') {
       return `
-      <div class="mb-3">
+      <div class="mb-3"${showIfAttrs}>
         <label class="text-xs text-white/40 mb-1.5 block">${f.label}</label>
         <textarea id="af_${f.key}" rows="3" class="auth-input" style="resize:vertical;" placeholder="${f.placeholder || ''}">${escHtml(String(val))}</textarea>
       </div>`;
     }
 
+    if (f.type === 'file') {
+      return `
+      <div class="mb-3"${showIfAttrs}>
+        <label class="text-xs text-white/40 mb-1.5 block">${f.label}${f.required ? ' *' : ''}</label>
+        <input type="hidden" id="af_${f.key}" value="${escHtml(String(val))}">
+        <div id="af_${f.key}_widget">${_renderFileWidget(f, val)}</div>
+        <div id="af_${f.key}_progress" class="hidden mt-2">
+          <div class="h-1 rounded-full overflow-hidden" style="background:rgba(255,255,255,.08);">
+            <div class="af-progress-bar h-full" style="width:0%;background:var(--grad);transition:width .2s;"></div>
+          </div>
+          <p class="text-xs text-white/40 mt-1"><span class="af-progress-label">Subiendo…</span></p>
+        </div>
+      </div>`;
+    }
+
     return `
-    <div class="mb-3">
+    <div class="mb-3"${showIfAttrs}>
       <label class="text-xs text-white/40 mb-1.5 block">${f.label}${f.required ? ' *' : ''}</label>
       <input type="${f.type}" id="af_${f.key}" class="auth-input"
         value="${escHtml(String(val))}" placeholder="${f.placeholder || ''}">
     </div>`;
   }).join('');
+}
+
+function _renderFileWidget(f, val) {
+  if (val) {
+    const filename = String(val).split('/').pop() || 'archivo';
+    return `
+      <div class="flex items-center gap-2 px-3 py-2.5 rounded-xl" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);">
+        <i data-lucide="${f.icon || 'file'}" class="w-4 h-4 text-white/50 flex-shrink-0"></i>
+        <span class="flex-1 min-w-0 text-xs text-white/70 truncate" title="${escHtml(String(val))}">${escHtml(filename)}</span>
+        <button type="button" onclick="_clearAdminUpload('${f.key}')"
+          class="p-1 rounded flex-shrink-0" style="background:rgba(239,68,68,.1);" title="Quitar">
+          <i data-lucide="x" class="w-3.5 h-3.5 text-red-400/80"></i>
+        </button>
+      </div>`;
+  }
+  const optsAttr = escHtml(JSON.stringify({ key: f.key, bucket: f.bucket, accept: f.accept, pathPrefix: f.pathPrefix, storeMode: f.storeMode }));
+  return `
+    <button type="button" data-fileopts="${optsAttr}" onclick="_chooseAdminFile(this)"
+      class="w-full px-3 py-2.5 rounded-xl text-xs flex items-center gap-2"
+      style="background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.15);">
+      <i data-lucide="${f.icon || 'upload'}" class="w-4 h-4 text-white/40"></i>
+      <span class="text-white/50">Subir archivo${f.accept ? ' (' + f.accept + ')' : ''}</span>
+    </button>`;
+}
+
+function _updateAdminFormVisibility() {
+  const body = document.getElementById('admin-modal-body');
+  if (!body) return;
+  body.querySelectorAll('[data-showif-key]').forEach(el => {
+    const key  = el.getAttribute('data-showif-key');
+    const vals = (el.getAttribute('data-showif-vals') || '').split(',');
+    const ctrl = document.getElementById('af_' + key);
+    if (!ctrl) return;
+    el.style.display = vals.includes(ctrl.value) ? '' : 'none';
+  });
 }
 
 async function saveAdminForm() {
