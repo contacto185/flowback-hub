@@ -2891,6 +2891,14 @@ async function _uploadAdminFile(opts, file) {
 
   console.log('[upload] iniciando', file.name, file.size, 'bytes', '→', bucket + '/' + path);
 
+  // Auth sanity check: surfaces "MISSING" when the client never picked up the session
+  const { data: { session } } = await sb.auth.getSession();
+  console.log('[upload] session:', session?.user?.email, 'token:', session?.access_token ? 'present' : 'MISSING');
+  if (!session?.access_token) {
+    alert('No hay sesión autenticada. Cerrá sesión y volvé a entrar.');
+    return;
+  }
+
   // Show progress UI, hide upload button
   if (widget) widget.style.display = 'none';
   if (progEl) progEl.classList.remove('hidden');
@@ -3206,7 +3214,13 @@ async function confirmDeleteAdmin(type, id) {
 ═══════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async () => {
   // 1. Init Supabase
-  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+      persistSession:     true,
+      autoRefreshToken:   true,
+      detectSessionInUrl: true,
+    }
+  });
 
   // 2. Inject section shells into DOM
   injectSectionShells();
