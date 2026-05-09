@@ -2860,13 +2860,21 @@ async function saveAdminForm() {
   console.log('[saveAdminForm] payload:', payload);
 
   setLoading(btn, true);
-  let error;
+  let data, error;
   if (_adminEditItem?.id) {
-    ({ error } = await sb.from(schema.table).update(payload).eq('id', _adminEditItem.id));
+    ({ data, error } = await sb.from(schema.table).update(payload).eq('id', _adminEditItem.id).select());
   } else {
-    ({ error } = await sb.from(schema.table).insert(payload));
+    ({ data, error } = await sb.from(schema.table).insert(payload).select());
   }
   setLoading(btn, false);
+
+  console.error('[saveAdminForm] insert error:', error);
+  console.log('[saveAdminForm] insert data:', data);
+
+  // Silent RLS rejection: no error but empty data means the policy blocked the write
+  if (!error && (!data || data.length === 0)) {
+    error = { message: 'No se guardó (posible bloqueo por RLS). Revisá las policies de la tabla ' + schema.table + '.' };
+  }
 
   if (error) {
     console.error('[saveAdminForm] error:', error, 'payload:', payload);
