@@ -1753,7 +1753,7 @@ function renderClasesStaticContent() {
       </div>
       <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(255,0,0,.1)">
-          <i data-lucide="youtube" class="w-5 h-5 text-red-500"></i>
+          <i data-lucide="play-circle" class="w-5 h-5 text-red-500"></i>
         </div>
         <div class="flex-1 min-w-0">
           <p class="font-semibold text-sm text-white">Canal de YouTube</p>
@@ -2856,6 +2856,8 @@ async function saveAdminForm() {
     payload.currency       = String(payload.currency || 'CLP').substring(0, 3);
     payload.is_active      = Boolean(payload.is_active);
   }
+
+  console.log('[saveAdminForm] payload:', payload);
 
   setLoading(btn, true);
   let error;
