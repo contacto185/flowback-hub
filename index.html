@@ -2446,6 +2446,20 @@ async function loadAdmin() {
   }
   renderAdminShell();
   switchAdminTab('videos');
+  _adminBucketDiagnostics();
+}
+
+/* Run once on admin load: confirms required Storage buckets are reachable. */
+async function _adminBucketDiagnostics() {
+  for (const name of ['course-materials', 'thumbnails']) {
+    try {
+      const { data, error } = await sb.storage.getBucket(name);
+      console.log('[bucket check]', name, data, error);
+      if (error) console.warn(`[bucket check] '${name}' inaccesible:`, error.message);
+    } catch (e) {
+      console.error('[bucket check] excepción para', name, e);
+    }
+  }
 }
 
 function renderAdminShell() {
@@ -2875,43 +2889,57 @@ async function _uploadAdminFile(opts, file) {
     ? `${pathPrefix}/${courseId}/${ts}-${safeName}`
     : `${pathPrefix}/${ts}-${safeName}`;
 
+  console.log('[upload] iniciando', file.name, file.size, 'bytes', '→', bucket + '/' + path);
+
   // Show progress UI, hide upload button
   if (widget) widget.style.display = 'none';
   if (progEl) progEl.classList.remove('hidden');
   if (bar) bar.style.width = '0%';
   if (labelEl) labelEl.textContent = `Subiendo ${safeName}…`;
 
+  let data = null, error = null;
   try {
-    await _uploadToBucketWithProgress(bucket, path, file, pct => {
+    data = await _uploadToBucketWithProgress(bucket, path, file, pct => {
       if (bar) bar.style.width = pct + '%';
       if (labelEl) labelEl.textContent = `Subiendo ${safeName}… ${pct}%`;
     });
-
-    // Resolve the value to store
-    let stored;
-    if (storeMode === 'publicUrl') {
-      const { data } = sb.storage.from(bucket).getPublicUrl(path);
-      stored = data?.publicUrl || path;
-    } else {
-      stored = path;
-    }
-    if (hidden) hidden.value = stored;
-
-    // Refresh widget into "filled" state
-    if (widget) {
-      const fields = ADMIN_FORMS[_adminEditType]?.fields || [];
-      const f = fields.find(x => x.key === key);
-      widget.innerHTML = _renderFileWidget(f, stored);
-      widget.style.display = '';
-      lucide.createIcons();
-    }
-    if (progEl) progEl.classList.add('hidden');
   } catch (err) {
-    console.error('[upload] error:', err);
-    alert('Error al subir: ' + (err?.message || err));
+    error = err;
+  }
+
+  console.log('[upload] resultado', data, error);
+
+  if (error) {
+    console.error('[upload] error:', error);
+    alert('Upload error: ' + JSON.stringify({
+      message: error.message,
+      status:  error.status,
+      stack:   String(error.stack || '').split('\n')[0]
+    }));
     if (progEl) progEl.classList.add('hidden');
     if (widget) widget.style.display = '';
+    return;
   }
+
+  // Resolve the value to store
+  let stored;
+  if (storeMode === 'publicUrl') {
+    const { data: pub } = sb.storage.from(bucket).getPublicUrl(path);
+    stored = pub?.publicUrl || path;
+  } else {
+    stored = path;
+  }
+  if (hidden) hidden.value = stored;
+
+  // Refresh widget into "filled" state
+  if (widget) {
+    const fields = ADMIN_FORMS[_adminEditType]?.fields || [];
+    const f = fields.find(x => x.key === key);
+    widget.innerHTML = _renderFileWidget(f, stored);
+    widget.style.display = '';
+    lucide.createIcons();
+  }
+  if (progEl) progEl.classList.add('hidden');
 }
 
 function _uploadToBucketWithProgress(bucket, path, file, onProgress) {
@@ -2920,24 +2948,32 @@ function _uploadToBucketWithProgress(bucket, path, file, onProgress) {
       const { data: { session } } = await sb.auth.getSession();
       const token = session?.access_token || SUPABASE_KEY;
       const url   = `${SUPABASE_URL}/storage/v1/object/${bucket}/${encodeURI(path)}`;
+      console.log('[upload] POST', url, 'authToken:', token ? token.slice(0,12) + '…' : '(none)');
       const xhr   = new XMLHttpRequest();
+      xhr.timeout = 90_000; // 90s — surface hangs as errors
       xhr.upload.onprogress = e => {
         if (e.lengthComputable && onProgress) {
           onProgress(Math.round(e.loaded / e.total * 100));
         }
       };
       xhr.onload = () => {
+        console.log('[upload] xhr.onload status', xhr.status, 'body:', xhr.responseText?.slice(0, 200));
         if (xhr.status >= 200 && xhr.status < 300) resolve(xhr.responseText);
-        else reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText}`));
+        else reject(Object.assign(new Error(`HTTP ${xhr.status}: ${xhr.responseText}`), { status: xhr.status }));
       };
-      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.onerror   = () => { console.error('[upload] xhr.onerror'); reject(new Error('Network error (CORS o conexión)')); };
+      xhr.ontimeout = () => { console.error('[upload] xhr.ontimeout'); reject(new Error('Timeout 90s — el servidor no respondió')); };
+      xhr.onabort   = () => { console.warn('[upload] xhr.onabort'); reject(new Error('Upload cancelado')); };
       xhr.open('POST', url);
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
       xhr.setRequestHeader('apikey', SUPABASE_KEY);
       xhr.setRequestHeader('x-upsert', 'true');
-      if (file.type) xhr.setRequestHeader('Content-Type', file.type);
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
       xhr.send(file);
-    } catch (e) { reject(e); }
+    } catch (e) {
+      console.error('[upload] setup error', e);
+      reject(e);
+    }
   });
 }
 
