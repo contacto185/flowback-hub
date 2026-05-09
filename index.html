@@ -2402,6 +2402,16 @@ const ADMIN_FORMS = {
       { key:'is_active',     label:'Activo',              type:'toggle' },
     ]
   },
+  documento: {
+    table: 'documents', title: 'Documento',
+    fields: [
+      { key:'title',         label:'Título',              type:'text',     required:true },
+      { key:'description',   label:'Descripción',         type:'textarea' },
+      { key:'drive_url',     label:'URL Google Drive',    type:'text',     required:true, placeholder:'https://drive.google.com/...' },
+      { key:'tier_required', label:'Tier',                type:'select',   options:['free','basica','premium','vip'] },
+      { key:'is_active',     label:'Activo',              type:'toggle' },
+    ]
+  },
   leccion: {
     table: 'lessons', title: 'Lección',
     fields: [
@@ -2446,11 +2456,12 @@ function renderAdminShell() {
     <p class="text-xs text-white/40 mb-4">Gestión de contenido · Solo admins</p>
 
     <div class="flex gap-1 p-1 rounded-2xl mb-5 overflow-x-auto" style="background:rgba(255,255,255,.05);scrollbar-width:none;">
-      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-videos"   onclick="switchAdminTab('videos')">Videos</button>
-      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-eventos"  onclick="switchAdminTab('eventos')">Eventos</button>
-      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-cursos"   onclick="switchAdminTab('cursos')">Cursos</button>
-      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-webinars" onclick="switchAdminTab('webinars')">Webinars</button>
-      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-usuarios" onclick="switchAdminTab('usuarios')">Usuarios</button>
+      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-videos"      onclick="switchAdminTab('videos')">Videos</button>
+      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-eventos"     onclick="switchAdminTab('eventos')">Eventos</button>
+      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-cursos"      onclick="switchAdminTab('cursos')">Cursos</button>
+      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-webinars"    onclick="switchAdminTab('webinars')">Webinars</button>
+      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-documentos"  onclick="switchAdminTab('documentos')">Documentos</button>
+      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-usuarios"    onclick="switchAdminTab('usuarios')">Usuarios</button>
     </div>
 
     <div id="admin-tab-content">${skeletonCards(3)}</div>
@@ -2459,16 +2470,17 @@ function renderAdminShell() {
 
 function switchAdminTab(tab) {
   _adminCurrentTab = tab;
-  ['videos','eventos','cursos','webinars','usuarios'].forEach(t => {
+  ['videos','eventos','cursos','webinars','documentos','usuarios'].forEach(t => {
     const btn = document.getElementById('admin-tab-' + t);
     if (btn) btn.classList.toggle('active', t === tab);
   });
   const loaders = {
-    videos:   loadAdminVideos,
-    eventos:  loadAdminEventos,
-    cursos:   loadAdminCursos,
-    webinars: loadAdminWebinars,
-    usuarios: loadAdminUsuarios,
+    videos:     loadAdminVideos,
+    eventos:    loadAdminEventos,
+    cursos:     loadAdminCursos,
+    webinars:   loadAdminWebinars,
+    documentos: loadAdminDocumentos,
+    usuarios:   loadAdminUsuarios,
   };
   loaders[tab]?.();
 }
@@ -2734,6 +2746,17 @@ function loadAdminWebinars() {
     type:      'webinar',
     cols:      [{key:'title'},{key:'date'},{key:'type'}],
     emptyIcon: 'radio',
+  });
+}
+
+/* ── TAB: Documentos ── */
+function loadAdminDocumentos() {
+  return _loadAdminTab({
+    queryFn:   () => sb.from('documents').select('*').order('created_at',{ascending:false}),
+    label:     'Documentos',
+    type:      'documento',
+    cols:      [{key:'title'},{key:'tier_required'},{key:'drive_url'}],
+    emptyIcon: 'file-text',
   });
 }
 
