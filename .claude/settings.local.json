@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git commit -m 'feat: secciones agenda, grabadas, cuenta, tribu con Supabase *)",
+      "Bash(git push *)",
+      "Bash(git commit -m 'feat: panel admin completo *)",
+      "Bash(git commit -m 'fix: botón cerrar sesión *)",
+      "Bash(git commit -m 'fix: panel admin videos no cargaba *)",
+      "Bash(git commit -m 'fix: admin tabs eventos/cursos/webinars + agenda grabadas tier check *)",
+      "Bash(git commit *)"
     ]
   }
 }

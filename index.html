@@ -2848,6 +2848,15 @@ async function saveAdminForm() {
     payload.course_id = _adminLessonsCourseId;
   }
 
+  // Type coercion for courses: Supabase column types are strict
+  if (_adminEditType === 'curso') {
+    payload.price          = payload.price          != null && !isNaN(parseFloat(payload.price))          ? parseFloat(payload.price)          : null;
+    payload.duration_hours = payload.duration_hours != null && !isNaN(parseFloat(payload.duration_hours)) ? parseFloat(payload.duration_hours) : null;
+    payload.order_index    = parseInt(payload.order_index, 10) || 0;
+    payload.currency       = String(payload.currency || 'CLP').substring(0, 3);
+    payload.is_active      = Boolean(payload.is_active);
+  }
+
   setLoading(btn, true);
   let error;
   if (_adminEditItem?.id) {
@@ -2858,6 +2867,7 @@ async function saveAdminForm() {
   setLoading(btn, false);
 
   if (error) {
+    console.error('[saveAdminForm] error:', error, 'payload:', payload);
     errEl.textContent = error.message || 'Error al guardar';
     errEl.style.display = 'block';
   } else {
