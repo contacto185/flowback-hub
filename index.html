@@ -583,7 +583,7 @@ const TIER_RANK     = { free: 0, basica: 1, premium: 2, vip: 3 };
 let sb            = null;
 let currentUser   = null;
 let userProfile   = null;
-let currentSection = 'eventos';
+let currentSection = 'inicio';
 let notifVisible  = false;
 
 /* ═══════════════════════════════════════════
@@ -733,6 +733,7 @@ function renderNavTabs() {
   // Logged out: 4 tabs  |  Logged in: up to 5 tabs
   const tabs = loggedIn
     ? [
+        { id: 'inicio',        icon: 'house',          label: 'Inicio'  },
         { id: 'clases-gratis', icon: 'gift',           label: 'Clases'  },
         { id: 'eventos',       icon: 'calendar-days',  label: 'Eventos' },
         { id: 'cursos',        icon: 'graduation-cap', label: 'Cursos'  },
@@ -744,7 +745,8 @@ function renderNavTabs() {
         ...(isAdmin() ? [{ id: 'admin', icon: 'shield', label: 'Admin' }] : []),
       ]
     : [
-        { id: 'eventos',       icon: 'calendar-days',  label: 'Eventos' },
+        { id: 'inicio',        icon: 'house',           label: 'Inicio'  },
+        { id: 'eventos',       icon: 'calendar-days',   label: 'Eventos' },
         { id: 'clases-gratis', icon: 'gift',            label: 'Gratis'  },
         { id: 'cursos',        icon: 'graduation-cap',  label: 'Cursos'  },
         { id: 'tribu',         icon: 'crown',           label: 'Tribu'   },
@@ -764,7 +766,7 @@ function renderNavTabs() {
 /* ═══════════════════════════════════════════
    SECTION SWITCHING
 ═══════════════════════════════════════════ */
-const ALL_SECTIONS = ['eventos', 'clases-gratis', 'cursos', 'tribu', 'agenda', 'grabadas', 'admin'];
+const ALL_SECTIONS = ['inicio', 'eventos', 'clases-gratis', 'cursos', 'tribu', 'agenda', 'grabadas', 'admin'];
 
 function switchSection(name) {
   currentSection = name;
@@ -871,8 +873,8 @@ function updateUIForLoggedInUser() {
   if (currentSection === 'agenda')   loadAgenda();
   if (currentSection === 'grabadas') loadGrabadas();
 
-  const memberTabs = ['eventos', 'clases-gratis', 'cursos', 'agenda', 'grabadas', 'tribu', 'admin'];
-  if (!memberTabs.includes(currentSection)) switchSection('eventos');
+  const memberTabs = ['inicio', 'eventos', 'clases-gratis', 'cursos', 'agenda', 'grabadas', 'tribu', 'admin'];
+  if (!memberTabs.includes(currentSection)) switchSection('inicio');
 }
 
 /* ═══════════════════════════════════════════
@@ -898,7 +900,7 @@ function updateUIForLoggedOutUser() {
 function injectSectionShells() {
   document.getElementById('main-content').innerHTML = `
     <!-- EVENTOS -->
-    <section id="sec-eventos" class="tab-section active">
+    <section id="sec-eventos" class="tab-section">
       <div class="pt-6 pb-2">
         <h1 class="text-2xl font-black serif mb-1">Próximos <span class="grad-text">eventos</span></h1>
         <p class="text-xs text-white/40 mb-5">Únete a nuestras experiencias transformadoras</p>
@@ -937,6 +939,55 @@ function injectSectionShells() {
       <div id="tribu-content" class="pt-6 pb-2">
         <!-- Rendered by renderTribuSection() -->
         ${skeletonCards(2)}
+      </div>
+    </section>
+
+    <!-- INICIO (home hub v3) -->
+    <section id="sec-inicio" class="tab-section">
+      <div class="pt-6 pb-2">
+        <div class="relative w-full mb-4 rounded-2xl overflow-hidden" style="height:35vh;min-height:200px;max-height:320px;">
+          <img src="https://flowback.infraqualia.com/assets/portada-lun.jpg" alt="Flowback" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end">
+            <div class="p-4 w-full">
+              <h1 class="serif text-2xl sm:text-3xl font-bold text-white mb-1">Flowback</h1>
+              <p class="text-white/80 text-xs sm:text-sm">Tu espacio de bienestar y movimiento consciente</p>
+            </div>
+          </div>
+        </div>
+        <div class="mb-4">
+          <h2 class="serif text-lg sm:text-xl font-bold text-white">¿Qué necesitas hoy?</h2>
+          <p class="text-white/60 text-xs sm:text-sm">Selecciona tu intención y recibe una práctica guiada</p>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="toggleIntencion('ansiedad')" class="card rounded-xl p-3 sm:p-4 flex flex-col items-center text-center transition-all active:scale-95" id="btn-ansiedad">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#81C784]/20 flex items-center justify-center mb-2"><span class="text-xl sm:text-2xl">🌿</span></div>
+            <h3 class="font-semibold text-xs sm:text-sm text-white leading-tight">Calmar la ansiedad</h3>
+          </button>
+          <button onclick="toggleIntencion('tension')" class="card rounded-xl p-3 sm:p-4 flex flex-col items-center text-center transition-all active:scale-95" id="btn-tension">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#FFB74D]/20 flex items-center justify-center mb-2"><span class="text-xl sm:text-2xl">💆</span></div>
+            <h3 class="font-semibold text-xs sm:text-sm text-white leading-tight">Soltar tensión acumulada</h3>
+          </button>
+          <button onclick="toggleIntencion('energia')" class="card rounded-xl p-3 sm:p-4 flex flex-col items-center text-center transition-all active:scale-95" id="btn-energia">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#FF7043]/20 flex items-center justify-center mb-2"><span class="text-xl sm:text-2xl">⚡</span></div>
+            <h3 class="font-semibold text-xs sm:text-sm text-white leading-tight">Recuperar energía</h3>
+          </button>
+          <button onclick="toggleIntencion('presencia')" class="card rounded-xl p-3 sm:p-4 flex flex-col items-center text-center transition-all active:scale-95" id="btn-presencia">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#64B5F6]/20 flex items-center justify-center mb-2"><span class="text-xl sm:text-2xl">🧘</span></div>
+            <h3 class="font-semibold text-xs sm:text-sm text-white leading-tight">Sentirme más presente</h3>
+          </button>
+        </div>
+        <div id="contenido-intencion" class="hidden mt-4">
+          <div class="card rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 id="titulo-intencion" class="font-semibold text-lg text-white"></h3>
+              <button onclick="cerrarIntencion()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><span class="text-white/60">✕</span></button>
+            </div>
+            <div id="contenido-media" class="aspect-video rounded-xl overflow-hidden bg-[#1a1a2e] mb-3 flex items-center justify-center">
+              <div class="text-center"><span class="text-4xl mb-2 block">🎧</span><p class="text-white/60 text-sm">Contenido próximamente</p></div>
+            </div>
+            <p class="text-white/60 text-sm">Audio o video de práctica guiada</p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1488,7 +1539,7 @@ async function doSignOut() {
   userProfile  = null;
   updateHeader();
   updateUIForLoggedOutUser();
-  switchSection('clases-gratis');
+  switchSection('inicio');
   showToast('Sesión cerrada');
 }
 
@@ -3229,7 +3280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderNavTabs();
 
   // 4. Set first active section
-  const el = document.getElementById('sec-eventos');
+  const el = document.getElementById('sec-inicio');
   if (el) el.classList.add('active');
 
   // 5. Render tribu section (logged-out form)
@@ -3261,6 +3312,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(showNotifBar, 3000);
   }
 });
+
+/* ═══════════════════════════════════════════
+   INICIO — intención selector
+═══════════════════════════════════════════ */
+function toggleIntencion(tipo) {
+  const titulos = { ansiedad: '🌿 Calmar la ansiedad', tension: '💆 Soltar tensión', energia: '⚡ Recuperar energía', presencia: '🧘 Estar presente' };
+  const contenedor = document.getElementById('contenido-intencion');
+  const titulo = document.getElementById('titulo-intencion');
+  const btns = ['ansiedad','tension','energia','presencia'];
+  const yaAbierto = !contenedor.classList.contains('hidden') && titulo.textContent === titulos[tipo];
+  btns.forEach(b => document.getElementById('btn-'+b)?.classList.remove('ring-2','ring-accent-orange'));
+  if (yaAbierto) { contenedor.classList.add('hidden'); return; }
+  titulo.textContent = titulos[tipo];
+  contenedor.classList.remove('hidden');
+  document.getElementById('btn-'+tipo)?.classList.add('ring-2','ring-accent-orange');
+  contenedor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function cerrarIntencion() {
+  document.getElementById('contenido-intencion')?.classList.add('hidden');
+  ['ansiedad','tension','energia','presencia'].forEach(b => document.getElementById('btn-'+b)?.classList.remove('ring-2','ring-accent-orange'));
+}
 </script>
 </body>
 </html>
