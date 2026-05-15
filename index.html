@@ -150,8 +150,12 @@ tailwind.config = {
     border-radius: 24px;
     padding: 8px 4px;
     display: flex;
+    flex-wrap: nowrap;
     z-index: 50;
     overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
     scrollbar-width: none;
     gap: 2px;
     box-shadow: 0 8px 24px rgba(42,32,26,.08), 0 2px 8px rgba(42,32,26,.04);
@@ -159,14 +163,15 @@ tailwind.config = {
   #bottom-nav::-webkit-scrollbar { display: none; }
 
   .nav-tab {
-    flex: 1;
-    min-width: 60px;
+    flex: 0 0 auto;
+    min-width: 64px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 3px;
-    padding: 8px 4px;
+    padding: 8px 6px;
     cursor: pointer;
+    white-space: nowrap;
     border-radius: 16px;
     background: transparent;
     border: none;
