@@ -36,18 +36,21 @@ tailwind.config = {
 
 <style>
   :root {
-    --bg: #0B0E14;
-    --card: #131820;
+    /* v3 light theme */
+    --bg: #FFF8F0;
+    --card: #FFFFFF;
+    --card-bg: #FFFFFF;
+    --text: #2A201A;
+    --text-soft: rgba(42,32,26,.65);
+    --text-muted: rgba(42,32,26,.45);
+    --line: rgba(42,32,26,.08);
     --orange: #F57C00;
     --blue: #38BDF8;
-    --text: #F0F4F8;
     --grad: linear-gradient(135deg, #F57C00 0%, #38BDF8 100%);
-    /* v3 palette */
     --cream: #FFF8F0;
     --accent-orange: #F57C00;
     --accent-warm: #FFB74D;
     --dark-bg: #0a0a0f;
-    --card-bg: #12121a;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -73,15 +76,19 @@ tailwind.config = {
     background-clip: text;
   }
 
-  /* Cards (v3) */
+  /* Cards (v3 light) */
   .card {
     background: var(--card-bg);
     border-radius: 1rem;
-    border: 1px solid rgba(255,255,255,0.06);
+    border: 1px solid var(--line);
     padding: 1rem;
-    transition: border-color .2s, transform .2s;
+    box-shadow: 0 1px 3px rgba(42,32,26,.05), 0 1px 2px rgba(42,32,26,.04);
+    transition: border-color .2s, box-shadow .2s, transform .2s;
   }
-  .card:hover { border-color: rgba(245,124,0,.3); }
+  .card:hover {
+    border-color: rgba(245,124,0,.3);
+    box-shadow: 0 4px 12px rgba(42,32,26,.08), 0 2px 4px rgba(42,32,26,.05);
+  }
 
   /* Buttons */
   .btn-grad {
@@ -113,13 +120,13 @@ tailwind.config = {
   .btn-paypal { background: #FFC439; color: #003087; font-weight: 700; cursor: pointer; transition: transform .2s, box-shadow .2s; }
   .btn-paypal:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(255,196,57,.4); }
   .btn-ghost {
-    background: rgba(255,255,255,.06);
-    color: rgba(240,244,248,.7);
-    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(42,32,26,.04);
+    color: rgba(42,32,26,.7);
+    border: 1px solid rgba(42,32,26,.08);
     cursor: pointer;
     transition: background .2s;
   }
-  .btn-ghost:hover { background: rgba(255,255,255,.1); }
+  .btn-ghost:hover { background: rgba(42,32,26,.08); }
 
   /* Sections */
   .tab-section { display: none; }
@@ -136,7 +143,7 @@ tailwind.config = {
     transform: translateX(-50%);
     width: calc(100% - 32px);
     max-width: 480px;
-    background: rgba(19,24,32,.92);
+    background: rgba(255,255,248,.94);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid rgba(245,124,0,.2);
@@ -147,6 +154,7 @@ tailwind.config = {
     overflow-x: auto;
     scrollbar-width: none;
     gap: 2px;
+    box-shadow: 0 8px 24px rgba(42,32,26,.08), 0 2px 8px rgba(42,32,26,.04);
   }
   #bottom-nav::-webkit-scrollbar { display: none; }
 
@@ -171,8 +179,8 @@ tailwind.config = {
     border-radius: 10px;
     transition: background .2s;
   }
-  .nav-icon-wrap svg { color: rgba(240,244,248,.4); transition: color .2s; }
-  .nav-label { font-size: 10px; font-weight: 500; color: rgba(240,244,248,.4); transition: color .2s; }
+  .nav-icon-wrap svg { color: rgba(42,32,26,.45); transition: color .2s; }
+  .nav-label { font-size: 10px; font-weight: 500; color: rgba(42,32,26,.5); transition: color .2s; }
   .nav-tab.active .nav-icon-wrap { background: var(--accent-orange); }
   .nav-tab.active .nav-icon-wrap svg { color: #fff; }
   .nav-tab.active .nav-label { color: var(--accent-orange); font-weight: 600; }
@@ -188,8 +196,8 @@ tailwind.config = {
 
   /* ── Auth inputs ── */
   .auth-input {
-    background: rgba(255,255,255,.05);
-    border: 1px solid rgba(255,255,255,.1);
+    background: rgba(42,32,26,.04);
+    border: 1px solid rgba(42,32,26,.1);
     color: var(--text);
     border-radius: 12px;
     padding: 12px 16px;
@@ -198,15 +206,15 @@ tailwind.config = {
     transition: border-color .2s;
     font-family: 'Inter', sans-serif;
   }
-  .auth-input:focus { outline: none; border-color: var(--orange); }
-  .auth-input::placeholder { color: rgba(240,244,248,.2); }
+  .auth-input:focus { outline: none; border-color: var(--orange); background: #fff; }
+  .auth-input::placeholder { color: rgba(42,32,26,.35); }
   .auth-input.error { border-color: #ef4444; }
 
   /* ── Inline auth tabs ── */
   .auth-tab-btn {
     flex: 1; padding: 8px; border-radius: 10px;
     font-size: 13px; font-weight: 500;
-    color: rgba(240,244,248,.45);
+    color: rgba(42,32,26,.5);
     background: transparent; border: none; cursor: pointer;
     transition: background .2s, color .2s;
   }
@@ -220,13 +228,13 @@ tailwind.config = {
   .sub-tab-btn {
     flex: 1; padding: 8px; border-radius: 12px;
     font-size: 12px; font-weight: 500;
-    color: rgba(240,244,248,.45);
+    color: rgba(42,32,26,.5);
     background: transparent; border: none; cursor: pointer;
     transition: background .2s, color .2s;
   }
   .sub-tab-btn.active {
-    background: rgba(255,255,255,.09);
-    color: var(--text);
+    background: rgba(245,124,0,.12);
+    color: var(--orange);
     font-weight: 600;
   }
   .sub-section { display: none; }
@@ -285,7 +293,7 @@ tailwind.config = {
 
   /* ── Skeleton loading ── */
   .skeleton {
-    background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.08) 50%, rgba(255,255,255,.04) 75%);
+    background: linear-gradient(90deg, rgba(42,32,26,.05) 25%, rgba(42,32,26,.1) 50%, rgba(42,32,26,.05) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.4s infinite;
     border-radius: 8px;
@@ -294,7 +302,7 @@ tailwind.config = {
   .skeleton-card { height: 220px; border-radius: 16px; }
 
   /* ── Progress bar ── */
-  .progress-bar-bg { background: rgba(255,255,255,.08); border-radius: 4px; height: 4px; overflow: hidden; }
+  .progress-bar-bg { background: rgba(42,32,26,.1); border-radius: 4px; height: 4px; overflow: hidden; }
   .progress-bar-fill { height: 100%; background: var(--grad); border-radius: 4px; transition: width .3s; }
 
   /* ── Resource list row ── */
@@ -303,11 +311,11 @@ tailwind.config = {
 
   /* ── Schedule table ── */
   .sched-table { width: 100%; border-collapse: separate; border-spacing: 0 3px; }
-  .sched-table th { color: rgba(240,244,248,.4); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 4px 6px; text-align: center; }
-  .sched-table td { background: rgba(255,255,255,.03); padding: 7px 5px; text-align: center; font-size: 11px; color: rgba(240,244,248,.7); }
-  .sched-table td:first-child { border-radius: 8px 0 0 8px; color: var(--blue); font-weight: 700; font-size: 11px; padding-left: 8px; }
+  .sched-table th { color: rgba(42,32,26,.5); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 4px 6px; text-align: center; }
+  .sched-table td { background: rgba(42,32,26,.04); padding: 7px 5px; text-align: center; font-size: 11px; color: rgba(42,32,26,.7); }
+  .sched-table td:first-child { border-radius: 8px 0 0 8px; color: var(--orange); font-weight: 700; font-size: 11px; padding-left: 8px; }
   .sched-table td:last-child  { border-radius: 0 8px 8px 0; }
-  .sched-table .has-class { background: rgba(245,124,0,.08); color: rgba(240,244,248,.85); }
+  .sched-table .has-class { background: rgba(245,124,0,.1); color: rgba(42,32,26,.85); }
 
   /* ── Membership plan cards ── */
   .plan-basic   { border: 1px solid rgba(56,189,248,.22);  background: rgba(56,189,248,.03); }
@@ -315,7 +323,7 @@ tailwind.config = {
   .plan-vip     { border: 1px solid rgba(139,92,246,.45); background: linear-gradient(135deg,rgba(139,92,246,.05),rgba(245,124,0,.05)); }
 
   /* ── Before/after card ── */
-  .ba-card { border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.05); }
+  .ba-card { border-radius: 14px; overflow: hidden; border: 1px solid rgba(42,32,26,.06); }
 
   /* ── Glow backgrounds ── */
   .glow-orange { background: radial-gradient(ellipse at 50% 0%, rgba(245,124,0,.18) 0%, transparent 70%); }
@@ -352,7 +360,7 @@ tailwind.config = {
   .modal-sheet {
     position: relative; z-index: 1;
     width: 100%; max-width: 480px;
-    background: #131820;
+    background: #FFFFFF;
     border-radius: 24px 24px 0 0;
     border-top: 1px solid rgba(245,124,0,.3);
     padding: 20px 18px env(safe-area-inset-bottom, 28px);
@@ -368,7 +376,7 @@ tailwind.config = {
   /* ── Spinner ── */
   .spin {
     width: 20px; height: 20px; border-radius: 50%;
-    border: 2px solid rgba(255,255,255,.15);
+    border: 2px solid rgba(42,32,26,.15);
     border-top-color: var(--orange);
     animation: spin .7s linear infinite;
   }
@@ -379,6 +387,67 @@ tailwind.config = {
   button:disabled { opacity: .5; cursor: not-allowed; }
   .text-error { color: #f87171; }
   .text-success { color: #4ade80; }
+
+  /* ════════════════════════════════════════
+     LIGHT THEME — Tailwind text-white override
+     Default: text-white → dark on cream/white surfaces.
+     Exceptions force white back where the element sits over
+     an image overlay, a colored button, or a dark bg.
+  ════════════════════════════════════════ */
+  body .text-white         { color: var(--text); }
+  body .text-white\/90     { color: rgba(42,32,26,.9); }
+  body .text-white\/80     { color: rgba(42,32,26,.82); }
+  body .text-white\/70     { color: rgba(42,32,26,.75); }
+  body .text-white\/60     { color: rgba(42,32,26,.65); }
+  body .text-white\/50     { color: rgba(42,32,26,.55); }
+  body .text-white\/45     { color: rgba(42,32,26,.5); }
+  body .text-white\/40     { color: rgba(42,32,26,.45); }
+  body .text-white\/30     { color: rgba(42,32,26,.35); }
+  body .text-white\/25     { color: rgba(42,32,26,.3); }
+  body .text-white\/20     { color: rgba(42,32,26,.25); }
+  body .text-white\/10     { color: rgba(42,32,26,.15); }
+  body .text-white\/5      { color: rgba(42,32,26,.08); }
+
+  /* Exception A: text-white inside .absolute (image overlays) stays white.
+     Restricted to .text-white classes only — badges with their own color
+     (badge-online, badge-gold, etc) preserve their color. */
+  body .absolute.text-white,
+  body .absolute .text-white       { color: #fff; }
+  body .absolute.text-white\/90,
+  body .absolute .text-white\/90   { color: rgba(255,255,255,.9); }
+  body .absolute.text-white\/80,
+  body .absolute .text-white\/80   { color: rgba(255,255,255,.8); }
+  body .absolute.text-white\/70,
+  body .absolute .text-white\/70   { color: rgba(255,255,255,.7); }
+  body .absolute.text-white\/60,
+  body .absolute .text-white\/60   { color: rgba(255,255,255,.6); }
+  body .absolute.text-white\/50,
+  body .absolute .text-white\/50   { color: rgba(255,255,255,.5); }
+  body .absolute.text-white\/40,
+  body .absolute .text-white\/40   { color: rgba(255,255,255,.4); }
+  body .absolute.text-white\/30,
+  body .absolute .text-white\/30   { color: rgba(255,255,255,.3); }
+  body .absolute.text-white\/20,
+  body .absolute .text-white\/20   { color: rgba(255,255,255,.2); }
+
+  /* Exception B: colored solid buttons keep their white text */
+  body .btn-grad, body .btn-grad *,
+  body .btn-accent, body .btn-accent *,
+  body .btn-mp, body .btn-mp *      { color: #fff; }
+  body .btn-paypal, body .btn-paypal * { color: #003087; }
+
+  /* Exception C: modal-bg overlay (dark backdrop) */
+  body .modal-bg .text-white       { color: #fff; }
+
+  /* Exception D: nav active label uses accent color (already set, but reinforce) */
+  body .nav-tab.active .nav-label  { color: var(--accent-orange); }
+
+  /* Tailwind bg-white/X on light bg — turn into subtle dark tints */
+  body .bg-white\/20  { background-color: rgba(42,32,26,.12); }
+  body .bg-white\/10  { background-color: rgba(42,32,26,.06); }
+  body .bg-white\/5   { background-color: rgba(42,32,26,.04); }
+
+  /* Empty-state / load-error icon container subtle bg */
 </style>
 </head>
 <body>
@@ -387,17 +456,17 @@ tailwind.config = {
      NOTIFICATION BANNER
 ══════════════════════════════════════ -->
 <div id="notif-bar" class="px-4 pt-4 pb-2">
-  <div style="background:#131820; border:1px solid rgba(245,124,0,.25); border-radius:18px;" class="p-3.5 flex items-center gap-3 shadow-2xl">
+  <div style="background:#FFFFFF; border:1px solid rgba(245,124,0,.25); border-radius:18px;" class="p-3.5 flex items-center gap-3 shadow-2xl">
     <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:var(--grad)">
       <i data-lucide="bell" class="w-5 h-5 text-white"></i>
     </div>
     <div class="flex-1 min-w-0">
-      <p class="text-sm font-semibold text-white leading-tight">¿Activar notificaciones?</p>
-      <p class="text-xs text-white/40 mt-0.5">Entérate de eventos y novedades</p>
+      <p class="text-sm font-semibold leading-tight" style="color:var(--text)">¿Activar notificaciones?</p>
+      <p class="text-xs mt-0.5" style="color:var(--text-muted)">Entérate de eventos y novedades</p>
     </div>
     <div class="flex gap-2 flex-shrink-0">
       <button onclick="activateNotif()" class="btn-grad text-xs px-3 py-1.5 rounded-lg">Activar</button>
-      <button onclick="dismissNotif()" class="text-xs px-3 py-1.5 rounded-lg text-white/40" style="background:rgba(255,255,255,.06)">Ahora no</button>
+      <button onclick="dismissNotif()" class="text-xs px-3 py-1.5 rounded-lg" style="background:rgba(42,32,26,.05); color:var(--text-muted)">Ahora no</button>
     </div>
   </div>
 </div>
@@ -406,7 +475,7 @@ tailwind.config = {
      HEADER
 ══════════════════════════════════════ -->
 <header class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-5 py-3.5"
-  style="background:rgba(11,14,20,.88); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid rgba(245,124,0,.1);">
+  style="background:rgba(255,255,248,.92); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid rgba(245,124,0,.15);">
 
   <!-- Left: tier badge (hidden when logged out) -->
   <div id="header-tier" class="w-9" style="display:none">
@@ -449,8 +518,8 @@ tailwind.config = {
      TOAST NOTIFICATION
 ══════════════════════════════════════ -->
 <div id="toast">
-  <div id="toast-inner" class="px-4 py-2.5 rounded-2xl text-sm font-medium text-white shadow-xl"
-    style="background:#131820; border:1px solid rgba(245,124,0,.3)"></div>
+  <div id="toast-inner" class="px-4 py-2.5 rounded-2xl text-sm font-medium shadow-xl"
+    style="background:#2A201A; color:#FFF8F0; border:1px solid rgba(245,124,0,.3)"></div>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -470,7 +539,7 @@ tailwind.config = {
     <div class="flex items-center justify-between mb-1">
       <h2 class="text-xl font-black serif text-white">Elige tu membresía</h2>
       <button onclick="closeModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-white/40 hover:text-white transition-colors"
-        style="background:rgba(255,255,255,.06)">
+        style="background:rgba(42,32,26,.07)">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
@@ -577,7 +646,7 @@ tailwind.config = {
       <h2 id="admin-modal-title" class="text-lg font-black serif text-white"></h2>
       <button onclick="closeAdminModal()"
         class="w-8 h-8 rounded-full flex items-center justify-center text-white/40"
-        style="background:rgba(255,255,255,.06)">
+        style="background:rgba(42,32,26,.07)">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
@@ -966,7 +1035,7 @@ function injectSectionShells() {
     <section id="sec-inicio" class="tab-section">
       <div class="pt-6 pb-2">
         <div class="relative w-full mb-4 rounded-2xl overflow-hidden" style="height:35vh;min-height:200px;max-height:320px;">
-          <img src="https://flowback.infraqualia.com/assets/portada-lun.jpg" alt="Flowback" class="w-full h-full object-cover">
+          <img src="https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&q=80" alt="Flowback" class="w-full h-full object-cover">
           <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end">
             <div class="p-4 w-full">
               <h1 class="serif text-2xl sm:text-3xl font-bold text-white mb-1">Flowback</h1>
@@ -1071,7 +1140,7 @@ function renderTribuAuth(container) {
 
     <!-- Auth tabs -->
     <div class="card rounded-2xl p-5 mb-5">
-      <div class="flex gap-1 p-1 rounded-xl mb-5" style="background:rgba(255,255,255,.04)">
+      <div class="flex gap-1 p-1 rounded-xl mb-5" style="background:rgba(42,32,26,.05)">
         <button class="auth-tab-btn active" id="auth-tab-login"    onclick="showAuthForm('login')">Iniciar sesión</button>
         <button class="auth-tab-btn"        id="auth-tab-register" onclick="showAuthForm('register')">Crear cuenta</button>
       </div>
@@ -1131,7 +1200,7 @@ function renderTribuAuth(container) {
       <div id="auth-form-forgot" style="display:none">
         <div class="flex items-center gap-3 mb-4">
           <button onclick="showAuthForm('login')" class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-            style="background:rgba(255,255,255,.06)">
+            style="background:rgba(42,32,26,.07)">
             <i data-lucide="arrow-left" class="w-4 h-4 text-white/60"></i>
           </button>
           <div>
@@ -1179,7 +1248,7 @@ function renderTribuAuth(container) {
           <tr><td>20:00</td><td>—</td><td class="has-class">Medit.</td><td class="has-class">Medit.</td><td>—</td><td>—</td><td class="has-class">Medit.</td><td class="has-class">Medit.</td></tr>
         </tbody>
       </table>
-      <p class="text-xs text-white/30 text-center mt-3 pt-3" style="border-top:1px solid rgba(255,255,255,.05)">
+      <p class="text-xs text-white/30 text-center mt-3 pt-3" style="border-top:1px solid rgba(42,32,26,.06)">
         Todas las clases via Zoom · Horario CDMX (UTC-6)
       </p>
     </div>
@@ -1233,7 +1302,7 @@ function renderTribuMember(container) {
           <div class="flex items-center gap-2">
             <p class="font-bold text-white truncate">${escHtml(name)}</p>
             <button onclick="openEditName()" class="flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center"
-              style="background:rgba(255,255,255,.07)">
+              style="background:rgba(42,32,26,.08)">
               <i data-lucide="pencil" class="w-3 h-3 text-white/50"></i>
             </button>
           </div>
@@ -1249,7 +1318,7 @@ function renderTribuMember(container) {
     </div>
 
     <!-- Sub-nav -->
-    <div class="flex gap-1 p-1 rounded-2xl mb-5" style="background:rgba(255,255,255,.05)">
+    <div class="flex gap-1 p-1 rounded-2xl mb-5" style="background:rgba(42,32,26,.06)">
       <button class="sub-tab-btn active" id="sub-tab-cuenta" onclick="showSubTab('cuenta')">Mi cuenta</button>
       ${canMember ? `<button class="sub-tab-btn" id="sub-tab-acceso" onclick="showSubTab('acceso')">Acceso</button>` : ''}
       <button class="sub-tab-btn" id="sub-tab-planes" onclick="showSubTab('planes')">
@@ -1966,7 +2035,7 @@ function renderCourseCard(c, purchased = false) {
       <h3 class="font-bold text-base serif mb-1 text-white">${escHtml(c.title)}</h3>
       ${c.instructor ? `<p class="text-xs text-white/50 mb-2">Por <span class="text-white/70">${escHtml(c.instructor)}</span></p>` : ''}
       ${c.description ? `<p class="text-xs text-white/40 mb-3 leading-relaxed line-clamp-2">${escHtml(c.description)}</p>` : ''}
-      <div class="flex items-center justify-between mt-2 pt-2" style="border-top:1px solid rgba(255,255,255,.05);">
+      <div class="flex items-center justify-between mt-2 pt-2" style="border-top:1px solid rgba(42,32,26,.06);">
         <span class="text-lg font-black" style="color:var(--accent-orange)">${escHtml(priceTxt)}</span>
         ${duration ? `<span class="flex items-center gap-1 text-xs text-white/40">
           <i data-lucide="clock" class="w-3.5 h-3.5"></i>${duration}</span>` : ''}
@@ -2044,7 +2113,7 @@ function renderCourseDetail(course, lessons, purchased, progressMap) {
           ${unlocked ? 'cursor-pointer active:opacity-70' : 'opacity-50'}"
           ${unlocked ? `onclick="playLesson('${l.id}')"` : ''}>
           <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
-            style="${done ? 'background:rgba(34,197,94,.18);color:#4ade80;' : 'background:rgba(255,255,255,.07);color:rgba(255,255,255,.4);'}">
+            style="${done ? 'background:rgba(34,197,94,.18);color:#16a34a;' : 'background:rgba(42,32,26,.08);color:rgba(42,32,26,.5);'}">
             ${done ? '✓' : (i + 1)}
           </div>
           <div class="flex-1 min-w-0">
@@ -2055,7 +2124,7 @@ function renderCourseDetail(course, lessons, purchased, progressMap) {
                 style="background:rgba(34,197,94,.12);color:#4ade80;">Vista previa</span>` : ''}
             </div>
             ${pct > 0 && !done ? `
-            <div class="h-1 rounded-full mt-1.5" style="background:rgba(255,255,255,.07);">
+            <div class="h-1 rounded-full mt-1.5" style="background:rgba(42,32,26,.08);">
               <div class="h-1 rounded-full" style="width:${pct}%;background:var(--orange);"></div>
             </div>` : ''}
           </div>
@@ -2196,7 +2265,7 @@ async function playLesson(lessonId) {
   overlay.innerHTML = `
     <div class="flex items-center gap-3 p-4" style="background:rgba(0,0,0,.6);">
       <button onclick="closeLessonPlayer('${lessonId}')"
-        class="p-2 rounded-full flex-shrink-0" style="background:rgba(255,255,255,.1);">
+        class="p-2 rounded-full flex-shrink-0" style="background:rgba(42,32,26,.12);">
         <i data-lucide="x" class="w-5 h-5 text-white"></i>
       </button>
       <p class="font-semibold text-sm text-white truncate">${escHtml(title)}</p>
@@ -2373,7 +2442,7 @@ function renderGrabadaWebinarCard(w) {
         ? `<a href="${escHtml(zoomUrl)}" target="_blank" rel="noopener"
             class="btn-grad w-full py-2.5 rounded-xl text-sm text-center block">Ver grabación</a>`
         : `<button class="w-full py-2.5 rounded-xl text-sm font-medium text-white/40 cursor-default"
-            style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08)">Próximamente</button>`
+            style="background:rgba(42,32,26,.05); border:1px solid rgba(42,32,26,.1)">Próximamente</button>`
       }
     </div>
   </article>`;
@@ -2556,7 +2625,7 @@ function renderAdminShell() {
     <h1 class="text-2xl font-black serif mb-1">Panel <span class="grad-text">Admin</span></h1>
     <p class="text-xs text-white/40 mb-4">Gestión de contenido · Solo admins</p>
 
-    <div class="flex gap-1 p-1 rounded-2xl mb-5 overflow-x-auto" style="background:rgba(255,255,255,.05);scrollbar-width:none;">
+    <div class="flex gap-1 p-1 rounded-2xl mb-5 overflow-x-auto" style="background:rgba(42,32,26,.06);scrollbar-width:none;">
       <button class="sub-tab-btn flex-shrink-0" id="admin-tab-videos"      onclick="switchAdminTab('videos')">Videos</button>
       <button class="sub-tab-btn flex-shrink-0" id="admin-tab-eventos"     onclick="switchAdminTab('eventos')">Eventos</button>
       <button class="sub-tab-btn flex-shrink-0" id="admin-tab-cursos"      onclick="switchAdminTab('cursos')">Cursos</button>
@@ -2779,7 +2848,7 @@ async function loadAdminLecciones(courseId, courseTitle) {
     c.innerHTML = `
       <div class="flex items-center gap-2 mb-4">
         <button onclick="switchAdminTab('cursos')"
-          class="p-1.5 rounded-lg flex-shrink-0" style="background:rgba(255,255,255,.07);">
+          class="p-1.5 rounded-lg flex-shrink-0" style="background:rgba(42,32,26,.08);">
           <i data-lucide="arrow-left" class="w-4 h-4 text-white/60"></i>
         </button>
         <div class="flex-1 min-w-0">
@@ -2885,7 +2954,7 @@ async function loadAdminUsuarios() {
         </div>
         <select onchange="changeUserTier('${p.user_id}', this.value)"
           class="auth-input text-xs py-1.5 px-2 w-28 rounded-lg"
-          style="background:rgba(255,255,255,.05);">
+          style="background:rgba(42,32,26,.06);">
           <option value="free"${(p.tier||'').toLowerCase().trim()==='free'?' selected':''}>Gratis</option>
           <option value="basica"${(p.tier||'').toLowerCase().trim()==='basica'?' selected':''}>Básica</option>
           <option value="premium"${(p.tier||'').toLowerCase().trim()==='premium'?' selected':''}>Premium</option>
@@ -3152,7 +3221,7 @@ function renderAdminFormFields(fields, item) {
         <input type="hidden" id="af_${f.key}" value="${escHtml(String(val))}">
         <div id="af_${f.key}_widget">${_renderFileWidget(f, val)}</div>
         <div id="af_${f.key}_progress" class="hidden mt-2">
-          <div class="h-1 rounded-full overflow-hidden" style="background:rgba(255,255,255,.08);">
+          <div class="h-1 rounded-full overflow-hidden" style="background:rgba(42,32,26,.1);">
             <div class="af-progress-bar h-full" style="width:0%;background:var(--grad);transition:width .2s;"></div>
           </div>
           <p class="text-xs text-white/40 mt-1"><span class="af-progress-label">Subiendo…</span></p>
@@ -3173,7 +3242,7 @@ function _renderFileWidget(f, val) {
   if (val) {
     const filename = String(val).split('/').pop() || 'archivo';
     return `
-      <div class="flex items-center gap-2 px-3 py-2.5 rounded-xl" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);">
+      <div class="flex items-center gap-2 px-3 py-2.5 rounded-xl" style="background:rgba(42,32,26,.06);border:1px solid rgba(42,32,26,.12);">
         <i data-lucide="${f.icon || 'file'}" class="w-4 h-4 text-white/50 flex-shrink-0"></i>
         <span class="flex-1 min-w-0 text-xs text-white/70 truncate" title="${escHtml(String(val))}">${escHtml(filename)}</span>
         <button type="button" onclick="_clearAdminUpload('${f.key}')"
@@ -3186,7 +3255,7 @@ function _renderFileWidget(f, val) {
   return `
     <button type="button" data-fileopts="${optsAttr}" onclick="_chooseAdminFile(this)"
       class="w-full px-3 py-2.5 rounded-xl text-xs flex items-center gap-2"
-      style="background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.15);">
+      style="background:rgba(42,32,26,.06);border:1px dashed rgba(42,32,26,.15);">
       <i data-lucide="${f.icon || 'upload'}" class="w-4 h-4 text-white/40"></i>
       <span class="text-white/50">Subir archivo${f.accept ? ' (' + f.accept + ')' : ''}</span>
     </button>`;
