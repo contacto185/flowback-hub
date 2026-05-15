@@ -96,6 +96,18 @@ tailwind.config = {
     justify-content: center;
   }
   .btn-grad:hover { transform: scale(1.02); box-shadow: 0 0 22px rgba(245,124,0,.35); }
+  .btn-accent {
+    background: var(--accent-orange);
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: transform .2s, box-shadow .2s, background .2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-accent:hover { transform: scale(1.02); box-shadow: 0 4px 18px rgba(245,124,0,.4); background: #FF8A1A; }
   .btn-mp  { background: #00B1EA; color: #fff; font-weight: 700; cursor: pointer; transition: transform .2s, box-shadow .2s; }
   .btn-mp:hover  { transform: scale(1.02); box-shadow: 0 4px 16px rgba(0,177,234,.4); }
   .btn-paypal { background: #FFC439; color: #003087; font-weight: 700; cursor: pointer; transition: transform .2s, box-shadow .2s; }
@@ -1602,10 +1614,16 @@ function renderVideoCard(video, locked = false) {
     ? `<img class="vimeo-thumb" src="${escHtml(thumb)}" alt="${escHtml(video.title)}" loading="lazy" onerror="this.style.display='none'">`
     : `<div class="vimeo-thumb" style="background:linear-gradient(135deg,rgba(245,124,0,.08),rgba(56,189,248,.08))"></div>`;
 
+  const durationBadge = video.duration
+    ? `<span class="absolute bottom-2 right-2 text-xs font-semibold px-2 py-0.5 rounded-md text-white flex items-center gap-1 z-10" style="background:rgba(0,0,0,.7); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);">
+        <i data-lucide="clock" class="w-3 h-3"></i>${escHtml(video.duration)}
+      </span>`
+    : '';
+
   if (locked) {
     return `
-    <article class="card rounded-2xl overflow-hidden mb-4">
-      <div class="locked-wrap">
+    <article class="card rounded-2xl overflow-hidden mb-4" style="padding:0">
+      <div class="locked-wrap relative">
         <div class="vimeo-wrap locked-blur" style="pointer-events:none">
           ${thumbHtml}
           <div class="vimeo-play-overlay">
@@ -1615,7 +1633,7 @@ function renderVideoCard(video, locked = false) {
         <div class="locked-overlay">
           <i data-lucide="lock" class="w-7 h-7 text-white/50"></i>
           <p class="text-xs text-white/60 text-center">Requiere membresía <strong>${escHtml(tierLabel(video.tier_required))}</strong></p>
-          <button onclick="openModal()" class="btn-grad text-xs px-4 py-2 rounded-xl mt-1">Ver planes</button>
+          <button onclick="openModal()" class="btn-accent text-xs px-4 py-2 rounded-xl mt-1">Ver planes</button>
         </div>
       </div>
       <div class="p-4">
@@ -1626,13 +1644,13 @@ function renderVideoCard(video, locked = false) {
   }
 
   return `
-  <article class="card rounded-2xl overflow-hidden mb-4">
-    <div class="vimeo-wrap" onclick="playVimeo(this,'${escHtml(vimeoId || '')}')">
+  <article class="card rounded-2xl overflow-hidden mb-4" style="padding:0">
+    <div class="vimeo-wrap relative" onclick="playVimeo(this,'${escHtml(vimeoId || '')}')">
       ${thumbHtml}
       <div class="vimeo-play-overlay">
         <div class="play-btn"><svg viewBox="0 0 24 24" class="w-6 h-6 ml-1" fill="white"><path d="M8 5v14l11-7z"/></svg></div>
-        ${video.duration ? `<p class="text-xs text-white/60">${escHtml(video.duration)}</p>` : ''}
       </div>
+      ${durationBadge}
     </div>
     ${progress > 0 ? `
     <div class="px-4 pt-3 pb-0">
@@ -1640,7 +1658,7 @@ function renderVideoCard(video, locked = false) {
       <p class="text-xs text-white/30 mt-1">${progress}% completado</p>
     </div>` : ''}
     <div class="p-4 ${progress > 0 ? 'pt-2' : ''}">
-      <h3 class="font-bold text-sm serif mb-1">${escHtml(video.title)}</h3>
+      <h3 class="font-bold text-sm serif mb-1 text-white">${escHtml(video.title)}</h3>
       ${video.description ? `<p class="text-xs text-white/50 leading-relaxed line-clamp-2">${escHtml(video.description)}</p>` : ''}
     </div>
   </article>`;
@@ -1714,29 +1732,39 @@ function renderEventCard(e) {
   const isMember  = e.tier_required && e.tier_required !== 'free';
   const hasLink   = isOnline && e.zoom_url;
   const ctaHtml   = hasLink
-    ? `<a href="${escHtml(e.zoom_url)}" target="_blank" rel="noopener" class="btn-grad w-full py-2.5 rounded-xl text-sm text-center block">Unirme al Zoom</a>`
-    : `<button class="btn-grad w-full py-2.5 rounded-xl text-sm">Reservar lugar</button>`;
+    ? `<a href="${escHtml(e.zoom_url)}" target="_blank" rel="noopener" class="btn-accent w-full py-2.5 rounded-xl text-sm text-center block">Unirme</a>`
+    : `<button class="btn-accent w-full py-2.5 rounded-xl text-sm">Unirme</button>`;
+
+  // Prominent date badge (day + month abbrev)
+  const dt = new Date(e._date + 'T' + (e._time || '00:00'));
+  const day = isNaN(dt) ? '' : dt.getDate();
+  const month = isNaN(dt) ? '' : dt.toLocaleString('es', {month:'short'}).toUpperCase().replace('.','');
 
   return `
-  <article class="event-card card rounded-2xl overflow-hidden mb-4">
+  <article class="event-card card rounded-2xl overflow-hidden mb-4" style="padding:0">
     <div class="relative">
       <img src="${escHtml(thumb)}" alt="${escHtml(e.title)}" loading="lazy"
         class="w-full object-cover" style="aspect-ratio:16/9"
         onerror="this.src='https://flowback.infraqualia.com/assets/flowback-1.jpg'">
       <span class="${badgeCls} absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full">${badgeTxt}</span>
       ${isMember ? `<span class="badge-gold absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full">Miembros</span>` : ''}
+      ${day !== '' ? `
+      <div class="absolute bottom-3 left-3 rounded-xl px-3 py-1.5 text-center" style="background:rgba(245,124,0,.95); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);">
+        <p class="text-xl font-black text-white leading-none">${day}</p>
+        <p class="text-[10px] font-bold text-white/90 uppercase tracking-wide mt-0.5">${month}</p>
+      </div>` : ''}
     </div>
     <div class="p-4">
-      <div class="flex items-center gap-1.5 mb-2 flex-wrap">
-        <i data-lucide="calendar" class="w-3.5 h-3.5 flex-shrink-0" style="color:var(--blue)"></i>
-        <span class="text-xs" style="color:var(--blue)">${dateLabel}</span>
-        ${locLabel ? `<span class="text-white/20 mx-0.5">·</span>
+      <h3 class="font-bold text-base serif mb-1.5 text-white">${escHtml(e.title)}</h3>
+      ${e.description ? `<p class="text-xs text-white/50 mb-3 leading-relaxed line-clamp-2">${escHtml(e.description)}</p>` : '<div class="mb-3"></div>'}
+      <div class="flex items-center gap-2 mb-3 text-xs flex-wrap">
+        <i data-lucide="clock" class="w-3.5 h-3.5 flex-shrink-0" style="color:var(--accent-warm)"></i>
+        <span style="color:var(--accent-warm)">${dateLabel}</span>
+        ${locLabel ? `<span class="text-white/20">·</span>
         <i data-lucide="${locIcon}" class="w-3.5 h-3.5 flex-shrink-0 text-white/40"></i>
-        <span class="text-xs text-white/40">${locLabel}</span>` : ''}
+        <span class="text-white/40">${locLabel}</span>` : ''}
+        ${e.duration ? `<span class="text-white/20">·</span><span class="text-white/40">${escHtml(e.duration)}</span>` : ''}
       </div>
-      <h3 class="font-bold text-base serif mb-1.5">${escHtml(e.title)}</h3>
-      ${e.description ? `<p class="text-xs text-white/50 mb-3 leading-relaxed">${escHtml(e.description)}</p>` : '<div class="mb-3"></div>'}
-      ${e.duration ? `<p class="text-xs text-white/30 mb-3">Duración: ${escHtml(e.duration)}</p>` : ''}
       ${ctaHtml}
     </div>
   </article>`;
@@ -1908,40 +1936,40 @@ async function loadCursos() {
 
 function renderCourseCard(c, purchased = false) {
   const thumb    = c.thumbnail_url || 'https://flowback.infraqualia.com/assets/flowback-1.jpg';
-  const isGold   = c.tier_required === 'premium' || c.tier_required === 'vip';
-  const price    = c.price ? `${c.price} ${c.currency || 'USD'}` : 'Gratis';
+  const tier     = c.tier_required || 'free';
+  const priceTxt = c.price
+    ? `$${Number(c.price).toLocaleString('es-CL')} ${c.currency || 'CLP'}`
+    : 'Gratis';
   const duration = c.duration_hours ? formatDuration(c.duration_hours) : null;
 
+  const tierBadge = tier === 'vip'
+    ? `<span class="badge-vip absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full">VIP</span>`
+    : tier === 'premium'
+    ? `<span class="badge-premium absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full">PREMIUM</span>`
+    : tier === 'basica'
+    ? `<span class="badge-basica absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full">BÁSICA</span>`
+    : '';
+
   return `
-  <article class="course-card rounded-2xl overflow-hidden mb-4 cursor-pointer"
-    style="background:var(--card); border:1px solid ${isGold ? 'rgba(245,124,0,.42)' : 'rgba(56,189,248,.2)'};"
+  <article class="course-card card rounded-2xl overflow-hidden mb-4 cursor-pointer" style="padding:0"
     onclick="openCourseDetail('${c.id}')">
     <div class="relative">
       <img src="${escHtml(thumb)}" alt="${escHtml(c.title)}" loading="lazy"
         class="w-full object-cover" style="aspect-ratio:16/9"
         onerror="this.src='https://flowback.infraqualia.com/assets/flowback-1.jpg'">
-      <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(11,14,20,.75) 0%,transparent 55%)"></div>
-      ${isGold ? `<span class="badge-gold absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full">⭐ PREMIUM</span>` : ''}
+      <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(11,14,20,.78) 0%,transparent 55%)"></div>
+      ${tierBadge}
       ${purchased ? `<span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full"
         style="background:rgba(34,197,94,.2); color:#4ade80; border:1px solid rgba(34,197,94,.4)">✓ Tuyo</span>` : ''}
     </div>
     <div class="p-4">
-      ${duration || c.instructor ? `
-      <div class="flex items-center gap-2 mb-2 flex-wrap">
-        ${duration ? `<span class="flex items-center gap-1 text-xs" style="color:${isGold ? '#FFC107' : 'var(--blue)'}">
+      <h3 class="font-bold text-base serif mb-1 text-white">${escHtml(c.title)}</h3>
+      ${c.instructor ? `<p class="text-xs text-white/50 mb-2">Por <span class="text-white/70">${escHtml(c.instructor)}</span></p>` : ''}
+      ${c.description ? `<p class="text-xs text-white/40 mb-3 leading-relaxed line-clamp-2">${escHtml(c.description)}</p>` : ''}
+      <div class="flex items-center justify-between mt-2 pt-2" style="border-top:1px solid rgba(255,255,255,.05);">
+        <span class="text-lg font-black" style="color:var(--accent-orange)">${escHtml(priceTxt)}</span>
+        ${duration ? `<span class="flex items-center gap-1 text-xs text-white/40">
           <i data-lucide="clock" class="w-3.5 h-3.5"></i>${duration}</span>` : ''}
-        ${c.instructor ? `<span class="text-white/25 mx-0.5">·</span>
-          <span class="text-xs text-white/40">${escHtml(c.instructor)}</span>` : ''}
-      </div>` : ''}
-      <h3 class="font-bold text-base serif mb-1.5">${escHtml(c.title)}</h3>
-      ${c.description ? `<p class="text-xs text-white/50 mb-2 leading-relaxed line-clamp-2">${escHtml(c.description)}</p>` : ''}
-      <div class="flex items-center justify-between mt-1">
-        <span class="text-base font-black" style="color:${isGold ? '#FFC107' : 'var(--orange)'}">
-          ${escHtml(price)}
-        </span>
-        <span class="text-xs text-white/30 flex items-center gap-1">
-          Ver lecciones <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-        </span>
       </div>
     </div>
   </article>`;
