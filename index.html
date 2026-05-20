@@ -847,8 +847,26 @@ function renderNavTabs() {
       ];
 
   const nav = document.getElementById('bottom-nav');
+
+  // For non-logged-in 5-tab nav: distribute evenly. For logged-in 8-tab nav: keep CSS defaults (scrollable).
+  if (!loggedIn) {
+    nav.style.justifyContent = 'space-evenly';
+    nav.style.alignItems = 'center';
+    nav.style.width = '100%';
+    nav.style.padding = '8px 0';
+    nav.style.overflowX = 'visible';
+  } else {
+    nav.style.justifyContent = '';
+    nav.style.alignItems = '';
+    nav.style.width = '';
+    nav.style.padding = '';
+    nav.style.overflowX = '';
+  }
+
+  const btnInline = loggedIn ? '' : ' style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;"';
+
   nav.innerHTML = tabs.map(t => `
-    <button class="nav-tab${currentSection === t.id ? ' active' : ''}" id="nav-${t.id}" onclick="switchSection('${t.id}')">
+    <button class="nav-tab${currentSection === t.id ? ' active' : ''}" id="nav-${t.id}" onclick="switchSection('${t.id}')"${btnInline}>
       <div class="nav-icon-wrap"><i data-lucide="${t.icon}" class="w-5 h-5"></i></div>
       <span class="nav-label">${t.label}</span>
     </button>
