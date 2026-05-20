@@ -1932,10 +1932,10 @@ function renderClasesStaticContent() {
     <!-- Planes de membresía -->
     <h2 class="text-base font-bold serif mb-1 text-white">Planes de <span class="grad-text">membresía</span></h2>
     <p class="text-xs text-white/40 mb-4">Sin contratos · Cancela cuando quieras</p>
-    <div style="display:flex; gap:12px; overflow-x:auto; padding-bottom:8px; -webkit-overflow-scrolling:touch; scrollbar-width:none;" class="mb-6">
+    <div style="display:flex; flex-direction:column; gap:12px;" class="mb-6">
 
       <!-- BÁSICA -->
-      <div class="plan-basic rounded-2xl p-4 flex flex-col" style="min-width:260px; flex-shrink:0;">
+      <div class="flex flex-col" style="width:100%; border-radius:16px; border:1px solid #E8DDD4; background:#fff; padding:20px;">
         <p class="text-xs font-bold tracking-widest mb-1" style="color:var(--blue)">BÁSICA</p>
         <p class="text-xs text-white/50 mb-2">Plan Mensual · 1 mes</p>
         <div class="flex items-baseline gap-1 mb-1">
@@ -1953,7 +1953,7 @@ function renderClasesStaticContent() {
       </div>
 
       <!-- VIP (Popular) -->
-      <div class="plan-premium rounded-2xl p-4 flex flex-col relative" style="min-width:260px; flex-shrink:0;">
+      <div class="flex flex-col relative" style="width:100%; border-radius:16px; border:2px solid #F57C00; background:#fff; padding:20px;">
         <span class="badge-gold absolute -top-2 right-3 text-xs font-bold px-2.5 py-1 rounded-full">⭐ Popular</span>
         <p class="text-xs font-bold tracking-widest mb-1" style="color:var(--orange)">VIP</p>
         <p class="text-xs text-white/50 mb-2">Plan Trimestral · 3 meses</p>
@@ -1972,7 +1972,7 @@ function renderClasesStaticContent() {
       </div>
 
       <!-- PREMIUM -->
-      <div class="plan-vip rounded-2xl p-4 flex flex-col" style="min-width:260px; flex-shrink:0;">
+      <div class="flex flex-col" style="width:100%; border-radius:16px; border:1px solid #E8DDD4; background:#fff; padding:20px;">
         <p class="text-xs font-bold tracking-widest mb-1" style="color:#a78bfa">PREMIUM</p>
         <p class="text-xs text-white/50 mb-2">Plan Semestral · 6 meses</p>
         <div class="flex items-baseline gap-1 mb-1">
