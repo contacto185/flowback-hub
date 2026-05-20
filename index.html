@@ -1009,6 +1009,12 @@ function injectSectionShells() {
       <div class="pt-6 pb-2">
         <h1 class="text-2xl font-black serif mb-1">Clases <span class="grad-text">gratuitas</span></h1>
         <p class="text-xs text-white/40 mb-5">Comienza tu transformación hoy, sin costo</p>
+        <!-- YouTube featured embed -->
+        <div class="aspect-video rounded-2xl overflow-hidden mb-5">
+          <iframe width="100%" height="100%" src="https://www.youtube.com/embed/6ZzyleYIEYg"
+            frameborder="0" allowfullscreen loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+        </div>
         <div id="clases-list">
           ${skeletonCards(4)}
         </div>
@@ -1883,7 +1889,7 @@ function renderClasesStaticContent() {
   if (!el) return;
   el.innerHTML = `
     <!-- WhatsApp CTA -->
-    <a href="https://wa.me/" target="_blank" rel="noopener"
+    <a href="https://go.wha.link/boykze" target="_blank" rel="noopener"
       class="card mb-5 rounded-2xl p-4 flex items-center gap-4 block"
       style="border-color:rgba(37,211,102,.25); background:rgba(37,211,102,.04);">
       <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:rgba(37,211,102,.14);">
@@ -1899,20 +1905,8 @@ function renderClasesStaticContent() {
     <!-- Recursos destacados -->
     <h2 class="text-sm font-bold serif mb-3 text-white/80 uppercase tracking-wide">Recursos destacados</h2>
     <div class="space-y-2.5 mb-6">
-      <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(245,124,0,.13)">
-          <i data-lucide="mic" class="w-5 h-5" style="color:var(--orange)"></i>
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold text-sm text-white">Podcast Flowback</p>
-          <p class="text-xs text-white/40 mt-0.5">Episodios semanales de transformación</p>
-        </div>
-        <div class="text-right flex-shrink-0">
-          <p class="text-xs font-bold" style="color:var(--orange)">142</p>
-          <p class="text-xs text-white/30">ep.</p>
-        </div>
-      </div>
-      <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
+      <a href="https://www.youtube.com/@flowback_fitness2293/posts" target="_blank" rel="noopener"
+        class="res-row card rounded-xl p-3.5 flex items-center gap-3 block">
         <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(255,0,0,.1)">
           <i data-lucide="play-circle" class="w-5 h-5 text-red-500"></i>
         </div>
@@ -1920,12 +1914,10 @@ function renderClasesStaticContent() {
           <p class="font-semibold text-sm text-white">Canal de YouTube</p>
           <p class="text-xs text-white/40 mt-0.5">Videos gratuitos de bienestar y flow</p>
         </div>
-        <div class="text-right flex-shrink-0">
-          <p class="text-xs font-bold text-white">89k</p>
-          <p class="text-xs text-white/30">subs</p>
-        </div>
-      </div>
-      <div class="res-row card rounded-xl p-3.5 flex items-center gap-3">
+        <i data-lucide="arrow-up-right" class="w-4 h-4 text-white/30 flex-shrink-0"></i>
+      </a>
+      <a href="https://drive.google.com/file/d/1KvmQtZ3AKgXupkZyaOGySnw-Phhi9mmb/view" target="_blank" rel="noopener"
+        class="res-row card rounded-xl p-3.5 flex items-center gap-3 block">
         <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(56,189,248,.12)">
           <i data-lucide="heart-pulse" class="w-5 h-5" style="color:var(--blue)"></i>
         </div>
@@ -1933,22 +1925,68 @@ function renderClasesStaticContent() {
           <p class="font-semibold text-sm text-white">Protocolo Ansiedad</p>
           <p class="text-xs text-white/40 mt-0.5">Guía PDF descargable gratuita</p>
         </div>
-        <div class="text-right flex-shrink-0">
-          <p class="text-xs font-bold" style="color:var(--blue)">12k</p>
-          <p class="text-xs text-white/30">desc.</p>
-        </div>
-      </div>
+        <i data-lucide="arrow-up-right" class="w-4 h-4 text-white/30 flex-shrink-0"></i>
+      </a>
     </div>
 
-    <!-- CTA membresías -->
-    <div class="rounded-2xl p-5 mb-6 relative overflow-hidden"
-      style="background:linear-gradient(135deg,rgba(245,124,0,.13) 0%,rgba(56,189,248,.13) 100%); border:1px solid rgba(245,124,0,.3)">
-      <div class="absolute -top-4 -right-4 w-28 h-28 rounded-full"
-        style="background:radial-gradient(circle,rgba(245,124,0,.25),transparent 70%)"></div>
-      <p class="text-xs font-bold mb-1" style="color:var(--orange); letter-spacing:.08em">¿LISTO PARA MÁS?</p>
-      <p class="text-lg font-black serif text-white mb-1">Accede a todo el contenido</p>
-      <p class="text-xs text-white/50 mb-4 leading-relaxed">Clases en vivo, cursos completos y una comunidad que te respalda cada día.</p>
-      <button onclick="openModal()" class="btn-grad px-6 py-2.5 rounded-xl text-sm">Ver Membresías →</button>
+    <!-- Planes de membresía -->
+    <h2 class="text-base font-bold serif mb-1 text-white">Planes de <span class="grad-text">membresía</span></h2>
+    <p class="text-xs text-white/40 mb-4">Sin contratos · Cancela cuando quieras</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+
+      <!-- BÁSICA -->
+      <div class="plan-basic rounded-2xl p-4 flex flex-col">
+        <p class="text-xs font-bold tracking-widest mb-1" style="color:var(--blue)">BÁSICA</p>
+        <p class="text-xs text-white/50 mb-2">Plan Mensual · 1 mes</p>
+        <div class="flex items-baseline gap-1 mb-1">
+          <span class="text-2xl font-black text-white">$35.000</span>
+          <span class="text-xs text-white/40">CLP</span>
+        </div>
+        <p class="text-xs text-white/40 mb-3">equivale a $35 USD/mes</p>
+        <ul class="space-y-2 mb-4 flex-1">
+          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Clases Zoom AM y PM</span></li>
+          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Talleres grabados</span></li>
+          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Guía nutricional</span></li>
+        </ul>
+        <button onclick="openModal()" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2">Unirme a la Tribu</button>
+        <button onclick="openModal()" class="text-xs text-white/40 hover:text-white/70 transition-colors">Ver menos</button>
+      </div>
+
+      <!-- VIP (Popular) -->
+      <div class="plan-premium rounded-2xl p-4 flex flex-col relative">
+        <span class="badge-gold absolute -top-2 right-3 text-xs font-bold px-2.5 py-1 rounded-full">⭐ Popular</span>
+        <p class="text-xs font-bold tracking-widest mb-1" style="color:var(--orange)">VIP</p>
+        <p class="text-xs text-white/50 mb-2">Plan Trimestral · 3 meses</p>
+        <div class="flex items-baseline gap-1 mb-1">
+          <span class="text-2xl font-black text-white">$65.000</span>
+          <span class="text-xs text-white/40">CLP/mes</span>
+        </div>
+        <p class="text-xs font-semibold mb-3" style="color:var(--orange)">Ahorra 38%</p>
+        <ul class="space-y-2 mb-4 flex-1">
+          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Todo lo del plan básico</span></li>
+          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Acompañamiento nutricional</span></li>
+          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Respuestas 24/7 WhatsApp</span></li>
+        </ul>
+        <button onclick="openModal()" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2">Unirme a la Tribu</button>
+        <button onclick="openModal()" class="text-xs text-white/40 hover:text-white/70 transition-colors">Ver menos</button>
+      </div>
+
+      <!-- PREMIUM -->
+      <div class="plan-vip rounded-2xl p-4 flex flex-col">
+        <p class="text-xs font-bold tracking-widest mb-1" style="color:#a78bfa">PREMIUM</p>
+        <p class="text-xs text-white/50 mb-2">Plan Semestral · 6 meses</p>
+        <div class="flex items-baseline gap-1 mb-1">
+          <span class="text-2xl font-black text-white">$120.000</span>
+          <span class="text-xs text-white/40">CLP</span>
+        </div>
+        <p class="text-xs font-semibold mb-3" style="color:#a78bfa">Ahorra 50%</p>
+        <ul class="space-y-2 mb-4 flex-1">
+          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Todo lo del plan VIP</span></li>
+          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Curso Heridas Emocionales</span></li>
+        </ul>
+        <button onclick="openModal()" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2">Unirme a la Tribu</button>
+        <button onclick="openModal()" class="text-xs text-white/40 hover:text-white/70 transition-colors">Ver menos</button>
+      </div>
     </div>
 
     <!-- Soporte WhatsApp -->
@@ -1961,7 +1999,7 @@ function renderClasesStaticContent() {
         <p class="text-sm font-semibold text-white">Atención humana</p>
         <p class="text-xs text-white/40 mt-0.5">Nuestro equipo responde en menos de 2h</p>
       </div>
-      <a href="https://wa.me/" target="_blank" rel="noopener"
+      <a href="https://go.wha.link/boykze" target="_blank" rel="noopener"
         class="text-xs font-bold px-3.5 py-2 rounded-xl flex-shrink-0 text-white"
         style="background:#25D366">Escribir</a>
     </div>
