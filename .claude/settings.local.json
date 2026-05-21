@@ -9,7 +9,9 @@
       "Bash(git commit -m 'fix: botón cerrar sesión *)",
       "Bash(git commit -m 'fix: panel admin videos no cargaba *)",
       "Bash(git commit -m 'fix: admin tabs eventos/cursos/webinars + agenda grabadas tier check *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "WebFetch(domain:flowback.infraqualia.com)",
+      "Bash(git *)"
     ]
   }
 }

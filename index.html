@@ -116,8 +116,6 @@ tailwind.config = {
     justify-content: center;
   }
   .btn-accent:hover { transform: scale(1.02); box-shadow: 0 4px 18px rgba(245,124,0,.4); background: #FF8A1A; }
-  .btn-mp  { background: #00B1EA; color: #fff; font-weight: 700; cursor: pointer; transition: transform .2s, box-shadow .2s; }
-  .btn-mp:hover  { transform: scale(1.02); box-shadow: 0 4px 16px rgba(0,177,234,.4); }
   .btn-paypal { background: #FFC439; color: #003087; font-weight: 700; cursor: pointer; transition: transform .2s, box-shadow .2s; }
   .btn-paypal:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(255,196,57,.4); }
   .btn-ghost {
@@ -438,8 +436,7 @@ tailwind.config = {
 
   /* Exception B: colored solid buttons keep their white text */
   body .btn-grad, body .btn-grad *,
-  body .btn-accent, body .btn-accent *,
-  body .btn-mp, body .btn-mp *      { color: #fff; }
+  body .btn-accent, body .btn-accent * { color: #fff; }
   body .btn-paypal, body .btn-paypal * { color: #003087; }
 
   /* Exception C: modal-bg overlay (dark backdrop) */
@@ -551,11 +548,12 @@ tailwind.config = {
     </div>
     <p class="text-xs text-white/40 mb-5">Sin contratos · Cancela cuando quieras</p>
 
-    <!-- Básica -->
+    <!-- BÁSICA -->
     <div class="plan-basic rounded-2xl p-4 mb-3">
       <div class="flex items-start justify-between mb-3">
         <div>
           <p class="text-xs font-bold tracking-widest mb-1" style="color:var(--blue)">BÁSICA</p>
+          <p class="text-xs text-white/50 mb-1">Plan Mensual · 1 mes</p>
           <div class="flex items-baseline gap-1">
             <span class="text-3xl font-black text-white">$35</span>
             <span class="text-sm text-white/40">USD/mes</span>
@@ -564,74 +562,52 @@ tailwind.config = {
         <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(56,189,248,.14); color:var(--blue)">Popular</span>
       </div>
       <ul class="space-y-2 mb-4">
-        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Clases en vivo diarias</li>
-        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Acceso a +200 grabaciones</li>
-        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Comunidad privada</li>
+        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Clases Zoom AM y PM</span></li>
+        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Talleres grabados</span></li>
+        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Guía nutricional</span></li>
       </ul>
-      <div class="flex gap-2">
-        <button class="btn-mp flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-1">
-          <span class="text-xs font-black">Mercado</span><span class="text-xs font-black">Pago</span>
-        </button>
-        <button class="btn-paypal flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-0.5">
-          <span class="text-xs font-black italic" style="color:#009cde">Pay</span><span class="text-xs font-black italic" style="color:#003087">Pal</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Premium -->
-    <div class="plan-premium rounded-2xl p-4 mb-3">
-      <div class="flex items-start justify-between mb-3">
-        <div>
-          <p class="text-xs font-bold tracking-widest mb-1" style="color:var(--orange)">PREMIUM</p>
-          <div class="flex items-baseline gap-1">
-            <span class="text-3xl font-black text-white">$55</span>
-            <span class="text-sm text-white/40">USD/mes</span>
-          </div>
-        </div>
-        <span class="badge-gold text-xs font-bold px-2.5 py-1 rounded-full">⭐ Mejor valor</span>
-      </div>
-      <ul class="space-y-2 mb-4">
-        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Todo lo de Básica</li>
-        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Acceso a todos los cursos</li>
-        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Mentoría mensual 1:1</li>
-        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Descuentos en eventos</li>
-      </ul>
-      <div class="flex gap-2">
-        <button class="btn-mp flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-1">
-          <span class="text-xs font-black">Mercado</span><span class="text-xs font-black">Pago</span>
-        </button>
-        <button class="btn-paypal flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-0.5">
-          <span class="text-xs font-black italic" style="color:#009cde">Pay</span><span class="text-xs font-black italic" style="color:#003087">Pal</span>
-        </button>
-      </div>
+      <div id="paypal-modal-basica"></div>
     </div>
 
     <!-- VIP -->
-    <div class="plan-vip rounded-2xl p-4">
+    <div class="plan-vip rounded-2xl p-4 mb-3">
       <div class="flex items-start justify-between mb-3">
         <div>
           <p class="text-xs font-bold tracking-widest mb-1" style="color:#a78bfa">VIP</p>
+          <p class="text-xs text-white/50 mb-1">Plan Trimestral · 3 meses</p>
           <div class="flex items-baseline gap-1">
-            <span class="text-3xl font-black text-white">$95</span>
-            <span class="text-sm text-white/40">USD/mes</span>
+            <span class="text-3xl font-black text-white">$65</span>
+            <span class="text-sm text-white/40">USD total</span>
           </div>
         </div>
         <span class="text-xs font-bold px-2.5 py-1 rounded-full" style="background:rgba(139,92,246,.2); color:#a78bfa; border:1px solid rgba(139,92,246,.4)">💎 Exclusivo</span>
       </div>
       <ul class="space-y-2 mb-4">
-        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Todo lo de Premium</li>
-        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Sesiones privadas ilimitadas</li>
-        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Acceso a retiros presenciales</li>
-        <li class="flex items-center gap-2 text-xs text-white/65"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>Grupo VIP directo con Jimmy</li>
+        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Todo lo del plan básico</span></li>
+        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Acompañamiento nutricional</span></li>
+        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Respuestas 24/7 WhatsApp</span></li>
       </ul>
-      <div class="flex gap-2">
-        <button class="btn-mp flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-1">
-          <span class="text-xs font-black">Mercado</span><span class="text-xs font-black">Pago</span>
-        </button>
-        <button class="btn-paypal flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-0.5">
-          <span class="text-xs font-black italic" style="color:#009cde">Pay</span><span class="text-xs font-black italic" style="color:#003087">Pal</span>
-        </button>
+      <div id="paypal-modal-vip"></div>
+    </div>
+
+    <!-- PREMIUM -->
+    <div class="plan-premium rounded-2xl p-4">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <p class="text-xs font-bold tracking-widest mb-1" style="color:var(--orange)">PREMIUM</p>
+          <p class="text-xs text-white/50 mb-1">Plan Semestral · 6 meses</p>
+          <div class="flex items-baseline gap-1">
+            <span class="text-3xl font-black text-white">$120</span>
+            <span class="text-sm text-white/40">USD total</span>
+          </div>
+        </div>
+        <span class="badge-gold text-xs font-bold px-2.5 py-1 rounded-full">⭐ Mejor valor</span>
       </div>
+      <ul class="space-y-2 mb-4">
+        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Todo lo del plan VIP</span></li>
+        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Curso Heridas Emocionales</span></li>
+      </ul>
+      <div id="paypal-modal-premium"></div>
     </div>
 
     <p class="text-center text-xs text-white/25 mt-4 flex items-center justify-center gap-1">
@@ -779,6 +755,7 @@ function openModal() {
   void sheet.offsetWidth;
   sheet.classList.add('animate');
   lucide.createIcons();
+  renderModalPaypalButtons();
 }
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
@@ -2084,6 +2061,18 @@ function renderPaypalButtons() {
   });
 }
 
+function renderModalPaypalButtons() {
+  waitForPaypalSdk(() => {
+    Object.keys(PAYPAL_PLANS).forEach(plan => {
+      const cfg = PAYPAL_PLANS[plan];
+      const container = document.getElementById('paypal-modal-' + plan);
+      if (!container) return;
+      container.innerHTML = '';
+      mountPaypal(container, plan, cfg.amount, cfg.label);
+    });
+  });
+}
+
 function renderTribuPaypalButtons() {
   if (!currentUser) return;
   waitForPaypalSdk(() => {
@@ -2351,12 +2340,7 @@ function renderCourseDetail(course, lessons, purchased, progressMap) {
         style="background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.3);">
         <i data-lucide="check-circle" class="w-4 h-4"></i> Curso adquirido
        </div>`
-    : course.price
-      ? `<button onclick="buyWithMP('${course.id}')"
-          class="btn-grad w-full py-3 rounded-xl text-sm font-semibold">
-          Comprar con MercadoPago — ${escHtml(price)}
-         </button>`
-      : ``;
+    : ``;
 
   return `
   <div>
@@ -2507,10 +2491,6 @@ async function closeLessonPlayer(lessonId) {
       { onConflict: 'user_id,video_id' }
     );
   }
-}
-
-function buyWithMP(courseId) {
-  showToast('Pago con MercadoPago — próximamente', false);
 }
 
 /* ═══════════════════════════════════════════
