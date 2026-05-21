@@ -1165,6 +1165,7 @@ function renderTribuSection() {
     renderTribuAuth(container);
   }
   lucide.createIcons();
+  if (currentUser) renderTribuPaypalButtons();
 }
 
 function renderTribuAuth(container) {
@@ -1452,40 +1453,43 @@ function renderTribuMember(container) {
 function renderPlanesContent(currentTierVal) {
   const plans = [
     {
-      id:      'basica',
-      label:   'BÁSICA',
-      emoji:   '🌱',
-      price:   '$35.000',
-      period:  'mes',
-      color:   'var(--blue)',
-      badge:   'badge-basica',
-      badgeTxt:'Popular',
-      features:['Clases en vivo diarias por Zoom','Acceso a +200 grabaciones','Comunidad privada de miembros','Soporte del equipo Flowback'],
-      style:   'plan-basic',
+      id:        'basica',
+      label:     'BÁSICA',
+      emoji:     '🌱',
+      price:     '$35.000',
+      period:    'mes',
+      amountUsd: '35.00',
+      color:     'var(--blue)',
+      badge:     'badge-basica',
+      badgeTxt:  'Popular',
+      features:  ['Clases en vivo diarias por Zoom','Acceso a +200 grabaciones','Comunidad privada de miembros','Soporte del equipo Flowback'],
+      style:     'plan-basic',
     },
     {
-      id:      'premium',
-      label:   'PREMIUM',
-      emoji:   '⭐',
-      price:   '$65.000',
-      period:  'trimestre',
-      color:   'var(--orange)',
-      badge:   'badge-premium',
-      badgeTxt:'Mejor valor',
-      features:['Todo lo de Básica incluido','Acceso a todos los cursos','Sesiones grabadas exclusivas','Mentoría mensual 1:1','Descuentos en eventos'],
-      style:   'plan-premium',
+      id:        'premium',
+      label:     'PREMIUM',
+      emoji:     '⭐',
+      price:     '$65.000',
+      period:    'trimestre',
+      amountUsd: '65.00',
+      color:     'var(--orange)',
+      badge:     'badge-premium',
+      badgeTxt:  'Mejor valor',
+      features:  ['Todo lo de Básica incluido','Acceso a todos los cursos','Sesiones grabadas exclusivas','Mentoría mensual 1:1','Descuentos en eventos'],
+      style:     'plan-premium',
     },
     {
-      id:      'vip',
-      label:   'VIP',
-      emoji:   '💎',
-      price:   '$120.000',
-      period:  'semestre',
-      color:   '#a78bfa',
-      badge:   'badge-vip',
-      badgeTxt:'Exclusivo',
-      features:['Todo lo de Premium','Sesiones privadas ilimitadas','Acceso a retiros presenciales','Grupo VIP con Jimmy','Prioridad en eventos'],
-      style:   'plan-vip',
+      id:        'vip',
+      label:     'VIP',
+      emoji:     '💎',
+      price:     '$120.000',
+      period:    'semestre',
+      amountUsd: '120.00',
+      color:     '#a78bfa',
+      badge:     'badge-vip',
+      badgeTxt:  'Exclusivo',
+      features:  ['Todo lo de Premium','Sesiones privadas ilimitadas','Acceso a retiros presenciales','Grupo VIP con Jimmy','Prioridad en eventos'],
+      style:     'plan-vip',
     },
   ];
 
@@ -1538,10 +1542,10 @@ function renderPlanesContent(currentTierVal) {
               style="background:rgba(34,197,94,.12); color:#4ade80; border:1px solid rgba(34,197,94,.3)">
             ✓ Tu plan actual
            </div>`
-        : `<button class="btn-mp w-full py-2.5 rounded-xl text-sm font-bold"
-              onclick="showToast('Redirigiendo a MercadoPago…')">
-            Suscribirme con MercadoPago
-           </button>`
+        : `<div id="paypal-planes-${p.id}"
+                data-plan="${p.id}"
+                data-amount="${p.amountUsd}"
+                data-label="Plan ${escHtml(p.label)} · Flowback Hub"></div>`
       }
     </div>`;
   });
@@ -1582,6 +1586,7 @@ function showSubTab(name) {
     if (el)  el.classList.toggle('active', t === name);
     if (btn) btn.classList.toggle('active', t === name);
   });
+  if (name === 'planes') renderTribuPaypalButtons();
 }
 
 /* ═══════════════════════════════════════════
@@ -2046,50 +2051,100 @@ function handleJoinTribu(plan) {
   if (pp) pp.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-function renderPaypalButtons() {
-  if (typeof paypal === 'undefined' || !paypal.Buttons) return;
-  Object.keys(PAYPAL_PLANS).forEach(plan => {
-    const container = document.getElementById('paypal-' + plan);
-    const fallback  = document.getElementById('join-' + plan);
-    if (!container) return;
+function paypalSdkReady() {
+  return typeof window.paypal !== 'undefined' && !!window.paypal.Buttons;
+}
 
-    container.innerHTML = '';
-    if (currentUser) {
-      container.style.display = 'block';
-      if (fallback) fallback.style.display = 'none';
-      mountPaypalForPlan(plan, container);
-    } else {
-      container.style.display = 'none';
-      if (fallback) fallback.style.display = 'block';
-    }
+function waitForPaypalSdk(cb, attempt = 0) {
+  if (paypalSdkReady()) { console.log('[PayPal] SDK listo'); cb(); return; }
+  if (attempt > 30) { console.error('[PayPal] SDK no cargó tras 9s — abortando'); return; }
+  console.log('[PayPal] SDK no listo, reintento #' + (attempt + 1));
+  setTimeout(() => waitForPaypalSdk(cb, attempt + 1), 300);
+}
+
+function renderPaypalButtons() {
+  waitForPaypalSdk(() => {
+    console.log('[PayPal] renderPaypalButtons() — currentUser:', !!currentUser);
+    Object.keys(PAYPAL_PLANS).forEach(plan => {
+      const cfg       = PAYPAL_PLANS[plan];
+      const container = document.getElementById('paypal-' + plan);
+      const fallback  = document.getElementById('join-' + plan);
+      if (!container) { console.log('[PayPal] contenedor no existe: paypal-' + plan); return; }
+
+      container.innerHTML = '';
+      if (currentUser) {
+        container.style.display = 'block';
+        if (fallback) fallback.style.display = 'none';
+        mountPaypal(container, plan, cfg.amount, cfg.label);
+      } else {
+        container.style.display = 'none';
+        if (fallback) fallback.style.display = 'block';
+      }
+    });
   });
 }
 
-function mountPaypalForPlan(plan, container) {
-  const cfg = PAYPAL_PLANS[plan];
-  paypal.Buttons({
+function renderTribuPaypalButtons() {
+  if (!currentUser) return;
+  waitForPaypalSdk(() => {
+    const containers = document.querySelectorAll('[id^="paypal-planes-"]');
+    console.log('[PayPal] Tribu>Planes contenedores encontrados:', containers.length);
+    containers.forEach(container => {
+      const tier   = container.dataset.plan;
+      const amount = container.dataset.amount;
+      const label  = container.dataset.label || ('Plan ' + tier);
+      if (!tier || !amount) { console.warn('[PayPal] data-plan o data-amount falta', container.id); return; }
+      container.innerHTML = '';
+      mountPaypal(container, tier, amount, label);
+    });
+  });
+}
+
+function mountPaypal(container, tier, amount, label) {
+  console.log('[PayPal] montando plan:', tier, '· monto:', amount, '· container:', container.id);
+  if (!paypalSdkReady()) { console.warn('[PayPal] SDK no disponible al montar'); return; }
+
+  const buttons = paypal.Buttons({
     style: { layout: 'vertical', color: 'gold', shape: 'pill', label: 'paypal', height: 40 },
-    createOrder: (data, actions) => actions.order.create({
-      intent: 'CAPTURE',
-      purchase_units: [{
-        description: cfg.label,
-        amount: { currency_code: 'USD', value: cfg.amount },
-      }],
-    }),
+    createOrder: (data, actions) => {
+      console.log('[PayPal] createOrder', tier, amount);
+      return actions.order.create({
+        intent: 'CAPTURE',
+        purchase_units: [{
+          description: label,
+          amount: { currency_code: 'USD', value: amount },
+        }],
+      });
+    },
     onApprove: async (data, actions) => {
+      console.log('[PayPal] onApprove', tier, data.orderID);
       try {
         const details = await actions.order.capture();
-        await onPaypalSuccess(plan, data.orderID, cfg.amount, details);
+        await onPaypalSuccess(tier, data.orderID, amount, details);
       } catch (err) {
-        console.error('PayPal capture error', err);
+        console.error('[PayPal] capture error', err);
         showToast('Error al confirmar el pago. Intenta de nuevo.', true);
       }
     },
     onError: (err) => {
-      console.error('PayPal error', err);
+      console.error('[PayPal] button error', err);
       showToast('Error con PayPal. Intenta de nuevo.', true);
     },
-  }).render(container);
+    onCancel: (data) => {
+      console.log('[PayPal] cancelado por el usuario', data);
+    },
+  });
+
+  if (!buttons.isEligible || !buttons.isEligible()) {
+    console.warn('[PayPal] botones no elegibles para este contexto:', tier);
+    return;
+  }
+
+  buttons.render(container).then(() => {
+    console.log('[PayPal] render OK:', container.id);
+  }).catch(err => {
+    console.error('[PayPal] render error en ' + container.id, err);
+  });
 }
 
 async function onPaypalSuccess(plan, orderID, amount, details) {
