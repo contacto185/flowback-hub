@@ -14,6 +14,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://www.paypal.com/sdk/js?client-id=AU_R4Y-BTzQILCsUM3iA3uw75DGehr-OrZHJksacC672RvNN2hSINpF2oUsFxwuhh6dEDPW9iZXpUaKz&currency=USD&intent=capture"></script>
 
 <script>
 tailwind.config = {
@@ -985,6 +986,8 @@ function updateUIForLoggedInUser() {
   if (currentSection === 'agenda')   loadAgenda();
   if (currentSection === 'grabadas') loadGrabadas();
 
+  if (document.getElementById('paypal-basica')) renderPaypalButtons();
+
   const memberTabs = ['inicio', 'eventos', 'clases-gratis', 'cursos', 'agenda', 'grabadas', 'tribu', 'admin'];
   if (!memberTabs.includes(currentSection)) switchSection('inicio');
 }
@@ -997,6 +1000,8 @@ function updateUIForLoggedOutUser() {
 
   const tribu = document.getElementById('sec-tribu');
   if (tribu) renderTribuSection();
+
+  if (document.getElementById('paypal-basica')) renderPaypalButtons();
 
   // If on a member-only section, redirect to tribu
   if (['agenda', 'grabadas'].includes(currentSection)) {
@@ -1966,8 +1971,8 @@ function renderClasesStaticContent() {
           <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Talleres grabados</span></li>
           <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Guía nutricional</span></li>
         </ul>
-        <button onclick="openModal()" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2">Unirme a la Tribu</button>
-        <button onclick="openModal()" class="text-xs text-white/40 hover:text-white/70 transition-colors">Ver menos</button>
+        <button onclick="handleJoinTribu('basica')" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2" id="join-basica">Unirme a la Tribu</button>
+        <div id="paypal-basica" class="mb-2" style="display:none"></div>
       </div>
 
       <!-- VIP (Popular) -->
@@ -1985,8 +1990,8 @@ function renderClasesStaticContent() {
           <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Acompañamiento nutricional</span></li>
           <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Respuestas 24/7 WhatsApp</span></li>
         </ul>
-        <button onclick="openModal()" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2">Unirme a la Tribu</button>
-        <button onclick="openModal()" class="text-xs text-white/40 hover:text-white/70 transition-colors">Ver menos</button>
+        <button onclick="handleJoinTribu('vip')" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2" id="join-vip">Unirme a la Tribu</button>
+        <div id="paypal-vip" class="mb-2" style="display:none"></div>
       </div>
 
       <!-- PREMIUM -->
@@ -2002,8 +2007,8 @@ function renderClasesStaticContent() {
           <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Todo lo del plan VIP</span></li>
           <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Curso Heridas Emocionales</span></li>
         </ul>
-        <button onclick="openModal()" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2">Unirme a la Tribu</button>
-        <button onclick="openModal()" class="text-xs text-white/40 hover:text-white/70 transition-colors">Ver menos</button>
+        <button onclick="handleJoinTribu('premium')" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2" id="join-premium">Unirme a la Tribu</button>
+        <div id="paypal-premium" class="mb-2" style="display:none"></div>
       </div>
     </div>
 
@@ -2023,6 +2028,97 @@ function renderClasesStaticContent() {
     </div>
   `;
   lucide.createIcons();
+  renderPaypalButtons();
+}
+
+/* ═══════════════════════════════════════════
+   PAYPAL CHECKOUT — planes de membresía
+═══════════════════════════════════════════ */
+const PAYPAL_PLANS = {
+  basica:  { amount: '35.00',  label: 'Plan Básica · Flowback Hub'  },
+  vip:     { amount: '65.00',  label: 'Plan VIP · Flowback Hub'     },
+  premium: { amount: '120.00', label: 'Plan Premium · Flowback Hub' },
+};
+
+function handleJoinTribu(plan) {
+  if (!currentUser) { openModal(); return; }
+  const pp = document.getElementById('paypal-' + plan);
+  if (pp) pp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function renderPaypalButtons() {
+  if (typeof paypal === 'undefined' || !paypal.Buttons) return;
+  Object.keys(PAYPAL_PLANS).forEach(plan => {
+    const container = document.getElementById('paypal-' + plan);
+    const fallback  = document.getElementById('join-' + plan);
+    if (!container) return;
+
+    container.innerHTML = '';
+    if (currentUser) {
+      container.style.display = 'block';
+      if (fallback) fallback.style.display = 'none';
+      mountPaypalForPlan(plan, container);
+    } else {
+      container.style.display = 'none';
+      if (fallback) fallback.style.display = 'block';
+    }
+  });
+}
+
+function mountPaypalForPlan(plan, container) {
+  const cfg = PAYPAL_PLANS[plan];
+  paypal.Buttons({
+    style: { layout: 'vertical', color: 'gold', shape: 'pill', label: 'paypal', height: 40 },
+    createOrder: (data, actions) => actions.order.create({
+      intent: 'CAPTURE',
+      purchase_units: [{
+        description: cfg.label,
+        amount: { currency_code: 'USD', value: cfg.amount },
+      }],
+    }),
+    onApprove: async (data, actions) => {
+      try {
+        const details = await actions.order.capture();
+        await onPaypalSuccess(plan, data.orderID, cfg.amount, details);
+      } catch (err) {
+        console.error('PayPal capture error', err);
+        showToast('Error al confirmar el pago. Intenta de nuevo.', true);
+      }
+    },
+    onError: (err) => {
+      console.error('PayPal error', err);
+      showToast('Error con PayPal. Intenta de nuevo.', true);
+    },
+  }).render(container);
+}
+
+async function onPaypalSuccess(plan, orderID, amount, details) {
+  if (!currentUser) { showToast('Sesión expirada. Inicia sesión.', true); return; }
+
+  const { error: payErr } = await sb.from('payments').insert({
+    user_id:        currentUser.id,
+    amount:         Number(amount),
+    currency:       'USD',
+    method:         'paypal',
+    status:         'confirmed',
+    reference_code: orderID,
+    confirmed_at:   new Date().toISOString(),
+  });
+  if (payErr) console.error('payments insert error', payErr);
+
+  const { error: profErr } = await sb.from('profiles')
+    .update({ tier: plan })
+    .eq('user_id', currentUser.id);
+  if (profErr) {
+    console.error('profile tier update error', profErr);
+    showToast('Pago recibido, pero no pudimos actualizar tu plan. Contacta a soporte.', true);
+    return;
+  }
+
+  if (userProfile) userProfile.tier = plan;
+  showToast('¡Bienvenido a la Tribu!');
+  updateHeader();
+  updateUIForLoggedInUser();
 }
 
 /* ═══════════════════════════════════════════
