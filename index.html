@@ -242,20 +242,21 @@ tailwind.config = {
     color: var(--orange);
     font-weight: 600;
   }
-  /* Admin tabs: all 7 fit in one row on mobile (compact font + padding) */
+  /* Admin tabs: 7-column grid so every tab gets the same width with real gaps */
   .admin-tabs-bar {
-    display: flex;
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
     gap: 2px;
     width: 100%;
   }
   .admin-tabs-bar .sub-tab-btn {
-    flex: 1;
     min-width: 0;
     text-align: center;
+    font-size: 10px;
+    padding: 4px 2px;
     white-space: nowrap;
-    font-size: 11px;
-    padding: 4px 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .sub-section { display: none; }
   .sub-section.active { display: block; }
