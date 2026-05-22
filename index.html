@@ -242,17 +242,20 @@ tailwind.config = {
     color: var(--orange);
     font-weight: 600;
   }
-  /* Admin tabs scroll horizontally on mobile (instead of squishing/clipping) */
+  /* Admin tabs: all 7 fit in one row on mobile (compact font + padding) */
   .admin-tabs-bar {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 2px;
+    width: 100%;
   }
-  .admin-tabs-bar::-webkit-scrollbar { display: none; }
   .admin-tabs-bar .sub-tab-btn {
-    flex: 0 0 auto;
+    flex: 1;
+    min-width: 0;
+    text-align: center;
     white-space: nowrap;
-    padding: 8px 14px;
+    font-size: 11px;
+    padding: 4px 8px;
   }
   .sub-section { display: none; }
   .sub-section.active { display: block; }
@@ -2875,7 +2878,7 @@ function renderAdminShell() {
     <h1 class="text-2xl font-black serif mb-1">Panel <span class="grad-text">Admin</span></h1>
     <p class="text-xs text-white/40 mb-4">Gestión de contenido · Solo admins</p>
 
-    <div class="admin-tabs-bar flex gap-1 p-1 rounded-2xl mb-5" style="background:rgba(42,32,26,.06);">
+    <div class="admin-tabs-bar p-1 rounded-2xl mb-5" style="background:rgba(42,32,26,.06);">
       <button class="sub-tab-btn" id="admin-tab-videos"     onclick="switchAdminTab('videos')">Videos</button>
       <button class="sub-tab-btn" id="admin-tab-eventos"    onclick="switchAdminTab('eventos')">Eventos</button>
       <button class="sub-tab-btn" id="admin-tab-cursos"     onclick="switchAdminTab('cursos')">Cursos</button>
