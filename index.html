@@ -1012,7 +1012,7 @@ function injectSectionShells() {
         <p class="text-xs text-white/40 mb-5">Comienza tu transformación hoy, sin costo</p>
         <!-- YouTube featured embed -->
         <div class="aspect-video rounded-2xl overflow-hidden mb-5">
-          <iframe width="100%" height="100%" src="https://www.youtube.com/embed/6ZzyleYIEYg"
+          <iframe id="clases-youtube-iframe" width="100%" height="100%" src="https://www.youtube.com/embed/6ZzyleYIEYg"
             frameborder="0" allowfullscreen loading="lazy"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
         </div>
@@ -3383,6 +3383,9 @@ async function loadAdminImagenes() {
       currentUrl: nutricionUrl,
     })}
 
+    <!-- Video Principal (YouTube) -->
+    ${_renderYoutubeMainCard(getSetting('youtube_main_url', 'https://www.youtube.com/watch?v=6ZzyleYIEYg'))}
+
     <!-- Videos thumbnails -->
     <div class="flex items-center justify-between mb-2 mt-6">
       <p class="text-sm font-bold text-white/60 uppercase tracking-wide">Thumbnails de videos</p>
@@ -3516,6 +3519,55 @@ async function _galeriaDelete(path) {
   } catch (err) {
     console.error('[galeria] delete error:', err);
     showToast('Error al eliminar: ' + (err?.message || err), true);
+  }
+}
+
+function _renderYoutubeMainCard(currentUrl) {
+  const id = getYoutubeId(currentUrl);
+  const embedSrc = id ? `https://www.youtube.com/embed/${id}` : '';
+  return `
+  <div class="card rounded-2xl p-4 mb-4">
+    <div class="mb-2">
+      <p class="font-semibold text-sm text-white">Video Principal (YouTube)</p>
+      <p class="text-xs text-white/40 mt-0.5">Aparece arriba de las Clases gratuitas</p>
+    </div>
+    <div class="w-full rounded-xl overflow-hidden mb-3" style="aspect-ratio:16/9; background:rgba(255,255,255,.04);">
+      ${embedSrc
+        ? `<iframe id="yt-main-preview" src="${escHtml(embedSrc)}" frameborder="0" allowfullscreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            style="width:100%;height:100%;display:block;"></iframe>`
+        : `<div class="w-full h-full flex items-center justify-center text-xs text-white/30">URL inválida</div>`}
+    </div>
+    <input type="text" id="yt-main-url" value="${escHtml(currentUrl || '')}"
+      placeholder="https://www.youtube.com/watch?v=..."
+      class="w-full text-xs px-3 py-2.5 rounded-xl mb-2"
+      style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:#fff;">
+    <p id="yt-main-status" class="text-xs text-white/40 mb-2 hidden"></p>
+    <button onclick="_saveYoutubeMainUrl()"
+      class="btn-grad w-full text-xs px-3 py-2.5 rounded-xl flex items-center justify-center gap-2">
+      <i data-lucide="save" class="w-4 h-4"></i>Guardar
+    </button>
+  </div>`;
+}
+
+async function _saveYoutubeMainUrl() {
+  const input  = document.getElementById('yt-main-url');
+  const status = document.getElementById('yt-main-status');
+  const url    = (input?.value || '').trim();
+  if (!url) { showToast('Pega una URL de YouTube', true); return; }
+  const id = getYoutubeId(url);
+  if (!id) { showToast('URL de YouTube inválida', true); return; }
+  try {
+    await setSetting('youtube_main_url', url);
+    applyStoredImagesToDom();
+    // Update the in-card preview too
+    const preview = document.getElementById('yt-main-preview');
+    if (preview) preview.src = `https://www.youtube.com/embed/${id}`;
+    if (status) { status.textContent = '✓ Guardado'; status.classList.remove('hidden'); }
+    showToast('✓ Video actualizado');
+  } catch (err) {
+    console.error('[yt-main] save error:', err);
+    showToast('Error al guardar: ' + (err?.message || err), true);
   }
 }
 
@@ -3678,10 +3730,17 @@ function _uploadImageToBucket(pathPrefix, file, onProgress) {
   });
 }
 
+function getYoutubeId(url) {
+  if (!url) return null;
+  const match = String(url).match(/(?:v=|youtu\.be\/|embed\/)([^&\s?]+)/);
+  return match ? match[1] : null;
+}
+
 /* Apply stored hero/nutrición URLs to the live DOM. Called at boot and after upload. */
 function applyStoredImagesToDom() {
   const heroUrl      = getSetting('hero_image_url',      null);
   const nutricionUrl = getSetting('nutricion_image_url', null);
+  const youtubeUrl   = getSetting('youtube_main_url',    null);
   if (heroUrl) {
     const el = document.getElementById('hero-inicio-img');
     if (el) el.src = heroUrl;
@@ -3689,6 +3748,11 @@ function applyStoredImagesToDom() {
   if (nutricionUrl) {
     const el = document.getElementById('nutricion-img');
     if (el) el.src = nutricionUrl;
+  }
+  if (youtubeUrl) {
+    const id = getYoutubeId(youtubeUrl);
+    const iframe = document.getElementById('clases-youtube-iframe');
+    if (id && iframe) iframe.src = `https://www.youtube.com/embed/${id}`;
   }
 }
 
