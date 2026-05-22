@@ -815,6 +815,7 @@ function activateNotif() {
    NAV TABS — dynamic per auth state
 ═══════════════════════════════════════════ */
 function renderNavTabs() {
+  console.log('[isAdmin]', currentUser?.email, isAdmin());
   const tier    = getUserTier();
   const loggedIn = !!currentUser;
 
@@ -4177,24 +4178,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadAppSettings();
   applyStoredImagesToDom();
 
-  // 3. Render initial nav (logged-out state)
-  renderNavTabs();
-
-  // 4. Set first active section
+  // 3. Set first active section (nav is rendered AFTER auth check to avoid flash)
   const el = document.getElementById('sec-inicio');
   if (el) el.classList.add('active');
 
-  // 5. Render tribu section (logged-out form)
+  // 4. Render tribu section (logged-out form)
   renderTribuSection();
 
-  // 6. Init Lucide icons
+  // 5. Init Lucide icons
   lucide.createIcons();
 
-  // 7. Check existing session
+  // 6. Check existing session BEFORE rendering nav — so we don't render the
+  //    logged-out nav and then flip to the logged-in one (Admin tab flash bug).
   const { data: { session } } = await sb.auth.getSession();
-  if (session?.user) await handleSignedIn(session.user);
+  if (session?.user) {
+    // handleSignedIn → updateUIForLoggedInUser → renderNavTabs (with correct state)
+    await handleSignedIn(session.user);
+  } else {
+    renderNavTabs();
+  }
 
-  // 8. Listen for auth state changes
+  // 7. Listen for auth state changes (only SIGNED_IN/SIGNED_OUT trigger re-renders)
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN')  await handleSignedIn(session.user);
     if (event === 'SIGNED_OUT') handleSignedOut();
