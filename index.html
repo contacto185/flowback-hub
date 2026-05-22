@@ -815,8 +815,8 @@ function activateNotif() {
    NAV TABS — dynamic per auth state
 ═══════════════════════════════════════════ */
 function renderNavTabs() {
-  console.log('[isAdmin]', currentUser?.email, isAdmin());
-  const tier    = getUserTier();
+  console.log('[renderNavTabs] email=', currentUser?.email, '| isAdmin=', isAdmin(), '| stack=', new Error().stack?.split('\n').slice(1,4).join(' ← '));
+  const tier     = getUserTier();
   const loggedIn = !!currentUser;
 
   // Define tabs based on auth state
@@ -1368,7 +1368,7 @@ function renderTribuMember(container) {
           <i data-lucide="chevron-right" class="w-4 h-4 text-white/30"></i>
         </div>
 
-        <!-- Admin badge -->
+        <!-- Admin badge + always-visible Panel Admin button (backup in case nav tab doesn't show) -->
         ${isAdmin() ? `
         <div class="card rounded-xl p-4 flex items-center gap-3"
           style="border-color:rgba(245,124,0,.3); background:rgba(245,124,0,.04)">
@@ -1379,7 +1379,12 @@ function renderTribuMember(container) {
             <p class="text-sm font-semibold" style="color:var(--orange)">Administrador</p>
             <p class="text-xs text-white/40">Acceso total a Flowback Hub</p>
           </div>
-        </div>` : ''}
+        </div>
+        <button onclick="switchSection('admin')"
+          class="btn-grad w-full rounded-xl px-4 py-3 flex items-center justify-center gap-2 text-sm font-semibold">
+          <i data-lucide="shield" class="w-4 h-4"></i>
+          Abrir Panel Admin
+        </button>` : ''}
 
         <!-- Plan actual -->
         <div class="card rounded-xl p-4">
