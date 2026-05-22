@@ -2244,6 +2244,12 @@ async function loadCursos() {
       .order('created_at', { ascending: false });
     if (error) throw error;
 
+    // Short-circuit on empty BEFORE the purchases query
+    if (!courses || courses.length === 0) {
+      container.innerHTML = renderEmptyState('graduation-cap', 'Sin cursos disponibles', 'Próximamente nuevos programas');
+      lucide.createIcons(); return;
+    }
+
     // If user is logged in, fetch their purchases
     let purchasedIds = new Set();
     if (currentUser) {
@@ -2252,11 +2258,6 @@ async function loadCursos() {
         .select('course_id')
         .eq('user_id', currentUser.id);
       purchasedIds = new Set((purchases || []).map(p => p.course_id));
-    }
-
-    if (!courses?.length) {
-      container.innerHTML = renderEmptyState('graduation-cap', 'Sin cursos disponibles', 'Próximamente nuevos programas');
-      lucide.createIcons(); return;
     }
 
     container.innerHTML = courses.map(c => renderCourseCard(c, purchasedIds.has(c.id))).join('');
@@ -2611,15 +2612,16 @@ async function loadAgenda() {
     console.log('[Agenda] tier:', getUserTier(), '| videos:', videos?.length, '| error:', error);
     if (error) throw error;
 
+    // Short-circuit on empty BEFORE the progress query (avoids stuck skeletons if that query is slow)
+    if (!videos || videos.length === 0) {
+      container.innerHTML = renderEmptyState('video-off', 'Sin clases aún', 'Próximamente nuevo contenido para miembros');
+      lucide.createIcons(); return;
+    }
+
     let progressMap = {};
     const { data: prog } = await sb
       .from('video_progress').select('video_id, progress_percent').eq('user_id', currentUser.id);
     (prog || []).forEach(p => { progressMap[p.video_id] = p.progress_percent; });
-
-    if (!videos?.length) {
-      container.innerHTML = renderEmptyState('video-off', 'Sin clases aún', 'Próximamente nuevo contenido para miembros');
-      lucide.createIcons(); return;
-    }
 
     container.innerHTML = videos.map(v =>
       renderVideoCard({ ...v, _progress: progressMap[v.id] ?? 0 }, !canAccess(v.tier_required))
@@ -2653,6 +2655,14 @@ async function loadGrabadas() {
     console.log('[Grabadas] tier:', getUserTier(), '| webinars:', webinars?.length, '| videos:', videos?.length, '| e1:', e1, '| e2:', e2);
     if (e1 || e2) throw e1 || e2;
 
+    // Short-circuit on empty BEFORE the progress query
+    const noWebinars = !webinars || webinars.length === 0;
+    const noVideos   = !videos   || videos.length === 0;
+    if (noWebinars && noVideos) {
+      container.innerHTML = renderEmptyState('play-circle', 'Sin sesiones aún', 'Próximamente nuevo contenido exclusivo');
+      lucide.createIcons(); return;
+    }
+
     let progressMap = {};
     const { data: prog } = await sb
       .from('video_progress').select('video_id, progress_percent').eq('user_id', currentUser.id);
@@ -2662,13 +2672,7 @@ async function loadGrabadas() {
     const videoCards   = (videos   || []).map(v =>
       renderVideoCard({ ...v, _progress: progressMap[v.id] ?? 0 }, !canAccess(v.tier_required))
     );
-
-    const all = [...webinarCards, ...videoCards];
-    if (!all.length) {
-      container.innerHTML = renderEmptyState('play-circle', 'Sin sesiones aún', 'Próximamente nuevo contenido exclusivo');
-      lucide.createIcons(); return;
-    }
-    container.innerHTML = all.join('');
+    container.innerHTML = [...webinarCards, ...videoCards].join('');
     lucide.createIcons();
   } catch(err) {
     console.error('[Grabadas] error:', err);
