@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0B0E14">
 <meta name="description" content="Flowback Hub — Tu comunidad de transformación y bienestar">
@@ -3008,13 +3009,19 @@ async function _loadAdminTab({ queryFn, label, type, cols, emptyIcon, reorderTab
   try {
     const { data, error } = await queryFn();
     console.log(`[Admin ${label}]`, { count: data?.length ?? 'null', error });
+    console.log(`[Admin ${label}] items:`, data);
     if (error) throw error;
 
+    const rows = data?.length
+      ? data.map((v, i) => renderAdminItemRow(cols, v, type,
+          reorderTable ? { table: reorderTable, isFirst: i === 0, isLast: i === data.length - 1 } : null
+        )).join('')
+      : null;
+    console.log(`[Admin ${label}] rendered HTML length:`, rows ? rows.length : 0);
+
     c.innerHTML = renderAdminListHeader(label, type) +
-      (data?.length
-        ? data.map((v, i) => renderAdminItemRow(cols, v, type,
-            reorderTable ? { table: reorderTable, isFirst: i === 0, isLast: i === data.length - 1 } : null
-          )).join('')
+      (rows
+        ? rows
         : `<div class="card rounded-2xl p-8 text-center mt-1">
              <i data-lucide="${emptyIcon}" class="w-8 h-8 mx-auto mb-3 text-white/20"></i>
              <p class="font-medium text-white/50 mb-1">Sin ${label.toLowerCase()} aún</p>
