@@ -2906,7 +2906,7 @@ function renderAdminListHeader(label, type) {
   </div>`;
 }
 
-function renderAdminItemRow(fields, item, type) {
+function renderAdminItemRow(fields, item, type, reorderCtx = null) {
   const [col1, col2, col3] = fields;
   const val1 = item[col1.key] ?? '—';
   const val2 = col2 ? (item[col2.key] ?? '—') : '';
@@ -2922,7 +2922,8 @@ function renderAdminItemRow(fields, item, type) {
       <p class="text-sm font-medium text-white truncate">${escHtml(String(val1))}</p>
       <p class="text-xs text-white/40 mt-0.5 truncate">${escHtml(String(val2))}${val3 ? ' · ' + escHtml(String(val3)) : ''}</p>
     </div>
-    <div class="flex gap-2 flex-shrink-0">
+    <div class="flex gap-1.5 flex-shrink-0">
+      ${reorderCtx ? _renderReorderControls(reorderCtx.table, item.id, reorderCtx.isFirst, reorderCtx.isLast) : ''}
       <button onclick="openAdminForm('${type}', ${JSON.stringify(item).replace(/"/g,'&quot;')})"
         class="btn-ghost text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1">
         <i data-lucide="pencil" class="w-3 h-3"></i>
@@ -2936,10 +2937,70 @@ function renderAdminItemRow(fields, item, type) {
   </div>`;
 }
 
+/* Reorder controls: ↑ ↓ buttons that swap order_index with the neighbor row.
+   Boundary buttons are disabled. Table name is required to dispatch the update. */
+function _renderReorderControls(table, id, isFirst, isLast) {
+  const safeId = String(id).replace(/'/g, "\\'");
+  const upDisabled   = isFirst ? 'disabled style="opacity:.25;cursor:not-allowed;"' : '';
+  const downDisabled = isLast  ? 'disabled style="opacity:.25;cursor:not-allowed;"' : '';
+  return `
+    <button onclick="_reorderAdminItem('${table}','${safeId}',-1)"
+      class="btn-ghost text-xs px-2 py-1.5 rounded-lg flex items-center" title="Subir" ${upDisabled}>
+      <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+    </button>
+    <button onclick="_reorderAdminItem('${table}','${safeId}',1)"
+      class="btn-ghost text-xs px-2 py-1.5 rounded-lg flex items-center" title="Bajar" ${downDisabled}>
+      <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+    </button>`;
+}
+
+/* Swap order_index between the clicked item and its neighbor (dir = -1 up, +1 down).
+   Lessons are scoped by _adminLessonsCourseId. Uses current visual position
+   (idx in the ASC-sorted list) as fallback when order_index is null. */
+async function _reorderAdminItem(table, id, dir) {
+  try {
+    let query = sb.from(table).select('id,order_index')
+      .order('order_index', { nullsLast: true })
+      .order('created_at', { ascending: false });
+    if (table === 'lessons' && _adminLessonsCourseId) {
+      query = query.eq('course_id', _adminLessonsCourseId);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const items = data || [];
+    const idx = items.findIndex(x => String(x.id) === String(id));
+    if (idx === -1) return;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= items.length) return;
+
+    const a = items[idx];
+    const b = items[targetIdx];
+    const aOrder = a.order_index ?? idx;
+    const bOrder = b.order_index ?? targetIdx;
+
+    const [r1, r2] = await Promise.all([
+      sb.from(table).update({ order_index: bOrder }).eq('id', a.id),
+      sb.from(table).update({ order_index: aOrder }).eq('id', b.id),
+    ]);
+    if (r1.error || r2.error) throw (r1.error || r2.error);
+
+    // Reload the appropriate view
+    if (table === 'videos')      loadAdminVideos();
+    else if (table === 'courses') loadAdminCursos();
+    else if (table === 'lessons' && _adminLessonsCourseId) {
+      loadAdminLecciones(_adminLessonsCourseId, _adminLessonsCourseTitle);
+    }
+  } catch (err) {
+    console.error('[reorder] error:', err);
+    showToast('Error al reordenar: ' + (err?.message || err), true);
+  }
+}
+
 /* ── Shared admin tab loader ──
    Logs data/error, shows real error message, always shows Agregar button.
    RLS returning [] is handled: user sees empty state + Agregar, not stuck skeletons. */
-async function _loadAdminTab({ queryFn, label, type, cols, emptyIcon }) {
+async function _loadAdminTab({ queryFn, label, type, cols, emptyIcon, reorderTable }) {
   const c = document.getElementById('admin-tab-content');
   if (!c) return;
   c.innerHTML = skeletonCards(3);
@@ -2950,7 +3011,9 @@ async function _loadAdminTab({ queryFn, label, type, cols, emptyIcon }) {
 
     c.innerHTML = renderAdminListHeader(label, type) +
       (data?.length
-        ? data.map(v => renderAdminItemRow(cols, v, type)).join('')
+        ? data.map((v, i) => renderAdminItemRow(cols, v, type,
+            reorderTable ? { table: reorderTable, isFirst: i === 0, isLast: i === data.length - 1 } : null
+          )).join('')
         : `<div class="card rounded-2xl p-8 text-center mt-1">
              <i data-lucide="${emptyIcon}" class="w-8 h-8 mx-auto mb-3 text-white/20"></i>
              <p class="font-medium text-white/50 mb-1">Sin ${label.toLowerCase()} aún</p>
@@ -2979,11 +3042,12 @@ async function _loadAdminTab({ queryFn, label, type, cols, emptyIcon }) {
 /* ── TAB: Videos ── */
 function loadAdminVideos() {
   return _loadAdminTab({
-    queryFn:   () => sb.from('videos').select('*').order('order_index',{nullsLast:true}).order('created_at',{ascending:false}),
-    label:     'Videos',
-    type:      'video',
-    cols:      [{key:'title'},{key:'tier_required'},{key:'duration'}],
-    emptyIcon: 'video-off',
+    queryFn:       () => sb.from('videos').select('*').order('order_index',{nullsLast:true}).order('created_at',{ascending:false}),
+    label:         'Videos',
+    type:          'video',
+    cols:          [{key:'title'},{key:'tier_required'},{key:'duration'}],
+    emptyIcon:     'video-off',
+    reorderTable:  'videos',
   });
 }
 
@@ -3017,7 +3081,7 @@ async function loadAdminCursos() {
         </button>
       </div>` +
       (data?.length
-        ? data.map(course => `
+        ? data.map((course, i) => `
           <div class="card rounded-xl p-3.5 mb-2.5 flex items-center gap-3">
             <span class="w-2 h-2 rounded-full flex-shrink-0 ${course.is_active !== false ? 'bg-green-400' : 'bg-red-400/60'}"></span>
             <div class="flex-1 min-w-0">
@@ -3028,6 +3092,7 @@ async function loadAdminCursos() {
               </p>
             </div>
             <div class="flex gap-1.5 flex-shrink-0">
+              ${_renderReorderControls('courses', course.id, i === 0, i === data.length - 1)}
               <button onclick="loadAdminLecciones('${course.id}', ${JSON.stringify(course.title).replace(/"/g,'&quot;')})"
                 class="text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1"
                 style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:rgba(56,189,248,.8);"
@@ -3100,7 +3165,7 @@ async function loadAdminLecciones(courseId, courseTitle) {
         </button>
       </div>` +
       (data?.length
-        ? data.map(l => `
+        ? data.map((l, i) => `
           <div class="card rounded-xl p-3.5 mb-2.5 flex items-center gap-3">
             <span class="w-2 h-2 rounded-full flex-shrink-0 ${l.is_active !== false ? 'bg-green-400' : 'bg-red-400/60'}"></span>
             <div class="flex-1 min-w-0">
@@ -3112,6 +3177,7 @@ async function loadAdminLecciones(courseId, courseTitle) {
               </p>
             </div>
             <div class="flex gap-1.5 flex-shrink-0">
+              ${_renderReorderControls('lessons', l.id, i === 0, i === data.length - 1)}
               <button onclick="openAdminLessonForm(${JSON.stringify(l).replace(/"/g,'&quot;')})"
                 class="btn-ghost text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1">
                 <i data-lucide="pencil" class="w-3 h-3"></i>
