@@ -1936,7 +1936,7 @@ function renderClasesStaticContent() {
     </ul>
 
     <!-- Nutrición image -->
-    <img id="nutricion-img" src="${escHtml(getStoredImage('nutricion_image_url', 'https://wvxcqavtjtgvxdvtuvvd.supabase.co/storage/v1/object/public/thumbnails/WhatsApp%20Image%202026-05-21%20at%209.46.39%20PM.jpeg'))}" alt="Nutrición" style="border-radius:16px; width:100%; display:block;" class="mb-5" loading="lazy">
+    <img id="nutricion-img" src="${escHtml(getSetting('nutricion_image_url', 'https://wvxcqavtjtgvxdvtuvvd.supabase.co/storage/v1/object/public/thumbnails/WhatsApp%20Image%202026-05-21%20at%209.46.39%20PM.jpeg'))}" alt="Nutrición" style="border-radius:16px; width:100%; display:block;" class="mb-5" loading="lazy">
 
     <!-- WhatsApp CTA -->
     <a href="https://go.wha.link/boykze" target="_blank" rel="noopener"
@@ -2742,7 +2742,7 @@ const ADMIN_FORMS = {
       { key:'description',   label:'Descripción',         type:'textarea' },
       { key:'vimeo_url',     label:'URL Vimeo',           type:'text',     placeholder:'https://vimeo.com/...' },
       { key:'duration',      label:'Duración',            type:'text',     placeholder:'ej: 45 min' },
-      { key:'thumbnail_url', label:'Thumbnail URL',       type:'text' },
+      { key:'thumbnail_url', label:'Thumbnail (800×450px)', type:'file',   bucket:'thumbnails', accept:'image/*', icon:'image', pathPrefix:'admin/videos', storeMode:'publicUrl' },
       { key:'tier_required', label:'Tier',                type:'select',   options:['free','basica','premium','vip'] },
       { key:'order_index',   label:'Orden',               type:'number' },
       { key:'is_active',     label:'Activo',              type:'toggle' },
@@ -2769,7 +2769,7 @@ const ADMIN_FORMS = {
     fields: [
       { key:'title',          label:'Título',             type:'text',     required:true },
       { key:'description',    label:'Descripción',        type:'textarea' },
-      { key:'thumbnail_url',  label:'Thumbnail URL',      type:'text' },
+      { key:'thumbnail_url',  label:'Thumbnail (800×450px)', type:'file',  bucket:'thumbnails', accept:'image/*', icon:'image', pathPrefix:'admin/courses', storeMode:'publicUrl' },
       { key:'instructor',     label:'Instructor',         type:'text' },
       { key:'duration_hours', label:'Duración (horas)',   type:'number',   placeholder:'ej: 8' },
       { key:'tier_required',  label:'Tier',               type:'select',   options:['free','basica','premium','vip'] },
@@ -3243,8 +3243,30 @@ const ADMIN_IMG_DEFAULTS = {
   nutricion: 'https://wvxcqavtjtgvxdvtuvvd.supabase.co/storage/v1/object/public/thumbnails/WhatsApp%20Image%202026-05-21%20at%209.46.39%20PM.jpeg',
 };
 
-function getStoredImage(key, fallback) {
-  try { return localStorage.getItem(key) || fallback; } catch { return fallback; }
+/* In-memory cache for app_settings rows (Supabase). Populated by loadAppSettings(). */
+window._appSettingsCache = {};
+
+async function loadAppSettings() {
+  try {
+    const { data, error } = await sb.from('app_settings').select('key,value');
+    if (error) { console.warn('[app_settings] read error:', error.message); return; }
+    for (const row of data || []) window._appSettingsCache[row.key] = row.value;
+  } catch (e) {
+    console.warn('[app_settings] load exception:', e);
+  }
+}
+
+function getSetting(key, fallback) {
+  return window._appSettingsCache?.[key] || fallback;
+}
+
+async function setSetting(key, value) {
+  window._appSettingsCache[key] = value;
+  const { error } = await sb.from('app_settings').upsert(
+    { key, value, updated_at: new Date().toISOString() },
+    { onConflict: 'key' }
+  );
+  if (error) throw error;
 }
 
 async function loadAdminImagenes() {
@@ -3252,8 +3274,10 @@ async function loadAdminImagenes() {
   if (!c) return;
   c.innerHTML = skeletonCards(3);
 
-  const heroUrl      = getStoredImage('hero_image_url',      ADMIN_IMG_DEFAULTS.hero);
-  const nutricionUrl = getStoredImage('nutricion_image_url', ADMIN_IMG_DEFAULTS.nutricion);
+  // Refresh cache from Supabase so we always show the latest stored URLs
+  await loadAppSettings();
+  const heroUrl      = getSetting('hero_image_url',      ADMIN_IMG_DEFAULTS.hero);
+  const nutricionUrl = getSetting('nutricion_image_url', ADMIN_IMG_DEFAULTS.nutricion);
 
   let videos = [], courses = [];
   try {
@@ -3285,7 +3309,13 @@ async function loadAdminImagenes() {
     })}
 
     <!-- Videos thumbnails -->
-    <p class="text-sm font-bold text-white/60 uppercase tracking-wide mb-2 mt-6">Thumbnails de videos</p>
+    <div class="flex items-center justify-between mb-2 mt-6">
+      <p class="text-sm font-bold text-white/60 uppercase tracking-wide">Thumbnails de videos</p>
+      <button onclick="openAdminForm('video', null)"
+        class="btn-grad text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>Agregar video
+      </button>
+    </div>
     <p class="text-xs text-white/40 mb-3">Recomendado: 800×450px (ratio 16:9)</p>
     <div class="mb-6">
       ${videos.length
@@ -3294,15 +3324,124 @@ async function loadAdminImagenes() {
     </div>
 
     <!-- Cursos thumbnails -->
-    <p class="text-sm font-bold text-white/60 uppercase tracking-wide mb-2 mt-6">Imágenes de cursos</p>
+    <div class="flex items-center justify-between mb-2 mt-6">
+      <p class="text-sm font-bold text-white/60 uppercase tracking-wide">Imágenes de cursos</p>
+      <button onclick="openAdminForm('curso', null)"
+        class="btn-grad text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>Agregar curso
+      </button>
+    </div>
     <p class="text-xs text-white/40 mb-3">Recomendado: 800×450px (ratio 16:9)</p>
     <div class="mb-6">
       ${courses.length
         ? courses.map(c => _renderDbThumbRow({ table:'courses', item:c })).join('')
         : '<div class="card rounded-xl p-4 text-center text-xs text-white/40">Sin cursos</div>'}
     </div>
+
+    <!-- Galería general -->
+    <div class="flex items-center justify-between mb-2 mt-6">
+      <p class="text-sm font-bold text-white/60 uppercase tracking-wide">Galería general</p>
+      <button onclick="loadAdminImagenesGaleria()"
+        class="btn-ghost text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
+        <i data-lucide="refresh-cw" class="w-3 h-3"></i>Refrescar
+      </button>
+    </div>
+    <p class="text-xs text-white/40 mb-3">Todas las imágenes del bucket thumbnails</p>
+    <div id="img-mgr-galeria">
+      <div class="card rounded-xl p-4 text-center text-xs text-white/40">Cargando galería…</div>
+    </div>
   `;
   lucide.createIcons();
+  loadAdminImagenesGaleria();
+}
+
+/* List images stored in the thumbnails bucket. We list known admin subfolders +
+   bucket root so users see everything the app has uploaded. */
+async function loadAdminImagenesGaleria() {
+  const container = document.getElementById('img-mgr-galeria');
+  if (!container) return;
+  container.innerHTML = '<div class="card rounded-xl p-4 text-center text-xs text-white/40">Cargando galería…</div>';
+
+  const prefixes = ['', 'admin/hero', 'admin/nutricion', 'admin/videos', 'admin/courses', 'lessons'];
+  const items = [];
+  for (const prefix of prefixes) {
+    try {
+      const { data, error } = await sb.storage.from('thumbnails').list(prefix, {
+        limit: 500,
+        sortBy: { column: 'created_at', order: 'desc' },
+      });
+      if (error) { console.warn('[galeria] list error', prefix, error.message); continue; }
+      for (const f of data || []) {
+        // Folders have id === null in Supabase Storage listing — skip them
+        if (!f.id || !f.name) continue;
+        const path = prefix ? `${prefix}/${f.name}` : f.name;
+        items.push({ path, name: f.name, createdAt: f.created_at });
+      }
+    } catch (e) { console.warn('[galeria] exception', prefix, e); }
+  }
+
+  // Dedupe (root list can overlap when buckets are flat) and sort newest first
+  const seen = new Set();
+  const unique = items.filter(i => seen.has(i.path) ? false : (seen.add(i.path), true));
+  unique.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+
+  if (!unique.length) {
+    container.innerHTML = '<div class="card rounded-xl p-4 text-center text-xs text-white/40">No hay imágenes en el bucket</div>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+      ${unique.map(it => {
+        const { data: pub } = sb.storage.from('thumbnails').getPublicUrl(it.path);
+        const url = pub?.publicUrl || '';
+        const safePath = escHtml(it.path);
+        return `
+        <div class="card rounded-xl overflow-hidden flex flex-col">
+          <div class="w-full" style="aspect-ratio:1/1; background:rgba(255,255,255,.04)">
+            <img src="${escHtml(url)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy" onerror="this.style.display='none'">
+          </div>
+          <div class="p-2">
+            <p class="text-[10px] text-white/40 truncate mb-1.5" title="${safePath}">${escHtml(it.name)}</p>
+            <div class="flex gap-1">
+              <button onclick="_galeriaCopyUrl('${escHtml(url)}')"
+                class="btn-ghost flex-1 text-[10px] px-1.5 py-1 rounded-md flex items-center justify-center gap-1">
+                <i data-lucide="copy" class="w-3 h-3"></i>Copiar
+              </button>
+              <button onclick="_galeriaDelete('${safePath}')"
+                class="text-[10px] px-1.5 py-1 rounded-md flex items-center justify-center gap-1 text-red-400/80"
+                style="background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.15);">
+                <i data-lucide="trash-2" class="w-3 h-3"></i>
+              </button>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+  lucide.createIcons();
+}
+
+async function _galeriaCopyUrl(url) {
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('✓ URL copiada');
+  } catch {
+    showToast('No se pudo copiar', true);
+  }
+}
+
+async function _galeriaDelete(path) {
+  if (!confirm(`¿Eliminar imagen?\n${path}`)) return;
+  try {
+    const { error } = await sb.storage.from('thumbnails').remove([path]);
+    if (error) throw error;
+    showToast('✓ Imagen eliminada');
+    loadAdminImagenesGaleria();
+  } catch (err) {
+    console.error('[galeria] delete error:', err);
+    showToast('Error al eliminar: ' + (err?.message || err), true);
+  }
 }
 
 function _renderImageManagerCard({ title, subtitle, slot, currentUrl }) {
@@ -3396,7 +3535,7 @@ async function _uploadSlotImage(slot, file) {
     });
 
     const storageKey = slot === 'hero' ? 'hero_image_url' : 'nutricion_image_url';
-    localStorage.setItem(storageKey, publicUrl);
+    await setSetting(storageKey, publicUrl);
     applyStoredImagesToDom();
 
     if (previewEl) previewEl.innerHTML = `<img src="${publicUrl}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">`;
@@ -3466,8 +3605,8 @@ function _uploadImageToBucket(pathPrefix, file, onProgress) {
 
 /* Apply stored hero/nutrición URLs to the live DOM. Called at boot and after upload. */
 function applyStoredImagesToDom() {
-  const heroUrl      = getStoredImage('hero_image_url',      null);
-  const nutricionUrl = getStoredImage('nutricion_image_url', null);
+  const heroUrl      = getSetting('hero_image_url',      null);
+  const nutricionUrl = getSetting('nutricion_image_url', null);
   if (heroUrl) {
     const el = document.getElementById('hero-inicio-img');
     if (el) el.src = heroUrl;
@@ -3863,7 +4002,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 2. Inject section shells into DOM
   injectSectionShells();
 
-  // 2.1 Apply admin-configured image overrides (hero + nutrición)
+  // 2.1 Load admin-configured settings (hero/nutrición URLs) and apply to DOM
+  await loadAppSettings();
   applyStoredImagesToDom();
 
   // 3. Render initial nav (logged-out state)
