@@ -1113,9 +1113,7 @@ function injectSectionShells() {
       <div class="pt-6 pb-2">
         <h1 class="text-2xl font-black serif mb-1">Tu <span class="grad-text">agenda</span></h1>
         <p class="text-xs text-white/40 mb-5">Clases grabadas de tu membresía</p>
-        <div id="agenda-list">
-          ${skeletonCards(4)}
-        </div>
+        <div id="agenda-list"></div>
       </div>
     </section>
 
@@ -1124,9 +1122,7 @@ function injectSectionShells() {
       <div class="pt-6 pb-2">
         <h1 class="text-2xl font-black serif mb-1">Sesiones <span class="grad-text">grabadas</span></h1>
         <p class="text-xs text-white/40 mb-5">Contenido exclusivo premium y VIP</p>
-        <div id="grabadas-list">
-          ${skeletonCards(4)}
-        </div>
+        <div id="grabadas-list"></div>
       </div>
     </section>
 
@@ -2600,6 +2596,9 @@ async function loadAgenda() {
   if (!currentUser)         { container.innerHTML = renderMemberGate();                    lucide.createIcons(); return; }
   if (!canAccess('basica')) { container.innerHTML = renderTierGate('basica','la Agenda'); lucide.createIcons(); return; }
 
+  // Skeletons appear DURING the fetch, not before — so they can't get stuck if loadAgenda never runs.
+  container.innerHTML = skeletonCards(4);
+
   try {
     const { data: videos, error } = await sb
       .from('videos')
@@ -2612,10 +2611,15 @@ async function loadAgenda() {
     console.log('[Agenda] tier:', getUserTier(), '| videos:', videos?.length, '| error:', error);
     if (error) throw error;
 
-    // Short-circuit on empty BEFORE the progress query (avoids stuck skeletons if that query is slow)
+    // Si no hay datos, mostrar empty state YA — antes de cualquier query auxiliar
     if (!videos || videos.length === 0) {
-      container.innerHTML = renderEmptyState('video-off', 'Sin clases aún', 'Próximamente nuevo contenido para miembros');
-      lucide.createIcons(); return;
+      container.innerHTML = `
+        <div style="text-align:center;padding:40px 20px;color:#9CA3AF;">
+          <div style="font-size:48px;margin-bottom:12px;">🎬</div>
+          <p style="font-weight:600;margin-bottom:4px;">Sin clases aún</p>
+          <p style="font-size:14px;">Próximamente nuevo contenido para miembros</p>
+        </div>`;
+      return;
     }
 
     let progressMap = {};
@@ -2644,6 +2648,9 @@ async function loadGrabadas() {
   if (!currentUser)          { container.innerHTML = renderMemberGate();                           lucide.createIcons(); return; }
   if (!canAccess('premium')) { container.innerHTML = renderTierGate('premium','las Sesiones Grabadas'); lucide.createIcons(); return; }
 
+  // Skeletons appear DURING the fetch, not before
+  container.innerHTML = skeletonCards(4);
+
   try {
     const [{ data: webinars, error: e1 }, { data: videos, error: e2 }] = await Promise.all([
       sb.from('webinars').select('*').eq('type','grabada').eq('is_active',true)
@@ -2655,12 +2662,17 @@ async function loadGrabadas() {
     console.log('[Grabadas] tier:', getUserTier(), '| webinars:', webinars?.length, '| videos:', videos?.length, '| e1:', e1, '| e2:', e2);
     if (e1 || e2) throw e1 || e2;
 
-    // Short-circuit on empty BEFORE the progress query
+    // Si no hay datos, mostrar empty state YA — antes de la query auxiliar
     const noWebinars = !webinars || webinars.length === 0;
     const noVideos   = !videos   || videos.length === 0;
     if (noWebinars && noVideos) {
-      container.innerHTML = renderEmptyState('play-circle', 'Sin sesiones aún', 'Próximamente nuevo contenido exclusivo');
-      lucide.createIcons(); return;
+      container.innerHTML = `
+        <div style="text-align:center;padding:40px 20px;color:#9CA3AF;">
+          <div style="font-size:48px;margin-bottom:12px;">📹</div>
+          <p style="font-weight:600;margin-bottom:4px;">Sin sesiones aún</p>
+          <p style="font-size:14px;">Próximamente contenido exclusivo</p>
+        </div>`;
+      return;
     }
 
     let progressMap = {};
