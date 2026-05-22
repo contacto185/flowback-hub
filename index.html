@@ -1046,7 +1046,7 @@ function injectSectionShells() {
     <section id="sec-inicio" class="tab-section">
       <div class="pt-6 pb-2">
         <div class="relative mb-4 overflow-hidden" style="width:100%;height:220px;border-radius:16px;">
-          <img src="https://wvxcqavtjtgvxdvtuvvd.supabase.co/storage/v1/object/public/thumbnails/WhatsApp%20Image%202026-05-21%20at%209.46.32%20PM.jpeg" alt="Flowback" style="width:100%;height:100%;object-fit:cover;object-position:center top;">
+          <img id="hero-inicio-img" src="https://wvxcqavtjtgvxdvtuvvd.supabase.co/storage/v1/object/public/thumbnails/WhatsApp%20Image%202026-05-21%20at%209.46.32%20PM.jpeg" alt="Flowback" style="width:100%;height:100%;object-fit:cover;object-position:center top;">
           <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end">
             <div class="p-4 w-full">
               <h1 class="serif text-2xl sm:text-3xl font-bold text-white mb-1">Flowback</h1>
@@ -1936,7 +1936,7 @@ function renderClasesStaticContent() {
     </ul>
 
     <!-- Nutrición image -->
-    <img src="https://wvxcqavtjtgvxdvtuvvd.supabase.co/storage/v1/object/public/thumbnails/WhatsApp%20Image%202026-05-21%20at%209.46.39%20PM.jpeg" alt="Nutrición" style="border-radius:16px; width:100%; display:block;" class="mb-5" loading="lazy">
+    <img id="nutricion-img" src="${escHtml(getStoredImage('nutricion_image_url', 'https://wvxcqavtjtgvxdvtuvvd.supabase.co/storage/v1/object/public/thumbnails/WhatsApp%20Image%202026-05-21%20at%209.46.39%20PM.jpeg'))}" alt="Nutrición" style="border-radius:16px; width:100%; display:block;" class="mb-5" loading="lazy">
 
     <!-- WhatsApp CTA -->
     <a href="https://go.wha.link/boykze" target="_blank" rel="noopener"
@@ -2868,6 +2868,7 @@ function renderAdminShell() {
       <button class="sub-tab-btn flex-shrink-0" id="admin-tab-cursos"      onclick="switchAdminTab('cursos')">Cursos</button>
       <button class="sub-tab-btn flex-shrink-0" id="admin-tab-webinars"    onclick="switchAdminTab('webinars')">Webinars</button>
       <button class="sub-tab-btn flex-shrink-0" id="admin-tab-documentos"  onclick="switchAdminTab('documentos')">Documentos</button>
+      <button class="sub-tab-btn flex-shrink-0" id="admin-tab-imagenes"    onclick="switchAdminTab('imagenes')">Imágenes</button>
       <button class="sub-tab-btn flex-shrink-0" id="admin-tab-usuarios"    onclick="switchAdminTab('usuarios')">Usuarios</button>
     </div>
 
@@ -2877,7 +2878,7 @@ function renderAdminShell() {
 
 function switchAdminTab(tab) {
   _adminCurrentTab = tab;
-  ['videos','eventos','cursos','webinars','documentos','usuarios'].forEach(t => {
+  ['videos','eventos','cursos','webinars','documentos','imagenes','usuarios'].forEach(t => {
     const btn = document.getElementById('admin-tab-' + t);
     if (btn) btn.classList.toggle('active', t === tab);
   });
@@ -2887,6 +2888,7 @@ function switchAdminTab(tab) {
     cursos:     loadAdminCursos,
     webinars:   loadAdminWebinars,
     documentos: loadAdminDocumentos,
+    imagenes:   loadAdminImagenes,
     usuarios:   loadAdminUsuarios,
   };
   loaders[tab]?.();
@@ -3231,6 +3233,249 @@ async function changeUserTier(userId, newTier) {
   if (error) { showToast('Error al actualizar tier', true); return; }
   showToast(`Tier actualizado a ${tierLabel(newTier)}`);
   loadAdminUsuarios();
+}
+
+/* ═══════════════════════════════════════════
+   ADMIN TAB — Imágenes (gestión visual)
+═══════════════════════════════════════════ */
+const ADMIN_IMG_DEFAULTS = {
+  hero:      'https://wvxcqavtjtgvxdvtuvvd.supabase.co/storage/v1/object/public/thumbnails/WhatsApp%20Image%202026-05-21%20at%209.46.32%20PM.jpeg',
+  nutricion: 'https://wvxcqavtjtgvxdvtuvvd.supabase.co/storage/v1/object/public/thumbnails/WhatsApp%20Image%202026-05-21%20at%209.46.39%20PM.jpeg',
+};
+
+function getStoredImage(key, fallback) {
+  try { return localStorage.getItem(key) || fallback; } catch { return fallback; }
+}
+
+async function loadAdminImagenes() {
+  const c = document.getElementById('admin-tab-content');
+  if (!c) return;
+  c.innerHTML = skeletonCards(3);
+
+  const heroUrl      = getStoredImage('hero_image_url',      ADMIN_IMG_DEFAULTS.hero);
+  const nutricionUrl = getStoredImage('nutricion_image_url', ADMIN_IMG_DEFAULTS.nutricion);
+
+  let videos = [], courses = [];
+  try {
+    const [vRes, cRes] = await Promise.all([
+      sb.from('videos').select('id,title,thumbnail_url').order('created_at',{ascending:false}),
+      sb.from('courses').select('id,title,thumbnail_url').order('created_at',{ascending:false}),
+    ]);
+    videos  = vRes.data  || [];
+    courses = cRes.data  || [];
+  } catch (e) { console.error('[Admin Imágenes] error:', e); }
+
+  c.innerHTML = `
+    <p class="text-sm font-bold text-white/60 uppercase tracking-wide mb-4">Imágenes del sitio</p>
+
+    <!-- Hero de Inicio -->
+    ${_renderImageManagerCard({
+      title:    'Hero de Inicio',
+      subtitle: 'Recomendado: 800×400px (ratio 2:1)',
+      slot:     'hero',
+      currentUrl: heroUrl,
+    })}
+
+    <!-- Nutrición -->
+    ${_renderImageManagerCard({
+      title:    'Imagen Nutrición (Lo que obtendrás)',
+      subtitle: 'Recomendado: 800×800px (ratio 1:1)',
+      slot:     'nutricion',
+      currentUrl: nutricionUrl,
+    })}
+
+    <!-- Videos thumbnails -->
+    <p class="text-sm font-bold text-white/60 uppercase tracking-wide mb-2 mt-6">Thumbnails de videos</p>
+    <p class="text-xs text-white/40 mb-3">Recomendado: 800×450px (ratio 16:9)</p>
+    <div class="mb-6">
+      ${videos.length
+        ? videos.map(v => _renderDbThumbRow({ table:'videos', item:v })).join('')
+        : '<div class="card rounded-xl p-4 text-center text-xs text-white/40">Sin videos</div>'}
+    </div>
+
+    <!-- Cursos thumbnails -->
+    <p class="text-sm font-bold text-white/60 uppercase tracking-wide mb-2 mt-6">Imágenes de cursos</p>
+    <p class="text-xs text-white/40 mb-3">Recomendado: 800×450px (ratio 16:9)</p>
+    <div class="mb-6">
+      ${courses.length
+        ? courses.map(c => _renderDbThumbRow({ table:'courses', item:c })).join('')
+        : '<div class="card rounded-xl p-4 text-center text-xs text-white/40">Sin cursos</div>'}
+    </div>
+  `;
+  lucide.createIcons();
+}
+
+function _renderImageManagerCard({ title, subtitle, slot, currentUrl }) {
+  return `
+  <div class="card rounded-2xl p-4 mb-4">
+    <div class="flex items-center justify-between mb-2">
+      <div class="flex-1 min-w-0">
+        <p class="font-semibold text-sm text-white">${escHtml(title)}</p>
+        <p class="text-xs text-white/40 mt-0.5">${escHtml(subtitle)}</p>
+      </div>
+    </div>
+    <div id="img-mgr-preview-${slot}" class="w-full rounded-xl overflow-hidden mb-3" style="aspect-ratio: ${slot==='nutricion'?'1/1':'2/1'}; background:rgba(255,255,255,.04);">
+      <img src="${escHtml(currentUrl)}" alt="${escHtml(title)}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'">
+    </div>
+    <div id="img-mgr-progress-${slot}" class="hidden mb-3">
+      <div class="w-full h-2 rounded-full overflow-hidden" style="background:rgba(255,255,255,.08)">
+        <div class="img-mgr-bar h-full" style="width:0%; background:linear-gradient(90deg,#F57C00,#38BDF8); transition:width .2s"></div>
+      </div>
+      <p class="img-mgr-label text-xs text-white/50 mt-2"></p>
+    </div>
+    <button onclick="_pickImageForSlot('${slot}')"
+      class="btn-grad w-full text-xs px-3 py-2.5 rounded-xl flex items-center justify-center gap-2">
+      <i data-lucide="image-up" class="w-4 h-4"></i>Cambiar imagen
+    </button>
+  </div>`;
+}
+
+function _renderDbThumbRow({ table, item }) {
+  const thumb = item.thumbnail_url || '';
+  const itemTitle = item.title || '(sin título)';
+  return `
+  <div class="card rounded-xl p-3 mb-2 flex items-center gap-3">
+    <div class="w-16 h-10 rounded-lg overflow-hidden flex-shrink-0" style="background:rgba(255,255,255,.05)">
+      ${thumb
+        ? `<img src="${escHtml(thumb)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'">`
+        : `<div class="w-full h-full flex items-center justify-center"><i data-lucide="image-off" class="w-4 h-4 text-white/30"></i></div>`}
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm text-white truncate">${escHtml(itemTitle)}</p>
+      <p class="text-xs text-white/30 truncate" id="img-mgr-status-${table}-${escHtml(item.id)}">${thumb ? 'Con thumbnail' : 'Sin thumbnail'}</p>
+    </div>
+    <button onclick="_pickThumbForDbRow('${table}','${escHtml(item.id)}')"
+      class="btn-ghost text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 flex-shrink-0">
+      <i data-lucide="image-up" class="w-3.5 h-3.5"></i>Cambiar
+    </button>
+  </div>`;
+}
+
+function _pickImageForSlot(slot) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    await _uploadSlotImage(slot, file);
+  };
+  input.click();
+}
+
+function _pickThumbForDbRow(table, id) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    await _uploadDbThumb(table, id, file);
+  };
+  input.click();
+}
+
+async function _uploadSlotImage(slot, file) {
+  const previewEl = document.getElementById('img-mgr-preview-' + slot);
+  const progEl    = document.getElementById('img-mgr-progress-' + slot);
+  const bar       = progEl?.querySelector('.img-mgr-bar');
+  const labelEl   = progEl?.querySelector('.img-mgr-label');
+
+  // Live preview before upload completes
+  const localUrl = URL.createObjectURL(file);
+  if (previewEl) previewEl.innerHTML = `<img src="${localUrl}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+
+  if (progEl) progEl.classList.remove('hidden');
+  if (bar) bar.style.width = '0%';
+  if (labelEl) labelEl.textContent = 'Subiendo…';
+
+  try {
+    const publicUrl = await _uploadImageToBucket('admin/' + slot, file, pct => {
+      if (bar) bar.style.width = pct + '%';
+      if (labelEl) labelEl.textContent = `Subiendo… ${pct}%`;
+    });
+
+    const storageKey = slot === 'hero' ? 'hero_image_url' : 'nutricion_image_url';
+    localStorage.setItem(storageKey, publicUrl);
+    applyStoredImagesToDom();
+
+    if (previewEl) previewEl.innerHTML = `<img src="${publicUrl}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+    if (labelEl) labelEl.textContent = '✓ Imagen actualizada';
+    if (bar) bar.style.width = '100%';
+    showToast('✓ Imagen actualizada');
+    setTimeout(() => progEl?.classList.add('hidden'), 1500);
+  } catch (err) {
+    console.error('[img-mgr] upload error:', err);
+    if (labelEl) labelEl.textContent = 'Error: ' + (err?.message || err);
+    showToast('Error al subir imagen', true);
+  }
+}
+
+async function _uploadDbThumb(table, id, file) {
+  const statusEl = document.getElementById(`img-mgr-status-${table}-${id}`);
+  if (statusEl) statusEl.textContent = 'Subiendo…';
+  try {
+    const publicUrl = await _uploadImageToBucket('admin/' + table, file, pct => {
+      if (statusEl) statusEl.textContent = `Subiendo… ${pct}%`;
+    });
+    const { error } = await sb.from(table).update({ thumbnail_url: publicUrl }).eq('id', id);
+    if (error) throw error;
+    if (statusEl) statusEl.textContent = '✓ Imagen actualizada';
+    showToast('✓ Imagen actualizada');
+    // Refresh list so the preview thumbnail updates
+    loadAdminImagenes();
+  } catch (err) {
+    console.error('[img-mgr] db thumb upload error:', err);
+    if (statusEl) statusEl.textContent = 'Error: ' + (err?.message || err);
+    showToast('Error al subir imagen', true);
+  }
+}
+
+function _uploadImageToBucket(pathPrefix, file, onProgress) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const safeName = file.name.replace(/[^\w.\-]+/g, '_');
+      const path     = `${pathPrefix}/${Date.now()}-${safeName}`;
+      const { data: { session } } = await sb.auth.getSession();
+      const token = session?.access_token || SUPABASE_KEY;
+      const url   = `${SUPABASE_URL}/storage/v1/object/thumbnails/${encodeURI(path)}`;
+      const xhr   = new XMLHttpRequest();
+      xhr.timeout = 90_000;
+      xhr.upload.onprogress = e => {
+        if (e.lengthComputable && onProgress) onProgress(Math.round(e.loaded / e.total * 100));
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const { data: pub } = sb.storage.from('thumbnails').getPublicUrl(path);
+          resolve(pub?.publicUrl || `${SUPABASE_URL}/storage/v1/object/public/thumbnails/${encodeURI(path)}`);
+        } else {
+          reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText}`));
+        }
+      };
+      xhr.onerror   = () => reject(new Error('Network error (CORS o conexión)'));
+      xhr.ontimeout = () => reject(new Error('Timeout 90s'));
+      xhr.open('POST', url);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.setRequestHeader('apikey', SUPABASE_KEY);
+      xhr.setRequestHeader('x-upsert', 'true');
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      xhr.send(file);
+    } catch (e) { reject(e); }
+  });
+}
+
+/* Apply stored hero/nutrición URLs to the live DOM. Called at boot and after upload. */
+function applyStoredImagesToDom() {
+  const heroUrl      = getStoredImage('hero_image_url',      null);
+  const nutricionUrl = getStoredImage('nutricion_image_url', null);
+  if (heroUrl) {
+    const el = document.getElementById('hero-inicio-img');
+    if (el) el.src = heroUrl;
+  }
+  if (nutricionUrl) {
+    const el = document.getElementById('nutricion-img');
+    if (el) el.src = nutricionUrl;
+  }
 }
 
 /* ═══════════════════════════════════════════
@@ -3617,6 +3862,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 2. Inject section shells into DOM
   injectSectionShells();
+
+  // 2.1 Apply admin-configured image overrides (hero + nutrición)
+  applyStoredImagesToDom();
 
   // 3. Render initial nav (logged-out state)
   renderNavTabs();
