@@ -2986,8 +2986,9 @@ async function _reorderAdminItem(table, id, dir) {
     if (r1.error || r2.error) throw (r1.error || r2.error);
 
     // Reload the appropriate view
-    if (table === 'videos')      loadAdminVideos();
-    else if (table === 'courses') loadAdminCursos();
+    if (table === 'videos')        loadAdminVideos();
+    else if (table === 'courses')  loadAdminCursos();
+    else if (table === 'webinars') loadAdminWebinars();
     else if (table === 'lessons' && _adminLessonsCourseId) {
       loadAdminLecciones(_adminLessonsCourseId, _adminLessonsCourseTitle);
     }
@@ -3216,11 +3217,12 @@ function openAdminLessonForm(item) {
 /* ── TAB: Webinars ── */
 function loadAdminWebinars() {
   return _loadAdminTab({
-    queryFn:   () => sb.from('webinars').select('*').order('date',{ascending:false}),
-    label:     'Webinars',
-    type:      'webinar',
-    cols:      [{key:'title'},{key:'date'},{key:'type'}],
-    emptyIcon: 'radio',
+    queryFn:       () => sb.from('webinars').select('*').order('order_index',{nullsLast:true}).order('date',{ascending:false}),
+    label:         'Webinars',
+    type:          'webinar',
+    cols:          [{key:'title'},{key:'date'},{key:'type'}],
+    emptyIcon:     'radio',
+    reorderTable:  'webinars',
   });
 }
 
