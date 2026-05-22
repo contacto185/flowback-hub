@@ -149,34 +149,27 @@ tailwind.config = {
     border: 1px solid rgba(245,124,0,.2);
     border-radius: 24px;
     padding: 8px 4px;
-    display: flex;
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: repeat(var(--nav-cols, 5), 1fr);
     z-index: 50;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
     gap: 2px;
     box-shadow: 0 8px 24px rgba(42,32,26,.08), 0 2px 8px rgba(42,32,26,.04);
   }
-  #bottom-nav::-webkit-scrollbar { display: none; }
 
   .nav-tab {
-    flex: 0 0 auto;
-    min-width: 64px;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 3px;
-    padding: 8px 6px;
+    padding: 8px 2px;
     cursor: pointer;
     white-space: nowrap;
     border-radius: 16px;
     background: transparent;
     border: none;
     transition: background .2s;
-    white-space: nowrap;
+    overflow: hidden;
   }
   .nav-icon-wrap {
     width: 34px; height: 34px;
@@ -185,7 +178,19 @@ tailwind.config = {
     transition: background .2s;
   }
   .nav-icon-wrap svg { color: rgba(42,32,26,.45); transition: color .2s; }
-  .nav-label { font-size: 10px; font-weight: 500; color: rgba(42,32,26,.5); transition: color .2s; }
+  .nav-label {
+    font-size: 10px; font-weight: 500;
+    color: rgba(42,32,26,.5);
+    transition: color .2s;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Compact mode when many tabs (logged-in admin shows 8) */
+  #bottom-nav[data-cols="7"] .nav-icon-wrap,
+  #bottom-nav[data-cols="8"] .nav-icon-wrap { width: 30px; height: 30px; }
+  #bottom-nav[data-cols="7"] .nav-label,
+  #bottom-nav[data-cols="8"] .nav-label    { font-size: 9px; }
   .nav-tab.active .nav-icon-wrap { background: var(--accent-orange); }
   .nav-tab.active .nav-icon-wrap svg { color: #fff; }
   .nav-tab.active .nav-label { color: var(--accent-orange); font-weight: 600; }
@@ -844,25 +849,12 @@ function renderNavTabs() {
 
   const nav = document.getElementById('bottom-nav');
 
-  // For non-logged-in 5-tab nav: distribute evenly. For logged-in 8-tab nav: keep CSS defaults (scrollable).
-  if (!loggedIn) {
-    nav.style.justifyContent = 'space-evenly';
-    nav.style.alignItems = 'center';
-    nav.style.width = '100%';
-    nav.style.padding = '8px 0';
-    nav.style.overflowX = 'visible';
-  } else {
-    nav.style.justifyContent = '';
-    nav.style.alignItems = '';
-    nav.style.width = '';
-    nav.style.padding = '';
-    nav.style.overflowX = '';
-  }
-
-  const btnInline = loggedIn ? '' : ' style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;"';
+  // Drive the grid with the actual tab count so all tabs always fit on one row
+  nav.style.setProperty('--nav-cols', String(tabs.length));
+  nav.setAttribute('data-cols', String(tabs.length));
 
   nav.innerHTML = tabs.map(t => `
-    <button class="nav-tab${currentSection === t.id ? ' active' : ''}" id="nav-${t.id}" onclick="switchSection('${t.id}')"${btnInline}>
+    <button class="nav-tab${currentSection === t.id ? ' active' : ''}" id="nav-${t.id}" onclick="switchSection('${t.id}')">
       <div class="nav-icon-wrap"><i data-lucide="${t.icon}" class="w-5 h-5"></i></div>
       <span class="nav-label">${t.label}</span>
     </button>
@@ -3382,25 +3374,15 @@ async function setSetting(key, value) {
   if (error) throw error;
 }
 
-async function loadAdminImagenes() {
+function loadAdminImagenes() {
   const c = document.getElementById('admin-tab-content');
   if (!c) return;
-  c.innerHTML = skeletonCards(3);
 
-  // Refresh cache from Supabase so we always show the latest stored URLs
-  await loadAppSettings();
+  // Static content renders IMMEDIATELY using the app_settings cache (loaded at boot).
+  // No skeletons, no fetch — these URLs are already in memory.
   const heroUrl      = getSetting('hero_image_url',      ADMIN_IMG_DEFAULTS.hero);
   const nutricionUrl = getSetting('nutricion_image_url', ADMIN_IMG_DEFAULTS.nutricion);
-
-  let videos = [], courses = [];
-  try {
-    const [vRes, cRes] = await Promise.all([
-      sb.from('videos').select('id,title,thumbnail_url').order('created_at',{ascending:false}),
-      sb.from('courses').select('id,title,thumbnail_url').order('created_at',{ascending:false}),
-    ]);
-    videos  = vRes.data  || [];
-    courses = cRes.data  || [];
-  } catch (e) { console.error('[Admin Imágenes] error:', e); }
+  const youtubeUrl   = getSetting('youtube_main_url',    'https://www.youtube.com/watch?v=6ZzyleYIEYg');
 
   c.innerHTML = `
     <p class="text-sm font-bold text-white/60 uppercase tracking-wide mb-4">Imágenes del sitio</p>
@@ -3422,7 +3404,7 @@ async function loadAdminImagenes() {
     })}
 
     <!-- Video Principal (YouTube) -->
-    ${_renderYoutubeMainCard(getSetting('youtube_main_url', 'https://www.youtube.com/watch?v=6ZzyleYIEYg'))}
+    ${_renderYoutubeMainCard(youtubeUrl)}
 
     <!-- Videos thumbnails -->
     <div class="flex items-center justify-between mb-2 mt-6">
@@ -3433,10 +3415,8 @@ async function loadAdminImagenes() {
       </button>
     </div>
     <p class="text-xs text-white/40 mb-3">Recomendado: 800×450px (ratio 16:9)</p>
-    <div class="mb-6">
-      ${videos.length
-        ? videos.map(v => _renderDbThumbRow({ table:'videos', item:v })).join('')
-        : '<div class="card rounded-xl p-4 text-center text-xs text-white/40">Sin videos</div>'}
+    <div id="img-mgr-videos" class="mb-6">
+      <div class="card rounded-xl p-3 text-center text-xs text-white/30">Cargando…</div>
     </div>
 
     <!-- Cursos thumbnails -->
@@ -3448,10 +3428,8 @@ async function loadAdminImagenes() {
       </button>
     </div>
     <p class="text-xs text-white/40 mb-3">Recomendado: 800×450px (ratio 16:9)</p>
-    <div class="mb-6">
-      ${courses.length
-        ? courses.map(c => _renderDbThumbRow({ table:'courses', item:c })).join('')
-        : '<div class="card rounded-xl p-4 text-center text-xs text-white/40">Sin cursos</div>'}
+    <div id="img-mgr-courses" class="mb-6">
+      <div class="card rounded-xl p-3 text-center text-xs text-white/30">Cargando…</div>
     </div>
 
     <!-- Galería general -->
@@ -3468,7 +3446,40 @@ async function loadAdminImagenes() {
     </div>
   `;
   lucide.createIcons();
+
+  // Videos + courses thumbnail lists fetch in the background and replace their
+  // own containers — they never block the static cards above.
+  _loadAdminImagenesDbLists();
   loadAdminImagenesGaleria();
+}
+
+async function _loadAdminImagenesDbLists() {
+  const vBox = document.getElementById('img-mgr-videos');
+  const cBox = document.getElementById('img-mgr-courses');
+  try {
+    const [vRes, cRes] = await Promise.all([
+      sb.from('videos').select('id,title,thumbnail_url').order('created_at',{ascending:false}),
+      sb.from('courses').select('id,title,thumbnail_url').order('created_at',{ascending:false}),
+    ]);
+    const videos  = vRes.data  || [];
+    const courses = cRes.data  || [];
+    if (vBox) {
+      vBox.innerHTML = videos.length
+        ? videos.map(v => _renderDbThumbRow({ table:'videos', item:v })).join('')
+        : '<div class="card rounded-xl p-4 text-center text-xs text-white/40">Sin videos</div>';
+    }
+    if (cBox) {
+      cBox.innerHTML = courses.length
+        ? courses.map(c => _renderDbThumbRow({ table:'courses', item:c })).join('')
+        : '<div class="card rounded-xl p-4 text-center text-xs text-white/40">Sin cursos</div>';
+    }
+    lucide.createIcons();
+  } catch (e) {
+    console.error('[Admin Imágenes] db lists error:', e);
+    const errHtml = '<div class="card rounded-xl p-3 text-center text-xs text-orange-400/70">Error al cargar</div>';
+    if (vBox) vBox.innerHTML = errHtml;
+    if (cBox) cBox.innerHTML = errHtml;
+  }
 }
 
 /* List images stored in the thumbnails bucket. We list known admin subfolders +
