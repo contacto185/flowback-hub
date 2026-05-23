@@ -668,7 +668,7 @@ tailwind.config = {
 const SUPABASE_URL  = 'https://wvxcqavtjtgvxdvtuvvd.supabase.co';
 const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2eGNxYXZ0anRndnhkdnR1dnZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMDc3MjYsImV4cCI6MjA5MTY4MzcyNn0.o8KY2-HrYpf747tvZDZKqXjpXf-8daeEs7RLY71a-6g';
 const ADMIN_EMAILS  = ['hi@wapnix.com', 'hi@monkeia.com', 'contacto@flowback.cl', 'jimmylavinfeldman@gmail.com'];
-const TIER_RANK     = { free: 0, basica: 1, premium: 2, vip: 3 };
+const TIER_RANK     = { free: 0, basica: 1, vip: 2, premium: 3 };
 
 /* ═══════════════════════════════════════════
    APP STATE
@@ -697,13 +697,8 @@ function canAccess(tierRequired) {
   if (!tierRequired || tierRequired === 'free') return true;
   if (!currentUser) return false;
   const tier = getUserTier();
-  // Simple includes-based check — immune to TIER_RANK lookup failures
-  const map = {
-    basica:  ['basica','premium','vip'].includes(tier),
-    premium: ['premium','vip'].includes(tier),
-    vip:     tier === 'vip',
-  };
-  return map[tierRequired] ?? (TIER_RANK[tier] ?? 0) >= (TIER_RANK[tierRequired] ?? 0);
+  // Hierarchy: free(0) < basica(1) < vip(2) < premium(3) — drives all access checks
+  return (TIER_RANK[tier] ?? 0) >= (TIER_RANK[tierRequired] ?? 0);
 }
 
 function escHtml(str) {
@@ -1439,6 +1434,7 @@ function renderTribuMember(container) {
 
 /* Planes de membresía con precios CLP */
 function renderPlanesContent(currentTierVal) {
+  // Order: básica → vip → premium (matches the tier hierarchy: basica < vip < premium)
   const plans = [
     {
       id:        'basica',
@@ -1454,30 +1450,30 @@ function renderPlanesContent(currentTierVal) {
       style:     'plan-basic',
     },
     {
-      id:        'premium',
-      label:     'PREMIUM',
-      emoji:     '⭐',
-      price:     '$65.000',
-      period:    'trimestre',
-      amountUsd: '65.00',
-      color:     'var(--orange)',
-      badge:     'badge-premium',
-      badgeTxt:  'Mejor valor',
-      features:  ['Todo lo del plan VIP','Curso Heridas Emocionales','Acceso completo 6 meses'],
-      style:     'plan-premium',
-    },
-    {
       id:        'vip',
       label:     'VIP',
       emoji:     '💎',
-      price:     '$120.000',
-      period:    'semestre',
-      amountUsd: '120.00',
+      price:     '$65.000',
+      period:    'trimestre',
+      amountUsd: '65.00',
       color:     '#a78bfa',
       badge:     'badge-vip',
       badgeTxt:  'Exclusivo',
       features:  ['Todo lo del plan básico','Acompañamiento nutricional','Respuestas 24/7 WhatsApp','Horario de clases por Zoom','Guía nutricional'],
       style:     'plan-vip',
+    },
+    {
+      id:        'premium',
+      label:     'PREMIUM',
+      emoji:     '⭐',
+      price:     '$120.000',
+      period:    'semestre',
+      amountUsd: '120.00',
+      color:     'var(--orange)',
+      badge:     'badge-premium',
+      badgeTxt:  'Mejor valor',
+      features:  ['Todo lo del plan VIP','Curso Heridas Emocionales','Acceso semestral completo'],
+      style:     'plan-premium',
     },
   ];
 
