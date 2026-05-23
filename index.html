@@ -584,9 +584,9 @@ tailwind.config = {
         <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(56,189,248,.14); color:var(--blue)">Popular</span>
       </div>
       <ul class="space-y-2 mb-4">
-        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Clases Zoom AM y PM</span></li>
-        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Talleres grabados</span></li>
-        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Guía nutricional</span></li>
+        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Clases Zoom AM y PM</span></li>
+        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Talleres grabados</span></li>
+        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Guía nutricional</span></li>
       </ul>
       <div id="paypal-modal-basica"></div>
     </div>
@@ -605,9 +605,9 @@ tailwind.config = {
         <span class="text-xs font-bold px-2.5 py-1 rounded-full" style="background:rgba(139,92,246,.2); color:#a78bfa; border:1px solid rgba(139,92,246,.4)">💎 Exclusivo</span>
       </div>
       <ul class="space-y-2 mb-4">
-        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Todo lo del plan básico</span></li>
-        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Acompañamiento nutricional</span></li>
-        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Respuestas 24/7 WhatsApp</span></li>
+        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Todo lo del plan básico</span></li>
+        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Acompañamiento nutricional</span></li>
+        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Respuestas 24/7 WhatsApp</span></li>
       </ul>
       <div id="paypal-modal-vip"></div>
     </div>
@@ -626,8 +626,8 @@ tailwind.config = {
         <span class="badge-gold text-xs font-bold px-2.5 py-1 rounded-full">⭐ Mejor valor</span>
       </div>
       <ul class="space-y-2 mb-4">
-        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Todo lo del plan VIP</span></li>
-        <li class="flex items-center gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Curso Heridas Emocionales</span></li>
+        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Todo lo del plan VIP</span></li>
+        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Curso Heridas Emocionales</span></li>
       </ul>
       <div id="paypal-modal-premium"></div>
     </div>
@@ -1517,8 +1517,8 @@ function renderPlanesContent(currentTierVal) {
       </div>
       <ul class="space-y-1.5 mb-4">
         ${p.features.map(f => `
-        <li class="flex items-center gap-2 text-xs text-white/65">
-          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>${f}
+        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>${f}</span>
         </li>`).join('')}
       </ul>
       ${isCurrentPlan
@@ -2001,9 +2001,9 @@ function renderClasesStaticContent() {
         </div>
         <p class="text-xs text-white/40 mb-3">equivale a $35 USD/mes</p>
         <ul class="space-y-2 mb-4 flex-1">
-          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Clases Zoom AM y PM</span></li>
-          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Talleres grabados</span></li>
-          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Guía nutricional</span></li>
+          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Clases Zoom AM y PM</span></li>
+          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Talleres grabados</span></li>
+          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Guía nutricional</span></li>
         </ul>
         <button onclick="handleJoinTribu('basica')" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2" id="join-basica">Unirme a la Tribu</button>
         <div id="paypal-basica" class="mb-2" style="display:none"></div>
@@ -2020,9 +2020,9 @@ function renderClasesStaticContent() {
         </div>
         <p class="text-xs font-semibold mb-3" style="color:var(--orange)">Ahorra 38%</p>
         <ul class="space-y-2 mb-4 flex-1">
-          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Todo lo del plan básico</span></li>
-          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Acompañamiento nutricional</span></li>
-          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Respuestas 24/7 WhatsApp</span></li>
+          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Todo lo del plan básico</span></li>
+          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Acompañamiento nutricional</span></li>
+          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Respuestas 24/7 WhatsApp</span></li>
         </ul>
         <button onclick="handleJoinTribu('vip')" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2" id="join-vip">Unirme a la Tribu</button>
         <div id="paypal-vip" class="mb-2" style="display:none"></div>
@@ -2038,8 +2038,8 @@ function renderClasesStaticContent() {
         </div>
         <p class="text-xs font-semibold mb-3" style="color:#a78bfa">Ahorra 50%</p>
         <ul class="space-y-2 mb-4 flex-1">
-          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Todo lo del plan VIP</span></li>
-          <li class="flex items-start gap-2 text-xs text-white/70"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Curso Heridas Emocionales</span></li>
+          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Todo lo del plan VIP</span></li>
+          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Curso Heridas Emocionales</span></li>
         </ul>
         <button onclick="handleJoinTribu('premium')" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2" id="join-premium">Unirme a la Tribu</button>
         <div id="paypal-premium" class="mb-2" style="display:none"></div>
