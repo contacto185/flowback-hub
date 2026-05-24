@@ -247,7 +247,7 @@ tailwind.config = {
     color: var(--orange);
     font-weight: 600;
   }
-  /* Admin tabs: 7-column grid so every tab gets the same width with real gaps */
+  /* Admin tabs: 7-column grid with icon-above-text so nothing gets truncated */
   .admin-tabs-bar {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -256,13 +256,15 @@ tailwind.config = {
   }
   .admin-tabs-bar .sub-tab-btn {
     min-width: 0;
-    text-align: center;
-    font-size: 10px;
-    padding: 4px 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 2px;
   }
+  .admin-tab-emoji { font-size: 16px; line-height: 1; }
+  .admin-tab-label { font-size: 8px; font-weight: 500; line-height: 1.1; white-space: nowrap; }
   .sub-section { display: none; }
   .sub-section.active { display: block; }
 
@@ -2890,13 +2892,13 @@ function renderAdminShell() {
     <p class="text-xs text-white/40 mb-4">Gestión de contenido · Solo admins</p>
 
     <div class="admin-tabs-bar p-1 rounded-2xl mb-5" style="background:rgba(42,32,26,.06);">
-      <button class="sub-tab-btn" id="admin-tab-videos"     onclick="switchAdminTab('videos')">Videos</button>
-      <button class="sub-tab-btn" id="admin-tab-eventos"    onclick="switchAdminTab('eventos')">Eventos</button>
-      <button class="sub-tab-btn" id="admin-tab-cursos"     onclick="switchAdminTab('cursos')">Cursos</button>
-      <button class="sub-tab-btn" id="admin-tab-webinars"   onclick="switchAdminTab('webinars')">Webinars</button>
-      <button class="sub-tab-btn" id="admin-tab-documentos" onclick="switchAdminTab('documentos')">Documentos</button>
-      <button class="sub-tab-btn" id="admin-tab-imagenes"   onclick="switchAdminTab('imagenes')">Imágenes</button>
-      <button class="sub-tab-btn" id="admin-tab-usuarios"   onclick="switchAdminTab('usuarios')">Usuarios</button>
+      <button class="sub-tab-btn" id="admin-tab-videos"     onclick="switchAdminTab('videos')"><span class="admin-tab-emoji">🎥</span><span class="admin-tab-label">Videos</span></button>
+      <button class="sub-tab-btn" id="admin-tab-eventos"    onclick="switchAdminTab('eventos')"><span class="admin-tab-emoji">📅</span><span class="admin-tab-label">Eventos</span></button>
+      <button class="sub-tab-btn" id="admin-tab-cursos"     onclick="switchAdminTab('cursos')"><span class="admin-tab-emoji">🎓</span><span class="admin-tab-label">Cursos</span></button>
+      <button class="sub-tab-btn" id="admin-tab-webinars"   onclick="switchAdminTab('webinars')"><span class="admin-tab-emoji">📡</span><span class="admin-tab-label">Webinars</span></button>
+      <button class="sub-tab-btn" id="admin-tab-documentos" onclick="switchAdminTab('documentos')"><span class="admin-tab-emoji">📄</span><span class="admin-tab-label">Docs</span></button>
+      <button class="sub-tab-btn" id="admin-tab-imagenes"   onclick="switchAdminTab('imagenes')"><span class="admin-tab-emoji">🖼️</span><span class="admin-tab-label">Imágenes</span></button>
+      <button class="sub-tab-btn" id="admin-tab-usuarios"   onclick="switchAdminTab('usuarios')"><span class="admin-tab-emoji">👥</span><span class="admin-tab-label">Usuarios</span></button>
     </div>
 
     <div id="admin-tab-content">${skeletonCards(3)}</div>
@@ -2934,6 +2936,7 @@ function renderAdminListHeader(label, type) {
 }
 
 function renderAdminItemRow(fields, item, type, reorderCtx = null) {
+  console.log('[render admin item]', type, item, 'fields=', fields.map(f => f.key));
   const [col1, col2, col3] = fields;
   const val1 = item[col1.key] ?? '—';
   const val2 = col2 ? (item[col2.key] ?? '—') : '';
