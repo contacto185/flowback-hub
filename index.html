@@ -247,10 +247,10 @@ tailwind.config = {
     color: var(--orange);
     font-weight: 600;
   }
-  /* Admin tabs: 7-column grid with icon-above-text so nothing gets truncated */
+  /* Admin tabs: 8-column grid with icon-above-text so nothing gets truncated */
   .admin-tabs-bar {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(8, 1fr);
     gap: 2px;
     width: 100%;
   }
@@ -572,67 +572,8 @@ tailwind.config = {
     </div>
     <p class="text-xs text-white/40 mb-5">Sin contratos · Cancela cuando quieras</p>
 
-    <!-- BÁSICA -->
-    <div class="plan-basic rounded-2xl p-4 mb-3">
-      <div class="flex items-start justify-between mb-3">
-        <div>
-          <p class="text-xs font-bold tracking-widest mb-1" style="color:var(--blue)">BÁSICA</p>
-          <p class="text-xs text-white/50 mb-1">Plan Mensual · 1 mes</p>
-          <div class="flex items-baseline gap-1">
-            <span class="text-3xl font-black text-white">$35</span>
-            <span class="text-sm text-white/40">USD/mes</span>
-          </div>
-        </div>
-        <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(56,189,248,.14); color:var(--blue)">Popular</span>
-      </div>
-      <ul class="space-y-2 mb-4">
-        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Clases Zoom AM y PM</span></li>
-        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Talleres grabados</span></li>
-        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Guía nutricional</span></li>
-      </ul>
-      <div id="paypal-modal-basica"></div>
-    </div>
-
-    <!-- VIP -->
-    <div class="plan-vip rounded-2xl p-4 mb-3">
-      <div class="flex items-start justify-between mb-3">
-        <div>
-          <p class="text-xs font-bold tracking-widest mb-1" style="color:#a78bfa">VIP</p>
-          <p class="text-xs text-white/50 mb-1">Plan Trimestral · 3 meses</p>
-          <div class="flex items-baseline gap-1">
-            <span class="text-3xl font-black text-white">$65</span>
-            <span class="text-sm text-white/40">USD total</span>
-          </div>
-        </div>
-        <span class="text-xs font-bold px-2.5 py-1 rounded-full" style="background:rgba(139,92,246,.2); color:#a78bfa; border:1px solid rgba(139,92,246,.4)">💎 Exclusivo</span>
-      </div>
-      <ul class="space-y-2 mb-4">
-        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Todo lo del plan básico</span></li>
-        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Acompañamiento nutricional</span></li>
-        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Respuestas 24/7 WhatsApp</span></li>
-      </ul>
-      <div id="paypal-modal-vip"></div>
-    </div>
-
-    <!-- PREMIUM -->
-    <div class="plan-premium rounded-2xl p-4">
-      <div class="flex items-start justify-between mb-3">
-        <div>
-          <p class="text-xs font-bold tracking-widest mb-1" style="color:var(--orange)">PREMIUM</p>
-          <p class="text-xs text-white/50 mb-1">Plan Semestral · 6 meses</p>
-          <div class="flex items-baseline gap-1">
-            <span class="text-3xl font-black text-white">$120</span>
-            <span class="text-sm text-white/40">USD total</span>
-          </div>
-        </div>
-        <span class="badge-gold text-xs font-bold px-2.5 py-1 rounded-full">⭐ Mejor valor</span>
-      </div>
-      <ul class="space-y-2 mb-4">
-        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Todo lo del plan VIP</span></li>
-        <li class="flex items-center gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>Curso Heridas Emocionales</span></li>
-      </ul>
-      <div id="paypal-modal-premium"></div>
-    </div>
+    <!-- Planes renderizados dinámicamente desde tabla `plans` -->
+    <div id="modal-plans-container"></div>
 
     <p class="text-center text-xs text-white/25 mt-4 flex items-center justify-center gap-1">
       <i data-lucide="lock" class="w-3 h-3"></i> Pago 100% seguro · SSL encriptado
@@ -680,6 +621,7 @@ let currentUser   = null;
 let userProfile   = null;
 let currentSection = 'inicio';
 let notifVisible  = false;
+let appPlans      = [];   // Loaded from `plans` table — single source of truth
 
 /* ═══════════════════════════════════════════
    HELPERS
@@ -751,6 +693,43 @@ function getInitials(name, email) {
 }
 
 /* ═══════════════════════════════════════════
+   PLANS — single source of truth (table `plans`)
+═══════════════════════════════════════════ */
+async function loadPlans() {
+  try {
+    const { data, error } = await sb.from('plans')
+      .select('*')
+      .eq('is_active', true)
+      .order('order_index');
+    if (error) throw error;
+    appPlans = data || [];
+  } catch (err) {
+    console.warn('[loadPlans] error:', err);
+    appPlans = [];
+  }
+}
+
+function _planVisual(tier) {
+  const map = {
+    basica:  { emoji:'🌱', color:'var(--blue)',  badgeClass:'badge-basica',  styleClass:'plan-basic'   },
+    vip:     { emoji:'💎', color:'#a78bfa',       badgeClass:'badge-vip',     styleClass:'plan-vip'     },
+    premium: { emoji:'⭐', color:'var(--orange)', badgeClass:'badge-premium', styleClass:'plan-premium' },
+  };
+  return map[tier] || { emoji:'•', color:'var(--orange)', badgeClass:'badge-premium', styleClass:'plan-premium' };
+}
+
+function _planPeriodLabel(plan) {
+  const names = { 1:'Mensual', 3:'Trimestral', 6:'Semestral', 12:'Anual' };
+  const name  = names[plan.period_months] || (plan.period ? plan.period[0].toUpperCase() + plan.period.slice(1) : 'Plan');
+  const unit  = plan.period_months === 1 ? 'mes' : 'meses';
+  return `Plan ${name} · ${plan.period_months} ${unit}`;
+}
+
+function _planAmountUsd(plan) {
+  return Number(plan.price_usd || 0).toFixed(2);
+}
+
+/* ═══════════════════════════════════════════
    TOAST
 ═══════════════════════════════════════════ */
 function showToast(msg, isError = false) {
@@ -773,8 +752,47 @@ function openModal() {
   sheet.classList.remove('animate');
   void sheet.offsetWidth;
   sheet.classList.add('animate');
+  renderModalPlansContent();
   lucide.createIcons();
   renderModalPaypalButtons();
+}
+
+function renderModalPlansContent() {
+  const container = document.getElementById('modal-plans-container');
+  if (!container) return;
+  if (!appPlans.length) {
+    container.innerHTML = `<p class="text-xs text-white/40 text-center py-6">Cargando planes…</p>`;
+    return;
+  }
+  container.innerHTML = appPlans.map((plan, i) => {
+    const visual    = _planVisual(plan.tier);
+    const isLast    = i === appPlans.length - 1;
+    const badgeHtml = plan.badge
+      ? `<span class="${visual.badgeClass} text-xs font-bold px-2.5 py-1 rounded-full">${escHtml(plan.badge)}</span>`
+      : '';
+    return `
+    <div class="${visual.styleClass} rounded-2xl p-4 ${isLast ? '' : 'mb-3'}">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <p class="text-xs font-bold tracking-widest mb-1" style="color:${visual.color}">${escHtml(plan.name.toUpperCase())}</p>
+          <p class="text-xs text-white/50 mb-1">${escHtml(_planPeriodLabel(plan))}</p>
+          <div class="flex items-baseline gap-1">
+            <span class="text-3xl font-black text-white">$${Number(plan.price_usd)}</span>
+            <span class="text-sm text-white/40">USD${plan.period_months === 1 ? '/mes' : ' total'}</span>
+          </div>
+        </div>
+        ${badgeHtml}
+      </div>
+      <ul class="space-y-2 mb-4">
+        ${(plan.features || []).map(f => `
+          <li class="flex items-center gap-2 text-xs" style="color:#4B3832;">
+            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i>
+            <span>${escHtml(f)}</span>
+          </li>`).join('')}
+      </ul>
+      <div id="paypal-modal-${escHtml(plan.tier)}"></div>
+    </div>`;
+  }).join('');
 }
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
@@ -1434,51 +1452,8 @@ function renderTribuMember(container) {
   `;
 }
 
-/* Planes de membresía con precios CLP */
+/* Planes de membresía — fuente única: tabla `plans` (cargada en appPlans) */
 function renderPlanesContent(currentTierVal) {
-  // Order: básica → vip → premium (matches the tier hierarchy: basica < vip < premium)
-  const plans = [
-    {
-      id:        'basica',
-      label:     'BÁSICA',
-      emoji:     '🌱',
-      price:     '$35.000',
-      period:    'mes',
-      amountUsd: '35.00',
-      color:     'var(--blue)',
-      badge:     'badge-basica',
-      badgeTxt:  'Popular',
-      features:  ['Clases Zoom AM y PM','Talleres grabados','Guía nutricional'],
-      style:     'plan-basic',
-    },
-    {
-      id:        'vip',
-      label:     'VIP',
-      emoji:     '💎',
-      price:     '$65.000',
-      period:    'trimestre',
-      amountUsd: '65.00',
-      color:     '#a78bfa',
-      badge:     'badge-vip',
-      badgeTxt:  'Exclusivo',
-      features:  ['Todo lo del plan básico','Acompañamiento nutricional','Respuestas 24/7 WhatsApp','Horario de clases por Zoom','Guía nutricional'],
-      style:     'plan-vip',
-    },
-    {
-      id:        'premium',
-      label:     'PREMIUM',
-      emoji:     '⭐',
-      price:     '$120.000',
-      period:    'semestre',
-      amountUsd: '120.00',
-      color:     'var(--orange)',
-      badge:     'badge-premium',
-      badgeTxt:  'Mejor valor',
-      features:  ['Todo lo del plan VIP','Curso Heridas Emocionales','Acceso semestral completo'],
-      style:     'plan-premium',
-    },
-  ];
-
   const isMember = currentTierVal !== 'free';
   let html = '';
 
@@ -1496,31 +1471,41 @@ function renderPlanesContent(currentTierVal) {
     </div>`;
   }
 
-  if (currentTierVal !== 'vip') {
+  // Higher-ranked upgradeable plans available?
+  const upgradeable = appPlans.filter(p => TIER_RANK[p.tier] > TIER_RANK[currentTierVal]);
+  const currentInList = appPlans.find(p => p.tier === currentTierVal);
+
+  if (upgradeable.length) {
     html += `<p class="text-xs font-bold text-white/40 uppercase tracking-wider mb-3">${isMember ? 'Actualiza tu plan' : 'Elige tu membresía'}</p>`;
   }
 
-  plans.forEach(p => {
-    const isCurrentPlan = p.id === currentTierVal;
-    const isLower       = TIER_RANK[p.id] < TIER_RANK[currentTierVal];
+  appPlans.forEach(p => {
+    const isCurrentPlan = p.tier === currentTierVal;
+    const isLower       = TIER_RANK[p.tier] < TIER_RANK[currentTierVal];
     if (isLower) return; // don't show downgrade options
 
+    const visual    = _planVisual(p.tier);
+    const priceFmt  = '$' + Number(p.price_clp || 0).toLocaleString('es-CL');
+    const badgeHtml = p.badge
+      ? `<span class="${visual.badgeClass} text-xs font-bold px-2.5 py-1 rounded-full">${escHtml(p.badge)}</span>`
+      : '';
+
     html += `
-    <div class="${p.style} rounded-2xl p-4 mb-3 ${isCurrentPlan ? 'opacity-80' : ''}">
+    <div class="${visual.styleClass} rounded-2xl p-4 mb-3 ${isCurrentPlan ? 'opacity-80' : ''}">
       <div class="flex items-start justify-between mb-3">
         <div>
-          <p class="text-xs font-bold tracking-widest mb-1" style="color:${p.color}">${p.emoji} ${p.label}</p>
+          <p class="text-xs font-bold tracking-widest mb-1" style="color:${visual.color}">${visual.emoji} ${escHtml(p.name.toUpperCase())}</p>
           <div class="flex items-baseline gap-1">
-            <span class="text-3xl font-black text-white">${p.price}</span>
-            <span class="text-xs text-white/40">/ ${p.period}</span>
+            <span class="text-3xl font-black text-white">${priceFmt}</span>
+            <span class="text-xs text-white/40">/ ${escHtml(p.period)}</span>
           </div>
         </div>
-        <span class="${p.badge} text-xs font-bold px-2.5 py-1 rounded-full">${p.badgeTxt}</span>
+        ${badgeHtml}
       </div>
       <ul class="space-y-1.5 mb-4">
-        ${p.features.map(f => `
+        ${(p.features || []).map(f => `
         <li class="flex items-center gap-2 text-xs" style="color:#4B3832;">
-          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>${f}</span>
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0"></i><span>${escHtml(f)}</span>
         </li>`).join('')}
       </ul>
       ${isCurrentPlan
@@ -1528,18 +1513,19 @@ function renderPlanesContent(currentTierVal) {
               style="background:rgba(34,197,94,.12); color:#4ade80; border:1px solid rgba(34,197,94,.3)">
             ✓ Tu plan actual
            </div>`
-        : `<div id="paypal-planes-${p.id}"
-                data-plan="${p.id}"
-                data-amount="${p.amountUsd}"
-                data-label="Plan ${escHtml(p.label)} · Flowback Hub"></div>`
+        : `<div id="paypal-planes-${escHtml(p.tier)}"
+                data-plan="${escHtml(p.tier)}"
+                data-amount="${_planAmountUsd(p)}"
+                data-label="Plan ${escHtml(p.name)} · Flowback Hub"></div>`
       }
     </div>`;
   });
 
-  if (currentTierVal === 'vip') {
+  // User is on the highest-rank active plan: friendly cap message
+  if (isMember && !upgradeable.length) {
     html += `
     <div class="text-center py-6">
-      <p class="text-2xl mb-2">💎</p>
+      <p class="text-2xl mb-2">${_planVisual(currentTierVal).emoji}</p>
       <p class="font-bold text-white mb-1">Estás en el plan máximo</p>
       <p class="text-xs text-white/40">Tienes acceso completo a todo Flowback Hub</p>
     </div>`;
@@ -1898,6 +1884,45 @@ async function loadClasesGratis() {
   }
 }
 
+function renderClasesPlanCards() {
+  if (!appPlans.length) return '<p class="text-xs text-white/40 text-center py-4">Cargando planes…</p>';
+  return appPlans.map(plan => {
+    const visual    = _planVisual(plan.tier);
+    const isPopular = plan.badge && plan.badge.toLowerCase() === 'popular';
+    const cardStyle = isPopular
+      ? 'position:relative; width:100%; border-radius:16px; border:2px solid #F57C00; background:#fff; padding:20px; overflow:visible; margin-top:20px;'
+      : 'width:100%; border-radius:16px; border:1px solid #E8DDD4; background:#fff; padding:20px;';
+    const popularChip = isPopular
+      ? `<span style="position:absolute; top:-14px; left:50%; transform:translateX(-50%); background:#F57C00; color:white; font-size:12px; font-weight:700; padding:4px 16px; border-radius:999px; white-space:nowrap; box-shadow: 0 2px 8px rgba(245,124,0,0.4); z-index:10;">⭐ ${escHtml(plan.badge)}</span>`
+      : '';
+    const savings = plan.savings_percent > 0
+      ? `<p class="text-xs font-semibold mb-3" style="color:${visual.color}">Ahorra ${plan.savings_percent}%</p>`
+      : `<p class="text-xs text-white/40 mb-3">equivale a $${Number(plan.price_usd)} USD${plan.period_months === 1 ? '/mes' : ' total'}</p>`;
+    const priceLabel = plan.period_months === 1 ? 'CLP' : 'CLP total';
+
+    return `
+      <div class="flex flex-col" style="${cardStyle}">
+        ${popularChip}
+        <p class="text-xs font-bold tracking-widest mb-1" style="color:${visual.color}">${escHtml(plan.name.toUpperCase())}</p>
+        <p class="text-xs text-white/50 mb-2">${escHtml(_planPeriodLabel(plan))}</p>
+        <div class="flex items-baseline gap-1 mb-1">
+          <span class="text-2xl font-black text-white">$${Number(plan.price_clp || 0).toLocaleString('es-CL')}</span>
+          <span class="text-xs text-white/40">${priceLabel}</span>
+        </div>
+        ${savings}
+        <ul class="space-y-2 mb-4 flex-1">
+          ${(plan.features || []).map(f => `
+            <li class="flex items-start gap-2 text-xs" style="color:#4B3832;">
+              <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i>
+              <span>${escHtml(f)}</span>
+            </li>`).join('')}
+        </ul>
+        <button onclick="handleJoinTribu('${escHtml(plan.tier)}')" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2" id="join-${escHtml(plan.tier)}">Unirme a la Tribu</button>
+        <div id="paypal-${escHtml(plan.tier)}" class="mb-2" style="display:none"></div>
+      </div>`;
+  }).join('');
+}
+
 function renderClasesStaticContent() {
   const el = document.getElementById('clases-static-content');
   if (!el) return;
@@ -1988,64 +2013,11 @@ function renderClasesStaticContent() {
       </a>
     </div>
 
-    <!-- Planes de membresía -->
+    <!-- Planes de membresía (dinámico desde tabla `plans`) -->
     <h2 class="text-base font-bold serif mb-1 text-white">Planes de <span class="grad-text">membresía</span></h2>
     <p class="text-xs text-white/40 mb-4">Sin contratos · Cancela cuando quieras</p>
     <div style="display:flex; flex-direction:column; gap:24px; overflow:visible; padding-top:16px;" class="mb-6">
-
-      <!-- BÁSICA -->
-      <div class="flex flex-col" style="width:100%; border-radius:16px; border:1px solid #E8DDD4; background:#fff; padding:20px;">
-        <p class="text-xs font-bold tracking-widest mb-1" style="color:var(--blue)">BÁSICA</p>
-        <p class="text-xs text-white/50 mb-2">Plan Mensual · 1 mes</p>
-        <div class="flex items-baseline gap-1 mb-1">
-          <span class="text-2xl font-black text-white">$35.000</span>
-          <span class="text-xs text-white/40">CLP</span>
-        </div>
-        <p class="text-xs text-white/40 mb-3">equivale a $35 USD/mes</p>
-        <ul class="space-y-2 mb-4 flex-1">
-          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Clases Zoom AM y PM</span></li>
-          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Talleres grabados</span></li>
-          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Guía nutricional</span></li>
-        </ul>
-        <button onclick="handleJoinTribu('basica')" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2" id="join-basica">Unirme a la Tribu</button>
-        <div id="paypal-basica" class="mb-2" style="display:none"></div>
-      </div>
-
-      <!-- VIP (Popular) -->
-      <div class="flex flex-col" style="position:relative; width:100%; border-radius:16px; border:2px solid #F57C00; background:#fff; padding:20px; overflow:visible; margin-top:20px;">
-        <span style="position:absolute; top:-14px; left:50%; transform:translateX(-50%); background:#F57C00; color:white; font-size:12px; font-weight:700; padding:4px 16px; border-radius:999px; white-space:nowrap; box-shadow: 0 2px 8px rgba(245,124,0,0.4); z-index:10;">⭐ Popular</span>
-        <p class="text-xs font-bold tracking-widest mb-1" style="color:var(--orange)">VIP</p>
-        <p class="text-xs text-white/50 mb-2">Plan Trimestral · 3 meses</p>
-        <div class="flex items-baseline gap-1 mb-1">
-          <span class="text-2xl font-black text-white">$65.000</span>
-          <span class="text-xs text-white/40">CLP/mes</span>
-        </div>
-        <p class="text-xs font-semibold mb-3" style="color:var(--orange)">Ahorra 38%</p>
-        <ul class="space-y-2 mb-4 flex-1">
-          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Todo lo del plan básico</span></li>
-          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Acompañamiento nutricional</span></li>
-          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Respuestas 24/7 WhatsApp</span></li>
-        </ul>
-        <button onclick="handleJoinTribu('vip')" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2" id="join-vip">Unirme a la Tribu</button>
-        <div id="paypal-vip" class="mb-2" style="display:none"></div>
-      </div>
-
-      <!-- PREMIUM -->
-      <div class="flex flex-col" style="width:100%; border-radius:16px; border:1px solid #E8DDD4; background:#fff; padding:20px;">
-        <p class="text-xs font-bold tracking-widest mb-1" style="color:#a78bfa">PREMIUM</p>
-        <p class="text-xs text-white/50 mb-2">Plan Semestral · 6 meses</p>
-        <div class="flex items-baseline gap-1 mb-1">
-          <span class="text-2xl font-black text-white">$120.000</span>
-          <span class="text-xs text-white/40">CLP</span>
-        </div>
-        <p class="text-xs font-semibold mb-3" style="color:#a78bfa">Ahorra 50%</p>
-        <ul class="space-y-2 mb-4 flex-1">
-          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Todo lo del plan VIP</span></li>
-          <li class="flex items-start gap-2 text-xs" style="color:#4B3832;"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"></i><span>Curso Heridas Emocionales</span></li>
-        </ul>
-        <button onclick="handleJoinTribu('premium')" class="btn-grad w-full py-2.5 rounded-xl text-sm mb-2" id="join-premium">Unirme a la Tribu</button>
-        <div id="paypal-premium" class="mb-2" style="display:none"></div>
-      </div>
+      ${renderClasesPlanCards()}
     </div>
 
     <!-- Soporte WhatsApp -->
@@ -2068,17 +2040,11 @@ function renderClasesStaticContent() {
 }
 
 /* ═══════════════════════════════════════════
-   PAYPAL CHECKOUT — planes de membresía
+   PAYPAL CHECKOUT — montos derivados de tabla `plans` (appPlans)
 ═══════════════════════════════════════════ */
-const PAYPAL_PLANS = {
-  basica:  { amount: '35.00',  label: 'Plan Básica · Flowback Hub'  },
-  vip:     { amount: '65.00',  label: 'Plan VIP · Flowback Hub'     },
-  premium: { amount: '120.00', label: 'Plan Premium · Flowback Hub' },
-};
-
-function handleJoinTribu(plan) {
+function handleJoinTribu(planTier) {
   if (!currentUser) { openModal(); return; }
-  const pp = document.getElementById('paypal-' + plan);
+  const pp = document.getElementById('paypal-' + planTier);
   if (pp) pp.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -2095,18 +2061,19 @@ function waitForPaypalSdk(cb, attempt = 0) {
 
 function renderPaypalButtons() {
   waitForPaypalSdk(() => {
-    console.log('[PayPal] renderPaypalButtons() — currentUser:', !!currentUser);
-    Object.keys(PAYPAL_PLANS).forEach(plan => {
-      const cfg       = PAYPAL_PLANS[plan];
-      const container = document.getElementById('paypal-' + plan);
-      const fallback  = document.getElementById('join-' + plan);
-      if (!container) { console.log('[PayPal] contenedor no existe: paypal-' + plan); return; }
+    console.log('[PayPal] renderPaypalButtons() — currentUser:', !!currentUser, '· planes:', appPlans.length);
+    appPlans.forEach(plan => {
+      const amount    = _planAmountUsd(plan);
+      const label     = `Plan ${plan.name} · Flowback Hub`;
+      const container = document.getElementById('paypal-' + plan.tier);
+      const fallback  = document.getElementById('join-' + plan.tier);
+      if (!container) { console.log('[PayPal] contenedor no existe: paypal-' + plan.tier); return; }
 
       container.innerHTML = '';
       if (currentUser) {
         container.style.display = 'block';
         if (fallback) fallback.style.display = 'none';
-        mountPaypal(container, plan, cfg.amount, cfg.label);
+        mountPaypal(container, plan.tier, amount, label);
       } else {
         container.style.display = 'none';
         if (fallback) fallback.style.display = 'block';
@@ -2117,12 +2084,11 @@ function renderPaypalButtons() {
 
 function renderModalPaypalButtons() {
   waitForPaypalSdk(() => {
-    Object.keys(PAYPAL_PLANS).forEach(plan => {
-      const cfg = PAYPAL_PLANS[plan];
-      const container = document.getElementById('paypal-modal-' + plan);
+    appPlans.forEach(plan => {
+      const container = document.getElementById('paypal-modal-' + plan.tier);
       if (!container) return;
       container.innerHTML = '';
-      mountPaypal(container, plan, cfg.amount, cfg.label);
+      mountPaypal(container, plan.tier, _planAmountUsd(plan), `Plan ${plan.name} · Flowback Hub`);
     });
   });
 }
@@ -2897,6 +2863,7 @@ function renderAdminShell() {
       <button class="sub-tab-btn" id="admin-tab-cursos"     onclick="switchAdminTab('cursos')"><span class="admin-tab-emoji">🎓</span><span class="admin-tab-label">Cursos</span></button>
       <button class="sub-tab-btn" id="admin-tab-webinars"   onclick="switchAdminTab('webinars')"><span class="admin-tab-emoji">📡</span><span class="admin-tab-label">Webinars</span></button>
       <button class="sub-tab-btn" id="admin-tab-documentos" onclick="switchAdminTab('documentos')"><span class="admin-tab-emoji">📄</span><span class="admin-tab-label">Docs</span></button>
+      <button class="sub-tab-btn" id="admin-tab-planes"     onclick="switchAdminTab('planes')"><span class="admin-tab-emoji">💎</span><span class="admin-tab-label">Planes</span></button>
       <button class="sub-tab-btn" id="admin-tab-imagenes"   onclick="switchAdminTab('imagenes')"><span class="admin-tab-emoji">🖼️</span><span class="admin-tab-label">Imágenes</span></button>
       <button class="sub-tab-btn" id="admin-tab-usuarios"   onclick="switchAdminTab('usuarios')"><span class="admin-tab-emoji">👥</span><span class="admin-tab-label">Usuarios</span></button>
     </div>
@@ -2907,7 +2874,7 @@ function renderAdminShell() {
 
 function switchAdminTab(tab) {
   _adminCurrentTab = tab;
-  ['videos','eventos','cursos','webinars','documentos','imagenes','usuarios'].forEach(t => {
+  ['videos','eventos','cursos','webinars','documentos','planes','imagenes','usuarios'].forEach(t => {
     const btn = document.getElementById('admin-tab-' + t);
     if (btn) btn.classList.toggle('active', t === tab);
   });
@@ -2917,6 +2884,7 @@ function switchAdminTab(tab) {
     cursos:     loadAdminCursos,
     webinars:   loadAdminWebinars,
     documentos: loadAdminDocumentos,
+    planes:     loadAdminPlanes,
     imagenes:   loadAdminImagenes,
     usuarios:   loadAdminUsuarios,
   };
@@ -3019,6 +2987,7 @@ async function _reorderAdminItem(table, id, dir) {
     if (table === 'videos')        loadAdminVideos();
     else if (table === 'courses')  loadAdminCursos();
     else if (table === 'webinars') loadAdminWebinars();
+    else if (table === 'plans')    { await loadPlans(); loadAdminPlanes(); }
     else if (table === 'lessons' && _adminLessonsCourseId) {
       loadAdminLecciones(_adminLessonsCourseId, _adminLessonsCourseTitle);
     }
@@ -3271,6 +3240,218 @@ function loadAdminDocumentos() {
     cols:      [{key:'title'},{key:'tier_required'},{key:'drive_url'}],
     emptyIcon: 'file-text',
   });
+}
+
+/* ── TAB: Planes ── */
+async function loadAdminPlanes() {
+  const c = document.getElementById('admin-tab-content');
+  if (!c) return;
+  c.innerHTML = skeletonCards(3);
+  try {
+    const { data, error } = await sb.from('plans').select('*').order('order_index');
+    console.log('[Admin Planes]', { count: data?.length ?? 'null', error });
+    if (error) throw error;
+
+    c.innerHTML = `
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-bold text-white/60 uppercase tracking-wide">Planes de membresía</p>
+        <span class="text-xs text-white/30 italic">Solo edición · 3 planes fijos</span>
+      </div>` +
+      (data?.length
+        ? data.map((p, i) => `
+          <div class="card rounded-xl p-3.5 mb-2.5 flex items-center gap-3">
+            <span class="w-2 h-2 rounded-full flex-shrink-0 ${p.is_active !== false ? 'bg-green-400' : 'bg-red-400/60'}"></span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-white truncate">
+                ${escHtml(p.name)} <span class="text-white/40 text-xs">· ${escHtml(p.tier)}</span>
+              </p>
+              <p class="text-xs text-white/40 mt-0.5 truncate">
+                $${Number(p.price_clp || 0).toLocaleString('es-CL')} CLP / ${escHtml(p.period || '')}
+                ${p.badge ? ' · <span style="color:var(--orange)">' + escHtml(p.badge) + '</span>' : ''}
+              </p>
+            </div>
+            <div class="flex gap-1.5 flex-shrink-0">
+              ${_renderReorderControls('plans', p.id, i === 0, i === data.length - 1)}
+              <button onclick='openAdminPlanForm(${JSON.stringify(p).replace(/'/g, "&#39;")})'
+                class="btn-ghost text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1">
+                <i data-lucide="pencil" class="w-3 h-3"></i>
+              </button>
+            </div>
+          </div>`).join('')
+        : `<div class="card rounded-2xl p-8 text-center mt-1">
+             <i data-lucide="package-x" class="w-8 h-8 mx-auto mb-3 text-white/20"></i>
+             <p class="font-medium text-white/50 mb-1">Sin planes en la tabla</p>
+             <p class="text-xs text-white/25">Inserta los planes base directamente en Supabase</p>
+           </div>`);
+    lucide.createIcons();
+  } catch(err) {
+    console.error('[Admin Planes] error:', err);
+    c.innerHTML = `<div class="card rounded-2xl p-6 text-center mt-1" style="border-color:rgba(245,124,0,.3);">
+      <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-3 text-orange-400"></i>
+      <p class="font-semibold text-white mb-1">Error al cargar Planes</p>
+      <p class="text-xs text-white/50 mb-3 font-mono">${escHtml(err?.message || String(err))}</p>
+      <button onclick="switchAdminTab('planes')" class="btn-grad text-xs px-4 py-2 rounded-xl">Reintentar</button>
+    </div>`;
+    lucide.createIcons();
+  }
+}
+
+/* Feature row input — used inside the plan editor */
+function _renderPlanFeatureRow(value, idx) {
+  return `
+    <div class="flex gap-2 mb-2" data-feature-row>
+      <input type="text" class="auth-input flex-1 ap-feature-input" value="${escHtml(value || '')}" placeholder="ej: Clases Zoom AM y PM">
+      <button type="button" onclick="this.closest('[data-feature-row]').remove()"
+        class="px-3 rounded-xl text-red-400/80 flex-shrink-0"
+        style="background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.15);">
+        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>`;
+}
+
+function _addPlanFeature() {
+  const list = document.getElementById('ap_features_list');
+  if (!list) return;
+  list.insertAdjacentHTML('beforeend', _renderPlanFeatureRow('', list.children.length));
+  lucide.createIcons();
+}
+
+function openAdminPlanForm(item) {
+  if (!item) { showToast('Plan inválido', true); return; }
+  _adminEditType = 'plan';
+  _adminEditItem = item;
+
+  document.getElementById('admin-modal-title').textContent = 'Editar plan: ' + (item.name || item.tier);
+
+  const features = Array.isArray(item.features) ? item.features : [];
+
+  document.getElementById('admin-modal-body').innerHTML = `
+    <input type="hidden" id="ap_id" value="${escHtml(item.id || '')}">
+    <input type="hidden" id="ap_tier" value="${escHtml(item.tier || '')}">
+
+    <div class="mb-3">
+      <label class="text-xs text-white/40 mb-1.5 block">Nombre</label>
+      <input type="text" id="ap_name" class="auth-input" value="${escHtml(item.name || '')}" placeholder="Básica / VIP / Premium">
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div>
+        <label class="text-xs text-white/40 mb-1.5 block">Precio CLP</label>
+        <input type="number" id="ap_price_clp" class="auth-input" value="${item.price_clp ?? 0}">
+      </div>
+      <div>
+        <label class="text-xs text-white/40 mb-1.5 block">Precio USD</label>
+        <input type="number" id="ap_price_usd" class="auth-input" value="${item.price_usd ?? 0}" step="0.01">
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-3 mb-3">
+      <div>
+        <label class="text-xs text-white/40 mb-1.5 block">Periodo</label>
+        <input type="text" id="ap_period" class="auth-input" value="${escHtml(item.period || '')}" placeholder="mes / trimestre / semestre">
+      </div>
+      <div>
+        <label class="text-xs text-white/40 mb-1.5 block">Meses</label>
+        <input type="number" id="ap_period_months" class="auth-input" value="${item.period_months ?? 1}">
+      </div>
+      <div>
+        <label class="text-xs text-white/40 mb-1.5 block">Ahorro %</label>
+        <input type="number" id="ap_savings" class="auth-input" value="${item.savings_percent ?? 0}">
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="text-xs text-white/40 mb-1.5 block">Badge (etiqueta)</label>
+      <input type="text" id="ap_badge" class="auth-input" value="${escHtml(item.badge || '')}" placeholder="Popular / Mejor valor / (vacío)">
+    </div>
+
+    <div class="mb-3">
+      <label class="text-xs text-white/40 mb-1.5 block">Features (uno por línea)</label>
+      <div id="ap_features_list">
+        ${features.length
+          ? features.map((f, i) => _renderPlanFeatureRow(f, i)).join('')
+          : _renderPlanFeatureRow('', 0)}
+      </div>
+      <button type="button" onclick="_addPlanFeature()"
+        class="btn-ghost text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 mt-2">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>Agregar feature
+      </button>
+    </div>
+
+    <div class="flex items-center justify-between py-3 border-b border-white/5 mb-3">
+      <label class="text-sm text-white/70">Activo</label>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="ap_is_active" class="sr-only peer" ${item.is_active !== false ? 'checked' : ''}>
+        <div class="w-10 h-5 rounded-full peer-checked:bg-orange-500 bg-white/10 peer-focus:outline-none transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+      </label>
+    </div>
+
+    <div id="admin-form-error" class="text-xs text-error mb-3" style="display:none"></div>
+    <button id="admin-save-btn" onclick="saveAdminPlan()"
+      class="btn-grad w-full py-3 rounded-xl text-sm mb-3">
+      Guardar cambios
+    </button>
+  `;
+
+  const overlay = document.getElementById('admin-modal-overlay');
+  const sheet   = document.getElementById('admin-modal-sheet');
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  sheet.classList.remove('animate');
+  void sheet.offsetWidth;
+  sheet.classList.add('animate');
+  lucide.createIcons();
+}
+
+async function saveAdminPlan() {
+  const id     = document.getElementById('ap_id')?.value;
+  const errEl  = document.getElementById('admin-form-error');
+  const btn    = document.getElementById('admin-save-btn');
+  if (!id) { errEl.textContent = 'Plan inválido (falta id)'; errEl.style.display = 'block'; return; }
+
+  // Collect feature rows, drop empties
+  const features = Array.from(document.querySelectorAll('#ap_features_list .ap-feature-input'))
+    .map(i => i.value.trim())
+    .filter(Boolean);
+
+  const payload = {
+    name:            document.getElementById('ap_name').value.trim() || null,
+    price_clp:       parseInt(document.getElementById('ap_price_clp').value, 10) || 0,
+    price_usd:       parseFloat(document.getElementById('ap_price_usd').value) || 0,
+    period:          document.getElementById('ap_period').value.trim() || null,
+    period_months:   parseInt(document.getElementById('ap_period_months').value, 10) || 1,
+    savings_percent: parseInt(document.getElementById('ap_savings').value, 10) || 0,
+    badge:           document.getElementById('ap_badge').value.trim() || null,
+    features,
+    is_active:       document.getElementById('ap_is_active').checked,
+  };
+
+  if (!payload.name) { errEl.textContent = 'El campo "Nombre" es obligatorio'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+
+  console.log('[saveAdminPlan] payload:', payload);
+  setLoading(btn, true);
+  const { data, error } = await sb.from('plans').update(payload).eq('id', id).select();
+  setLoading(btn, false);
+
+  if (!error && (!data || data.length === 0)) {
+    alert('No se guardó (posible bloqueo por RLS). Revisá las policies de la tabla plans.');
+    return;
+  }
+  if (error) {
+    console.error('[saveAdminPlan] error:', error);
+    alert('Error: ' + (error.message || 'desconocido'));
+    errEl.textContent = error.message || 'Error al guardar';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // Refresh cache so the rest of the app sees the new prices/features
+  await loadPlans();
+
+  closeAdminModal();
+  showToast('Plan actualizado ✓');
+  loadAdminPlanes();
 }
 
 /* ── TAB: Usuarios ── */
@@ -4189,8 +4370,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 2. Inject section shells into DOM
   injectSectionShells();
 
-  // 2.1 Load admin-configured settings (hero/nutrición URLs) and apply to DOM
-  await loadAppSettings();
+  // 2.1 Load admin-configured settings (hero/nutrición URLs) + plans table in parallel
+  await Promise.all([loadAppSettings(), loadPlans()]);
   applyStoredImagesToDom();
 
   // 3. Set first active section (nav is rendered AFTER auth check to avoid flash)
