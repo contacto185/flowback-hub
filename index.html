@@ -2872,6 +2872,23 @@ let _adminEditItem         = null;   // null = new, object = editing
 let _adminLessonsCourseId  = null;   // course being browsed in lessons view
 let _adminLessonsCourseTitle = null;
 
+/* Monotonic generation counter for admin tab loads. Every loader bumps this
+   at entry and captures the new value as its `seq`. Before writing to the
+   DOM, the loader (and _writeAdminContent) checks `seq === _adminLoadSeq`.
+   If a newer loader has bumped past us, our write is silently discarded.
+   Net effect: rapid tab clicks can never let a stale fetch clobber the
+   freshest content. We don't truly abort the in-flight fetch (Supabase JS
+   doesn't expose AbortController by default) — we just ignore its result. */
+let _adminLoadSeq = 0;
+
+function _adminSeqStale(seq, label) {
+  if (seq !== _adminLoadSeq) {
+    console.log(`[Admin ${label}] discarding stale result (seq ${seq} ≠ current ${_adminLoadSeq})`);
+    return true;
+  }
+  return false;
+}
+
 /* ── Main loader ── */
 async function loadAdmin() {
   window._loaded_admin = true;
@@ -3066,14 +3083,24 @@ function _ensureAdminTabContent() {
 
 /* Write HTML into #admin-tab-content. Schedules the write on the next
    animation frame so the browser has committed any pending DOM updates
-   (e.g., the just-rendered shell) before we touch innerHTML. Returns a
-   Promise that resolves with true on success.
-
-   Includes a read-back verification + a delayed clobber check, so if
-   something overwrites the content right after we set it, we log it. */
-function _writeAdminContent(html) {
+   before we touch innerHTML. If `seq` is provided and doesn't match the
+   current _adminLoadSeq, the write is skipped (stale fetch result).
+   Returns Promise<boolean> — true if the write committed. */
+function _writeAdminContent(html, seq) {
   return new Promise(resolve => {
+    // Pre-rAF stale check
+    if (seq !== undefined && seq !== _adminLoadSeq) {
+      console.log(`[admin] write skipped (stale seq ${seq} vs current ${_adminLoadSeq})`);
+      resolve(false);
+      return;
+    }
     requestAnimationFrame(() => {
+      // Re-check after rAF — more time has passed, more chances of becoming stale
+      if (seq !== undefined && seq !== _adminLoadSeq) {
+        console.log(`[admin] write skipped after rAF (stale seq ${seq} vs current ${_adminLoadSeq})`);
+        resolve(false);
+        return;
+      }
       const target = _ensureAdminTabContent();
       if (!target) {
         console.warn('[admin] _writeAdminContent: container unavailable after restore attempt');
@@ -3083,25 +3110,12 @@ function _writeAdminContent(html) {
       target.innerHTML = html;
       try { lucide.createIcons(); }
       catch (e) { console.warn('[admin] lucide.createIcons failed:', e); }
-
-      // Read back to confirm the write actually committed.
       const verify = document.getElementById('admin-tab-content');
-      const verifyLen = verify ? verify.innerHTML.length : 0;
       const cs = verify ? getComputedStyle(verify) : null;
       console.log(
-        `[admin] wrote ${html.length} chars · verifyLen=${verifyLen}` +
-        ` · display=${cs?.display} · offsetH=${verify?.offsetHeight}` +
-        ` · w×h=${verify?.offsetWidth}×${verify?.offsetHeight}`
+        `[admin] wrote ${html.length} chars · seq=${seq} · verifyLen=${verify?.innerHTML.length}` +
+        ` · display=${cs?.display} · offsetH=${verify?.offsetHeight}`
       );
-
-      // Catch any code path that clobbers admin-tab-content immediately
-      // after we set it (e.g., another async loader's race).
-      requestAnimationFrame(() => {
-        const v2 = document.getElementById('admin-tab-content');
-        if (v2 && v2.innerHTML.length < html.length / 2) {
-          console.warn(`[admin] write was clobbered on the next frame · was=${html.length} · now=${v2.innerHTML.length}`);
-        }
-      });
       resolve(true);
     });
   });
@@ -3122,16 +3136,22 @@ function renderAdminEmptyState(emoji, title, hint) {
    Logs data/error, shows real error message, always shows Agregar button.
    RLS returning [] is handled: user sees empty state + Agregar, not stuck skeletons. */
 async function _loadAdminTab({ queryFn, label, type, cols, emptyEmoji, emptyTitle, emptyHint, reorderTable }) {
-  // _ensureAdminTabContent re-creates the container if it went missing,
-  // so we can never reach the fetch with a non-existent target.
+  // Bump the load counter — any in-flight loader becomes stale from this
+  // moment on, and its eventual write will be discarded.
+  const seq = ++_adminLoadSeq;
+  console.log(`[Admin ${label}] starting · seq=${seq}`);
+
+  // SYNCHRONOUS skeleton render BEFORE any async work. Guarantees the user
+  // sees a loading state immediately and that #admin-tab-content exists.
   const initial = _ensureAdminTabContent();
   if (!initial) { console.warn(`[Admin ${label}] container unavailable at start`); return; }
   initial.innerHTML = skeletonCards(3);
 
   try {
     const { data, error } = await queryFn();
-    console.log(`[Admin ${label}]`, { count: data?.length ?? 'null', error });
-    console.log(`[Admin ${label}] items:`, data);
+    if (_adminSeqStale(seq, label)) return;
+
+    console.log(`[Admin ${label}]`, { count: data?.length ?? 'null', error, seq });
     if (error) throw error;
 
     const rows = data?.length
@@ -3139,7 +3159,6 @@ async function _loadAdminTab({ queryFn, label, type, cols, emptyEmoji, emptyTitl
           reorderTable ? { table: reorderTable, isFirst: i === 0, isLast: i === data.length - 1 } : null
         )).join('')
       : null;
-    console.log(`[Admin ${label}] rendered HTML length:`, rows ? rows.length : 0);
 
     const body = rows
       ? rows
@@ -3149,11 +3168,12 @@ async function _loadAdminTab({ queryFn, label, type, cols, emptyEmoji, emptyTitl
           emptyHint  || 'Agregá el primero con el botón + Agregar'
         );
     const html = renderAdminListHeader(label, type) + body;
-    const ok = await _writeAdminContent(html);
-    console.log(`[Admin ${label}] write success=${ok}`);
+    const ok = await _writeAdminContent(html, seq);
+    console.log(`[Admin ${label}] write success=${ok} · seq=${seq}`);
   } catch(err) {
+    if (_adminSeqStale(seq, label)) return;
     console.error(`[Admin ${label}] error:`, err);
-    _writeAdminContent(renderAdminListHeader(label, type) +
+    await _writeAdminContent(renderAdminListHeader(label, type) +
       `<div class="card rounded-2xl p-6 text-center mt-1"
           style="border-color:rgba(245,124,0,.3);">
          <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-3 text-orange-400"></i>
@@ -3165,7 +3185,7 @@ async function _loadAdminTab({ queryFn, label, type, cols, emptyEmoji, emptyTitl
          </p>
          <button onclick="switchAdminTab(_adminCurrentTab)"
            class="btn-grad text-xs px-4 py-2 rounded-xl">Reintentar</button>
-       </div>`);
+       </div>`, seq);
   }
 }
 
@@ -3198,13 +3218,16 @@ function loadAdminEventos() {
 
 /* ── TAB: Cursos ── */
 async function loadAdminCursos() {
+  const seq = ++_adminLoadSeq;
+  console.log('[Admin Cursos] starting · seq=' + seq);
   const c = _ensureAdminTabContent();
   if (!c) return;
   c.innerHTML = skeletonCards(3);
   try {
     const { data, error } = await sb.from('courses').select('*')
       .order('order_index',{nullsLast:true}).order('created_at',{ascending:false});
-    console.log('[Admin Cursos]', { count: data?.length ?? 'null', error });
+    if (_adminSeqStale(seq, 'Cursos')) return;
+    console.log('[Admin Cursos]', { count: data?.length ?? 'null', error, seq });
     if (error) throw error;
     const html = `
       <div class="flex items-center justify-between mb-4">
@@ -3245,11 +3268,12 @@ async function loadAdminCursos() {
             </div>
           </div>`).join('')
         : renderAdminEmptyState('🎓', 'No hay cursos creados aún', 'Agregá el primero con el botón + Agregar'));
-    const ok = await _writeAdminContent(html);
-    console.log('[Admin Cursos] write success=' + ok);
+    const ok = await _writeAdminContent(html, seq);
+    console.log('[Admin Cursos] write success=' + ok + ' · seq=' + seq);
   } catch(err) {
+    if (_adminSeqStale(seq, 'Cursos')) return;
     console.error('[Admin Cursos] error:', err);
-    _writeAdminContent(`
+    await _writeAdminContent(`
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-bold text-white/60 uppercase tracking-wide">Cursos</p>
         <button onclick="openAdminForm('curso', null)"
@@ -3262,12 +3286,14 @@ async function loadAdminCursos() {
         <p class="font-semibold text-white mb-1">Error al cargar Cursos</p>
         <p class="text-xs text-white/50 mb-3 font-mono">${escHtml(err?.message || String(err))}</p>
         <button onclick="switchAdminTab('cursos')" class="btn-grad text-xs px-4 py-2 rounded-xl">Reintentar</button>
-      </div>`);
+      </div>`, seq);
   }
 }
 
 /* ── Lessons view for a course ── */
 async function loadAdminLecciones(courseId, courseTitle) {
+  const seq = ++_adminLoadSeq;
+  console.log('[Admin Lecciones] starting · seq=' + seq);
   _adminLessonsCourseId    = courseId;
   _adminLessonsCourseTitle = courseTitle;
   const c = _ensureAdminTabContent();
@@ -3277,7 +3303,8 @@ async function loadAdminLecciones(courseId, courseTitle) {
     const { data, error } = await sb.from('lessons').select('*')
       .eq('course_id', courseId)
       .order('order_index', { nullsLast: true });
-    console.log('[Admin Lecciones]', { courseId, count: data?.length ?? 'null', error });
+    if (_adminSeqStale(seq, 'Lecciones')) return;
+    console.log('[Admin Lecciones]', { courseId, count: data?.length ?? 'null', error, seq });
     if (error) throw error;
     const html = `
       <div class="flex items-center gap-2 mb-4">
@@ -3320,17 +3347,18 @@ async function loadAdminLecciones(courseId, courseTitle) {
             </div>
           </div>`).join('')
         : renderAdminEmptyState('📖', 'No hay lecciones aún', 'Tocá + Agregar para crear la primera lección'));
-    const ok = await _writeAdminContent(html);
-    console.log('[Admin Lecciones] write success=' + ok);
+    const ok = await _writeAdminContent(html, seq);
+    console.log('[Admin Lecciones] write success=' + ok + ' · seq=' + seq);
   } catch(err) {
+    if (_adminSeqStale(seq, 'Lecciones')) return;
     console.error('[Admin Lecciones] error:', err);
-    _writeAdminContent(`<div class="card rounded-2xl p-6 text-center mt-1" style="border-color:rgba(245,124,0,.3);">
+    await _writeAdminContent(`<div class="card rounded-2xl p-6 text-center mt-1" style="border-color:rgba(245,124,0,.3);">
       <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-3 text-orange-400"></i>
       <p class="font-semibold text-white mb-1">Error al cargar lecciones</p>
       <p class="text-xs text-white/50 mb-3 font-mono">${escHtml(err?.message || String(err))}</p>
       <button onclick="loadAdminLecciones(_adminLessonsCourseId, _adminLessonsCourseTitle)"
         class="btn-grad text-xs px-4 py-2 rounded-xl">Reintentar</button>
-    </div>`);
+    </div>`, seq);
   }
 }
 
@@ -3389,12 +3417,15 @@ function loadAdminDocumentos() {
 
 /* ── TAB: Planes ── */
 async function loadAdminPlanes() {
+  const seq = ++_adminLoadSeq;
+  console.log('[Admin Planes] starting · seq=' + seq);
   const c = _ensureAdminTabContent();
   if (!c) return;
   c.innerHTML = skeletonCards(3);
   try {
     const { data, error } = await sb.from('plans').select('*').order('order_index');
-    console.log('[Admin Planes]', { count: data?.length ?? 'null', error });
+    if (_adminSeqStale(seq, 'Planes')) return;
+    console.log('[Admin Planes]', { count: data?.length ?? 'null', error, seq });
     if (error) throw error;
 
     const html = `
@@ -3424,16 +3455,17 @@ async function loadAdminPlanes() {
             </div>
           </div>`).join('')
         : renderAdminEmptyState('💎', 'No hay planes en la base de datos', 'Insertá los 3 planes base directamente en Supabase'));
-    const ok = await _writeAdminContent(html);
-    console.log('[Admin Planes] write success=' + ok);
+    const ok = await _writeAdminContent(html, seq);
+    console.log('[Admin Planes] write success=' + ok + ' · seq=' + seq);
   } catch(err) {
+    if (_adminSeqStale(seq, 'Planes')) return;
     console.error('[Admin Planes] error:', err);
-    _writeAdminContent(`<div class="card rounded-2xl p-6 text-center mt-1" style="border-color:rgba(245,124,0,.3);">
+    await _writeAdminContent(`<div class="card rounded-2xl p-6 text-center mt-1" style="border-color:rgba(245,124,0,.3);">
       <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-3 text-orange-400"></i>
       <p class="font-semibold text-white mb-1">Error al cargar Planes</p>
       <p class="text-xs text-white/50 mb-3 font-mono">${escHtml(err?.message || String(err))}</p>
       <button onclick="switchAdminTab('planes')" class="btn-grad text-xs px-4 py-2 rounded-xl">Reintentar</button>
-    </div>`);
+    </div>`, seq);
   }
 }
 
@@ -3597,6 +3629,8 @@ async function saveAdminPlan() {
 
 /* ── TAB: Usuarios ── */
 async function loadAdminUsuarios() {
+  const seq = ++_adminLoadSeq;
+  console.log('[Admin Usuarios] starting · seq=' + seq);
   const c = _ensureAdminTabContent();
   if (!c) return;
   c.innerHTML = skeletonCards(3);
@@ -3607,6 +3641,7 @@ async function loadAdminUsuarios() {
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false });
+    if (_adminSeqStale(seq, 'Usuarios')) return;
     if (error) throw error;
 
     const rows = (data || []).map(p => `
@@ -3629,7 +3664,7 @@ async function loadAdminUsuarios() {
       </div>
     </div>`).join('');
 
-    console.log('[Admin Usuarios]', { count: data?.length ?? 'null', error });
+    console.log('[Admin Usuarios]', { count: data?.length ?? 'null', error, seq });
     const html = `
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-bold text-white/60 uppercase tracking-wide">
@@ -3638,16 +3673,17 @@ async function loadAdminUsuarios() {
         <span class="text-xs text-white/30 italic">Email: requiere service role</span>
       </div>
       ${rows || renderAdminEmptyState('👥', 'No hay usuarios registrados aún', 'Cuando alguien se registre va a aparecer acá')}`;
-    const ok = await _writeAdminContent(html);
-    console.log('[Admin Usuarios] write success=' + ok);
+    const ok = await _writeAdminContent(html, seq);
+    console.log('[Admin Usuarios] write success=' + ok + ' · seq=' + seq);
   } catch(err) {
+    if (_adminSeqStale(seq, 'Usuarios')) return;
     console.error('[Admin Usuarios] error:', err);
-    _writeAdminContent(`<div class="card rounded-2xl p-6 text-center mt-1" style="border-color:rgba(245,124,0,.3);">
+    await _writeAdminContent(`<div class="card rounded-2xl p-6 text-center mt-1" style="border-color:rgba(245,124,0,.3);">
       <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-3 text-orange-400"></i>
       <p class="font-semibold text-white mb-1">Error al cargar Usuarios</p>
       <p class="text-xs text-white/50 mb-3 font-mono">${escHtml(err?.message || String(err))}</p>
       <button onclick="switchAdminTab('usuarios')" class="btn-grad text-xs px-4 py-2 rounded-xl">Reintentar</button>
-    </div>`);
+    </div>`, seq);
   }
 }
 
@@ -3693,6 +3729,8 @@ async function setSetting(key, value) {
 }
 
 function loadAdminImagenes() {
+  const seq = ++_adminLoadSeq;
+  console.log('[Admin Imágenes] starting · seq=' + seq);
   const c = _ensureAdminTabContent();
   if (!c) return;
 
