@@ -1,0 +1,11 @@
+{
+  "name": "Flowback Hub",
+  "short_name": "Flowback",
+  "description": "Tu comunidad de transformación y bienestar",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0E14",
+  "theme_color": "#F57C00",
+  "orientation": "portrait",
+  "icons": []
+}

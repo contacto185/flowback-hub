@@ -2921,6 +2921,7 @@ function renderAdminShell() {
 }
 
 function switchAdminTab(tab) {
+  console.log('%c[switchAdminTab] → ' + tab, 'background:#F57C00;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold');
   _adminCurrentTab = tab;
   ['videos','eventos','cursos','webinars','documentos','planes','imagenes','usuarios'].forEach(t => {
     const btn = document.getElementById('admin-tab-' + t);
@@ -2936,7 +2937,9 @@ function switchAdminTab(tab) {
     imagenes:   loadAdminImagenes,
     usuarios:   loadAdminUsuarios,
   };
-  loaders[tab]?.();
+  const loader = loaders[tab];
+  if (!loader) { console.warn('[switchAdminTab] no loader registered for', tab); return; }
+  loader();
 }
 
 /* ── Generic list renderer ── */
@@ -3356,7 +3359,7 @@ function loadAdminWebinars() {
    the user reports skeletons here, the log will show whether the write
    landed and whether the element is laid out visibly. */
 function loadAdminDocumentos() {
-  console.log('[Admin Docs] loader invoked');
+  console.log('%c═══════ [Admin Docs] LOADER INVOKED ═══════', 'background:#1e40af;color:#fff;padding:4px 12px;font-weight:bold;font-size:13px');
   const result = _loadAdminTab({
     queryFn:    () => sb.from('documents').select('*').order('created_at',{ascending:false}),
     label:      'Documentos',
