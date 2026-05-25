@@ -2574,6 +2574,27 @@ function renderTierGate(requiredTier, sectionName) {
 /* ═══════════════════════════════════════════
    LOAD AGENDA (member videos, basica+)
 ═══════════════════════════════════════════ */
+/* Write HTML into a member-section container by re-querying the DOM right
+   before writing. Same defensive pattern as _writeAdminContent — survives
+   stale references caused by re-renders or races. */
+function _writeMemberSection(containerId, html) {
+  const el = document.getElementById(containerId);
+  if (!el) { console.warn(`[member] #${containerId} not in DOM at write time`); return false; }
+  el.innerHTML = html;
+  try { lucide.createIcons(); }
+  catch (e) { console.warn(`[member] lucide.createIcons failed for #${containerId}:`, e); }
+  return true;
+}
+
+function renderEmptyMemberState(emoji, title, subtitle) {
+  return `
+    <div class="card rounded-2xl p-8 text-center mt-2">
+      <div style="font-size:48px;margin-bottom:12px;">${emoji}</div>
+      <p class="font-semibold text-white/70 mb-1">${escHtml(title)}</p>
+      <p class="text-xs text-white/40">${escHtml(subtitle)}</p>
+    </div>`;
+}
+
 async function loadAgenda() {
   window._loaded_agenda = true;
   const container = document.getElementById('agenda-list');
@@ -2597,14 +2618,16 @@ async function loadAgenda() {
     console.log('[Agenda] tier:', getUserTier(), '| videos:', videos?.length, '| error:', error);
     if (error) throw error;
 
-    // Si no hay datos, mostrar empty state YA — antes de cualquier query auxiliar
+    // No data → friendly empty state. Re-fetch container so a stale reference
+    // (the original `container` captured before the await) can never leave
+    // the user staring at skeletons.
     if (!videos || videos.length === 0) {
-      container.innerHTML = `
-        <div style="text-align:center;padding:40px 20px;color:#9CA3AF;">
-          <div style="font-size:48px;margin-bottom:12px;">🎬</div>
-          <p style="font-weight:600;margin-bottom:4px;">Sin clases aún</p>
-          <p style="font-size:14px;">Próximamente nuevo contenido para miembros</p>
-        </div>`;
+      const ok = _writeMemberSection('agenda-list', renderEmptyMemberState(
+        '🎬',
+        'No hay clases disponibles aún',
+        'Próximamente nuevo contenido para miembros'
+      ));
+      console.log('[Agenda] empty state write success=' + ok);
       return;
     }
 
@@ -2613,13 +2636,14 @@ async function loadAgenda() {
       .from('video_progress').select('video_id, progress_percent').eq('user_id', currentUser.id);
     (prog || []).forEach(p => { progressMap[p.video_id] = p.progress_percent; });
 
-    container.innerHTML = videos.map(v =>
+    const html = videos.map(v =>
       renderVideoCard({ ...v, _progress: progressMap[v.id] ?? 0 }, !canAccess(v.tier_required))
     ).join('');
-    lucide.createIcons();
+    const ok = _writeMemberSection('agenda-list', html);
+    console.log('[Agenda] content write success=' + ok);
   } catch(err) {
     console.error('[Agenda] error:', err);
-    container.innerHTML = renderLoadError();
+    _writeMemberSection('agenda-list', renderLoadError());
   }
 }
 
@@ -2648,16 +2672,16 @@ async function loadGrabadas() {
     console.log('[Grabadas] tier:', getUserTier(), '| webinars:', webinars?.length, '| videos:', videos?.length, '| e1:', e1, '| e2:', e2);
     if (e1 || e2) throw e1 || e2;
 
-    // Si no hay datos, mostrar empty state YA — antes de la query auxiliar
+    // No data → friendly empty state (re-fetch container to dodge stale refs)
     const noWebinars = !webinars || webinars.length === 0;
     const noVideos   = !videos   || videos.length === 0;
     if (noWebinars && noVideos) {
-      container.innerHTML = `
-        <div style="text-align:center;padding:40px 20px;color:#9CA3AF;">
-          <div style="font-size:48px;margin-bottom:12px;">📹</div>
-          <p style="font-weight:600;margin-bottom:4px;">Sin sesiones aún</p>
-          <p style="font-size:14px;">Próximamente contenido exclusivo</p>
-        </div>`;
+      const ok = _writeMemberSection('grabadas-list', renderEmptyMemberState(
+        '📹',
+        'No hay sesiones grabadas aún',
+        'Próximamente contenido exclusivo'
+      ));
+      console.log('[Grabadas] empty state write success=' + ok);
       return;
     }
 
@@ -2670,11 +2694,11 @@ async function loadGrabadas() {
     const videoCards   = (videos   || []).map(v =>
       renderVideoCard({ ...v, _progress: progressMap[v.id] ?? 0 }, !canAccess(v.tier_required))
     );
-    container.innerHTML = [...webinarCards, ...videoCards].join('');
-    lucide.createIcons();
+    const ok = _writeMemberSection('grabadas-list', [...webinarCards, ...videoCards].join(''));
+    console.log('[Grabadas] content write success=' + ok);
   } catch(err) {
     console.error('[Grabadas] error:', err);
-    container.innerHTML = renderLoadError();
+    _writeMemberSection('grabadas-list', renderLoadError());
   }
 }
 
