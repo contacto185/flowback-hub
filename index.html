@@ -247,10 +247,10 @@ tailwind.config = {
     color: var(--orange);
     font-weight: 600;
   }
-  /* Admin tabs: 8-column grid with icon-above-text so nothing gets truncated */
+  /* Admin tabs: 9-column grid with icon-above-text so nothing gets truncated */
   .admin-tabs-bar {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(9, 1fr);
     gap: 2px;
     width: 100%;
   }
@@ -621,7 +621,8 @@ let currentUser   = null;
 let userProfile   = null;
 let currentSection = 'inicio';
 let notifVisible  = false;
-let appPlans      = [];   // Loaded from `plans` table — single source of truth
+let appPlans          = [];   // Loaded from `plans` table — single source of truth
+let appLandingBlocks  = { benefits: [], resources: [] };  // Loaded from `landing_blocks`
 
 /* ═══════════════════════════════════════════
    HELPERS
@@ -727,6 +728,120 @@ function _planPeriodLabel(plan) {
 
 function _planAmountUsd(plan) {
   return Number(plan.price_usd || 0).toFixed(2);
+}
+
+/* ═══════════════════════════════════════════
+   LANDING BLOCKS — content for Clases (section: benefits | resources)
+   Source of truth: table `landing_blocks`. Falls back to hardcoded
+   defaults if the table doesn't exist yet (migration not run).
+═══════════════════════════════════════════ */
+const LANDING_BLOCKS_FALLBACK = {
+  benefits: [
+    { emoji:'🏃', title:'Clases en vivo · 7 días a la semana', subtitle:'Jimmy o Kira en pantalla, guiándote en tiempo real' },
+    { emoji:'📹', title:'+500 clases grabadas' },
+    { emoji:'🥗', title:'Guías de alimentación desinflamatoria' },
+    { emoji:'🧘', title:'Meditaciones' },
+    { emoji:'📅', title:'Horario de Clases en vivo por Zoom' },
+    { emoji:'💬', title:'Guía nutricional y acompañamiento emocional por WhatsApp 24/7' },
+  ],
+  resources: [
+    { icon:'play-circle', accent_color:'#EF4444', title:'Canal de YouTube',
+      subtitle:'Videos gratuitos de bienestar y flow',
+      url:'https://www.youtube.com/@flowback_fitness2293/posts' },
+    { icon:'heart-pulse', accent_color:'#38BDF8', title:'Ebook Rejuvenece y desinflama',
+      subtitle:'Con ejercicios, meditaciones y recetas 🥙',
+      url:'https://drive.google.com/file/d/1KvmQtZ3AKgXupkZyaOGySnw-Phhi9mmb/view' },
+  ],
+};
+
+async function loadLandingBlocks() {
+  try {
+    const { data, error } = await sb.from('landing_blocks')
+      .select('*')
+      .eq('is_active', true)
+      .order('order_index');
+    if (error) throw error;
+
+    const grouped = { benefits: [], resources: [] };
+    for (const b of data || []) {
+      if (!grouped[b.section]) grouped[b.section] = [];
+      grouped[b.section].push(b);
+    }
+    // Fall back per-section if empty (so a migration that ran but seeded
+    // only one section still gets defaults for the other).
+    if (!grouped.benefits.length)  grouped.benefits  = LANDING_BLOCKS_FALLBACK.benefits;
+    if (!grouped.resources.length) grouped.resources = LANDING_BLOCKS_FALLBACK.resources;
+    appLandingBlocks = grouped;
+  } catch (err) {
+    console.warn('[loadLandingBlocks] table missing or query failed — using hardcoded fallback:', err?.message);
+    appLandingBlocks = {
+      benefits:  [...LANDING_BLOCKS_FALLBACK.benefits],
+      resources: [...LANDING_BLOCKS_FALLBACK.resources],
+    };
+  }
+}
+
+/* Convert '#RRGGBB' to 'rgba(r,g,b,a)' for icon backgrounds.
+   Passes through anything that already starts with 'rgb' / 'rgba'. */
+function _hexToRgba(color, alpha) {
+  if (!color) return `rgba(255,255,255,${alpha})`;
+  if (/^rgba?\(/i.test(color)) return color;
+  const hex = color.replace('#', '').trim();
+  if (hex.length === 6) {
+    const r = parseInt(hex.slice(0,2), 16);
+    const g = parseInt(hex.slice(2,4), 16);
+    const b = parseInt(hex.slice(4,6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+  return color;
+}
+
+function renderClasesBenefitsHtml() {
+  const items = appLandingBlocks.benefits || [];
+  if (!items.length) return '';
+  return `
+    <h2 class="text-base font-bold serif mb-3 text-white">Lo que <span class="grad-text">obtendrás</span></h2>
+    <ul class="card rounded-2xl p-4 mb-5 space-y-3">
+      ${items.map(b => `
+        <li class="flex items-start gap-3">
+          ${b.emoji ? `<span class="text-xl flex-shrink-0">${escHtml(b.emoji)}</span>` : ''}
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-sm text-white leading-snug">${escHtml(b.title)}</p>
+            ${b.subtitle ? `<p class="text-xs text-white/50 mt-0.5">${escHtml(b.subtitle)}</p>` : ''}
+          </div>
+        </li>`).join('')}
+    </ul>`;
+}
+
+function renderClasesResourcesHtml() {
+  const items = appLandingBlocks.resources || [];
+  if (!items.length) return '';
+  return `
+    <h2 class="text-sm font-bold serif mb-3 text-white/80 uppercase tracking-wide">Recursos destacados</h2>
+    <div class="space-y-2.5 mb-6">
+      ${items.map(r => {
+        const bg   = _hexToRgba(r.accent_color, 0.12);
+        const fg   = r.accent_color || 'var(--orange)';
+        const href = r.url || '#';
+        const iconHtml = r.icon
+          ? `<i data-lucide="${escHtml(r.icon)}" class="w-5 h-5" style="color:${escHtml(fg)}"></i>`
+          : r.emoji
+            ? `<span class="text-xl">${escHtml(r.emoji)}</span>`
+            : '';
+        return `
+        <a href="${escHtml(href)}" target="_blank" rel="noopener"
+           class="res-row card rounded-xl p-3.5 flex items-center gap-3 block">
+          <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:${bg}">
+            ${iconHtml}
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-sm text-white">${escHtml(r.title)}</p>
+            ${r.subtitle ? `<p class="text-xs text-white/40 mt-0.5">${escHtml(r.subtitle)}</p>` : ''}
+          </div>
+          <i data-lucide="arrow-up-right" class="w-4 h-4 text-white/30 flex-shrink-0"></i>
+        </a>`;
+      }).join('')}
+    </div>`;
 }
 
 /* ═══════════════════════════════════════════
@@ -1951,47 +2066,8 @@ function renderClasesStaticContent() {
   const el = document.getElementById('clases-static-content');
   if (!el) return;
   el.innerHTML = `
-    <!-- Lo que obtendrás -->
-    <h2 class="text-base font-bold serif mb-3 text-white">Lo que <span class="grad-text">obtendrás</span></h2>
-    <ul class="card rounded-2xl p-4 mb-5 space-y-3">
-      <li class="flex items-start gap-3">
-        <span class="text-xl flex-shrink-0">🏃</span>
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold text-sm text-white leading-snug">Clases en vivo · 7 días a la semana</p>
-          <p class="text-xs text-white/50 mt-0.5">Jimmy o Kira en pantalla, guiándote en tiempo real</p>
-        </div>
-      </li>
-      <li class="flex items-start gap-3">
-        <span class="text-xl flex-shrink-0">📹</span>
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold text-sm text-white leading-snug">+500 clases grabadas</p>
-        </div>
-      </li>
-      <li class="flex items-start gap-3">
-        <span class="text-xl flex-shrink-0">🥗</span>
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold text-sm text-white leading-snug">Guías de alimentación desinflamatoria</p>
-        </div>
-      </li>
-      <li class="flex items-start gap-3">
-        <span class="text-xl flex-shrink-0">🧘</span>
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold text-sm text-white leading-snug">Meditaciones</p>
-        </div>
-      </li>
-      <li class="flex items-start gap-3">
-        <span class="text-xl flex-shrink-0">📅</span>
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold text-sm text-white leading-snug">Horario de Clases en vivo por Zoom</p>
-        </div>
-      </li>
-      <li class="flex items-start gap-3">
-        <span class="text-xl flex-shrink-0">💬</span>
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold text-sm text-white leading-snug">Guía nutricional y acompañamiento emocional por WhatsApp 24/7</p>
-        </div>
-      </li>
-    </ul>
+    <!-- Lo que obtendrás (dinámico desde landing_blocks) -->
+    ${renderClasesBenefitsHtml()}
 
     <!-- Nutrición image -->
     <img id="nutricion-img" src="${escHtml(getSetting('nutricion_image_url', 'https://wvxcqavtjtgvxdvtuvvd.supabase.co/storage/v1/object/public/thumbnails/WhatsApp%20Image%202026-05-21%20at%209.46.39%20PM.jpeg'))}" alt="Nutrición" style="border-radius:16px; width:100%; display:block;" class="mb-5" loading="lazy">
@@ -2010,32 +2086,8 @@ function renderClasesStaticContent() {
       <i data-lucide="arrow-right" class="w-4 h-4 text-white/30 flex-shrink-0"></i>
     </a>
 
-    <!-- Recursos destacados -->
-    <h2 class="text-sm font-bold serif mb-3 text-white/80 uppercase tracking-wide">Recursos destacados</h2>
-    <div class="space-y-2.5 mb-6">
-      <a href="https://www.youtube.com/@flowback_fitness2293/posts" target="_blank" rel="noopener"
-        class="res-row card rounded-xl p-3.5 flex items-center gap-3 block">
-        <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(255,0,0,.1)">
-          <i data-lucide="play-circle" class="w-5 h-5 text-red-500"></i>
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold text-sm text-white">Canal de YouTube</p>
-          <p class="text-xs text-white/40 mt-0.5">Videos gratuitos de bienestar y flow</p>
-        </div>
-        <i data-lucide="arrow-up-right" class="w-4 h-4 text-white/30 flex-shrink-0"></i>
-      </a>
-      <a href="https://drive.google.com/file/d/1KvmQtZ3AKgXupkZyaOGySnw-Phhi9mmb/view" target="_blank" rel="noopener"
-        class="res-row card rounded-xl p-3.5 flex items-center gap-3 block">
-        <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:rgba(56,189,248,.12)">
-          <i data-lucide="heart-pulse" class="w-5 h-5" style="color:var(--blue)"></i>
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold text-sm text-white">Ebook Rejuvenece y desinflama</p>
-          <p class="text-xs text-white/40 mt-0.5">Con ejercicios, meditaciones y recetas 🥙</p>
-        </div>
-        <i data-lucide="arrow-up-right" class="w-4 h-4 text-white/30 flex-shrink-0"></i>
-      </a>
-    </div>
+    <!-- Recursos destacados (dinámico desde landing_blocks) -->
+    ${renderClasesResourcesHtml()}
 
     <!-- Planes de membresia (dinamico desde tabla plans) -->
     <h2 class="text-base font-bold serif mb-1 text-white">Planes de <span class="grad-text">membresía</span></h2>
@@ -2929,6 +2981,7 @@ function renderAdminShell() {
       <button class="sub-tab-btn" id="admin-tab-webinars"   onclick="switchAdminTab('webinars')"><span class="admin-tab-emoji">📡</span><span class="admin-tab-label">Webinars</span></button>
       <button class="sub-tab-btn" id="admin-tab-documentos" onclick="switchAdminTab('documentos')"><span class="admin-tab-emoji">📄</span><span class="admin-tab-label">Docs</span></button>
       <button class="sub-tab-btn" id="admin-tab-planes"     onclick="switchAdminTab('planes')"><span class="admin-tab-emoji">💎</span><span class="admin-tab-label">Planes</span></button>
+      <button class="sub-tab-btn" id="admin-tab-bloques"    onclick="switchAdminTab('bloques')"><span class="admin-tab-emoji">🧩</span><span class="admin-tab-label">Bloques</span></button>
       <button class="sub-tab-btn" id="admin-tab-imagenes"   onclick="switchAdminTab('imagenes')"><span class="admin-tab-emoji">🖼️</span><span class="admin-tab-label">Imágenes</span></button>
       <button class="sub-tab-btn" id="admin-tab-usuarios"   onclick="switchAdminTab('usuarios')"><span class="admin-tab-emoji">👥</span><span class="admin-tab-label">Usuarios</span></button>
     </div>
@@ -2940,7 +2993,7 @@ function renderAdminShell() {
 function switchAdminTab(tab) {
   console.log('%c[switchAdminTab] → ' + tab, 'background:#F57C00;color:#fff;padding:2px 8px;border-radius:4px;font-weight:bold');
   _adminCurrentTab = tab;
-  ['videos','eventos','cursos','webinars','documentos','planes','imagenes','usuarios'].forEach(t => {
+  ['videos','eventos','cursos','webinars','documentos','planes','bloques','imagenes','usuarios'].forEach(t => {
     const btn = document.getElementById('admin-tab-' + t);
     if (btn) btn.classList.toggle('active', t === tab);
   });
@@ -2951,6 +3004,7 @@ function switchAdminTab(tab) {
     webinars:   loadAdminWebinars,
     documentos: loadAdminDocumentos,
     planes:     loadAdminPlanes,
+    bloques:    loadAdminBloques,
     imagenes:   loadAdminImagenes,
     usuarios:   loadAdminUsuarios,
   };
@@ -3004,17 +3058,22 @@ function renderAdminItemRow(fields, item, type, reorderCtx = null) {
 }
 
 /* Reorder controls: ↑ ↓ buttons that swap order_index with the neighbor row.
-   Boundary buttons are disabled. Table name is required to dispatch the update. */
-function _renderReorderControls(table, id, isFirst, isLast) {
+   Boundary buttons are disabled. Table name is required to dispatch the update.
+   `scope` (optional) confines the reorder to rows where {scopeCol = scopeVal}
+   — used for landing_blocks so benefits don't swap with resources. */
+function _renderReorderControls(table, id, isFirst, isLast, scope) {
   const safeId = String(id).replace(/'/g, "\\'");
   const upDisabled   = isFirst ? 'disabled style="opacity:.25;cursor:not-allowed;"' : '';
   const downDisabled = isLast  ? 'disabled style="opacity:.25;cursor:not-allowed;"' : '';
+  const scopeArg = scope
+    ? `,'${String(scope.col).replace(/'/g,"\\'")}','${String(scope.val).replace(/'/g,"\\'")}'`
+    : '';
   return `
-    <button onclick="_reorderAdminItem('${table}','${safeId}',-1)"
+    <button onclick="_reorderAdminItem('${table}','${safeId}',-1${scopeArg})"
       class="btn-ghost text-xs px-2 py-1.5 rounded-lg flex items-center" title="Subir" ${upDisabled}>
       <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
     </button>
-    <button onclick="_reorderAdminItem('${table}','${safeId}',1)"
+    <button onclick="_reorderAdminItem('${table}','${safeId}',1${scopeArg})"
       class="btn-ghost text-xs px-2 py-1.5 rounded-lg flex items-center" title="Bajar" ${downDisabled}>
       <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
     </button>`;
@@ -3023,7 +3082,7 @@ function _renderReorderControls(table, id, isFirst, isLast) {
 /* Swap order_index between the clicked item and its neighbor (dir = -1 up, +1 down).
    Lessons are scoped by _adminLessonsCourseId. Uses current visual position
    (idx in the ASC-sorted list) as fallback when order_index is null. */
-async function _reorderAdminItem(table, id, dir) {
+async function _reorderAdminItem(table, id, dir, scopeCol, scopeVal) {
   try {
     let query = sb.from(table).select('id,order_index')
       .order('order_index', { nullsLast: true })
@@ -3031,6 +3090,8 @@ async function _reorderAdminItem(table, id, dir) {
     if (table === 'lessons' && _adminLessonsCourseId) {
       query = query.eq('course_id', _adminLessonsCourseId);
     }
+    // Generic scope filter (used by landing_blocks to swap only within a section)
+    if (scopeCol) query = query.eq(scopeCol, scopeVal);
     const { data, error } = await query;
     if (error) throw error;
 
@@ -3052,10 +3113,11 @@ async function _reorderAdminItem(table, id, dir) {
     if (r1.error || r2.error) throw (r1.error || r2.error);
 
     // Reload the appropriate view
-    if (table === 'videos')        loadAdminVideos();
-    else if (table === 'courses')  loadAdminCursos();
-    else if (table === 'webinars') loadAdminWebinars();
-    else if (table === 'plans')    { await loadPlans(); loadAdminPlanes(); }
+    if (table === 'videos')         loadAdminVideos();
+    else if (table === 'courses')   loadAdminCursos();
+    else if (table === 'webinars')  loadAdminWebinars();
+    else if (table === 'plans')     { await loadPlans(); loadAdminPlanes(); }
+    else if (table === 'landing_blocks') { await loadLandingBlocks(); loadAdminBloques(); }
     else if (table === 'lessons' && _adminLessonsCourseId) {
       loadAdminLecciones(_adminLessonsCourseId, _adminLessonsCourseTitle);
     }
@@ -3625,6 +3687,279 @@ async function saveAdminPlan() {
   closeAdminModal();
   showToast('Plan actualizado ✓');
   loadAdminPlanes();
+}
+
+/* ═══════════════════════════════════════════
+   ADMIN TAB — Bloques (landing_blocks)
+═══════════════════════════════════════════ */
+const ADMIN_BLOQUE_SECTIONS = {
+  benefits:  { label: '🌱 Lo que obtendrás · Clases', defaultEmoji: '✨' },
+  resources: { label: '🎁 Recursos destacados · Clases', defaultEmoji: '📌' },
+};
+
+async function loadAdminBloques() {
+  const seq = ++_adminLoadSeq;
+  console.log('[Admin Bloques] starting · seq=' + seq);
+  const c = _ensureAdminTabContent();
+  if (!c) return;
+  c.innerHTML = skeletonCards(3);
+  try {
+    const { data, error } = await sb.from('landing_blocks')
+      .select('*')
+      .order('section')
+      .order('order_index', { nullsLast: true });
+    if (_adminSeqStale(seq, 'Bloques')) return;
+    if (error) throw error;
+
+    const bySection = {};
+    Object.keys(ADMIN_BLOQUE_SECTIONS).forEach(s => bySection[s] = []);
+    (data || []).forEach(b => {
+      if (!bySection[b.section]) bySection[b.section] = [];
+      bySection[b.section].push(b);
+    });
+
+    const html = `
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-bold text-white/60 uppercase tracking-wide">Bloques de Landing</p>
+        <button onclick="openAdminBloqueForm(null)"
+          class="btn-grad text-xs px-3 py-2 rounded-xl flex items-center gap-1.5">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>Agregar
+        </button>
+      </div>
+      ${Object.keys(ADMIN_BLOQUE_SECTIONS).map(section => {
+        const meta = ADMIN_BLOQUE_SECTIONS[section];
+        const items = bySection[section] || [];
+        return `
+          <p class="text-xs font-bold text-white/40 uppercase tracking-wider mb-2 mt-4">${escHtml(meta.label)}</p>
+          ${items.length ? items.map((b, i) => _renderAdminBloqueRow(b, i, items.length)).join('') : `
+            <div class="card rounded-xl p-4 text-center mb-3">
+              <p class="text-xs text-white/40">Sin bloques · tocá <span class="text-white/60">+ Agregar</span> y elegí esta sección</p>
+            </div>`}
+        `;
+      }).join('')}
+    `;
+    const ok = await _writeAdminContent(html, seq);
+    console.log('[Admin Bloques] write success=' + ok + ' · seq=' + seq);
+  } catch(err) {
+    if (_adminSeqStale(seq, 'Bloques')) return;
+    console.error('[Admin Bloques] error:', err);
+    const isMissing = /landing_blocks/i.test(err?.message || '') || err?.code === 'PGRST205';
+    await _writeAdminContent(`<div class="card rounded-2xl p-6 text-center mt-1" style="border-color:rgba(245,124,0,.3);">
+      <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-3 text-orange-400"></i>
+      <p class="font-semibold text-white mb-1">Error al cargar Bloques</p>
+      <p class="text-xs text-white/50 mb-3 font-mono">${escHtml(err?.message || String(err))}</p>
+      ${isMissing ? `<p class="text-xs text-white/40 mb-3 leading-relaxed">
+        La tabla <code class="text-orange-400/70">landing_blocks</code> no existe todavía.
+        Ejecutá la migración <code class="text-orange-400/70">migrations/2026-05-25_landing_blocks.sql</code>
+        en el SQL editor de Supabase y reintentá.
+      </p>` : ''}
+      <button onclick="switchAdminTab('bloques')" class="btn-grad text-xs px-4 py-2 rounded-xl">Reintentar</button>
+    </div>`, seq);
+  }
+}
+
+function _renderAdminBloqueRow(b, i, sectionTotal) {
+  const visualBg = _hexToRgba(b.accent_color, 0.15);
+  const visualFg = b.accent_color || 'var(--orange)';
+  const visual   = b.emoji
+    ? `<span class="text-base">${escHtml(b.emoji)}</span>`
+    : b.icon
+      ? `<i data-lucide="${escHtml(b.icon)}" class="w-4 h-4" style="color:${escHtml(visualFg)}"></i>`
+      : `<i data-lucide="square" class="w-4 h-4 text-white/30"></i>`;
+  return `
+    <div class="card rounded-xl p-3.5 mb-2.5 flex items-center gap-3">
+      <span class="w-2 h-2 rounded-full flex-shrink-0 ${b.is_active !== false ? 'bg-green-400' : 'bg-red-400/60'}"></span>
+      <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:${visualBg}">
+        ${visual}
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-white truncate">${escHtml(b.title)}</p>
+        <p class="text-xs text-white/40 mt-0.5 truncate">
+          ${b.subtitle ? escHtml(b.subtitle) : '—'}${b.url ? ' · <span style="color:var(--blue)">link</span>' : ''}
+        </p>
+      </div>
+      <div class="flex gap-1.5 flex-shrink-0">
+        ${_renderReorderControls('landing_blocks', b.id, i === 0, i === sectionTotal - 1, { col:'section', val:b.section })}
+        <button onclick='openAdminBloqueForm(${JSON.stringify(b).replace(/'/g, "&#39;")})'
+          class="btn-ghost text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1">
+          <i data-lucide="pencil" class="w-3 h-3"></i>
+        </button>
+        <button onclick="confirmDeleteAdminBloque('${escHtml(b.id)}')"
+          class="text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-red-400/70"
+          style="background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.15);">
+          <i data-lucide="trash-2" class="w-3 h-3"></i>
+        </button>
+      </div>
+    </div>`;
+}
+
+function openAdminBloqueForm(item) {
+  _adminEditType = 'bloque';
+  _adminEditItem = item;
+
+  const isNew = !item;
+  document.getElementById('admin-modal-title').textContent =
+    isNew ? 'Agregar bloque' : 'Editar bloque';
+
+  const section = item?.section || 'benefits';
+
+  document.getElementById('admin-modal-body').innerHTML = `
+    <input type="hidden" id="ab_id" value="${escHtml(item?.id || '')}">
+
+    <div class="mb-3">
+      <label class="text-xs text-white/40 mb-1.5 block">Sección *</label>
+      <select id="ab_section" class="auth-input">
+        ${Object.keys(ADMIN_BLOQUE_SECTIONS).map(s => `
+          <option value="${s}"${section === s ? ' selected' : ''}>${escHtml(ADMIN_BLOQUE_SECTIONS[s].label)}</option>
+        `).join('')}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="text-xs text-white/40 mb-1.5 block">Título *</label>
+      <input type="text" id="ab_title" class="auth-input" value="${escHtml(item?.title || '')}" placeholder="ej: Clases en vivo · 7 días a la semana">
+    </div>
+
+    <div class="mb-3">
+      <label class="text-xs text-white/40 mb-1.5 block">Subtítulo</label>
+      <textarea id="ab_subtitle" rows="2" class="auth-input" style="resize:vertical;" placeholder="Texto secundario, opcional">${escHtml(item?.subtitle || '')}</textarea>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div>
+        <label class="text-xs text-white/40 mb-1.5 block">Emoji</label>
+        <input type="text" id="ab_emoji" class="auth-input" value="${escHtml(item?.emoji || '')}" placeholder="🏃 (usado en benefits)" maxlength="4">
+      </div>
+      <div>
+        <label class="text-xs text-white/40 mb-1.5 block">Icono Lucide</label>
+        <input type="text" id="ab_icon" class="auth-input" value="${escHtml(item?.icon || '')}" placeholder="play-circle (usado en resources)">
+      </div>
+    </div>
+    <p class="text-xs text-white/30 -mt-1 mb-3">Usá emoji <em>o</em> icono, no ambos. Lista de iconos: <a href="https://lucide.dev/icons/" target="_blank" rel="noopener" class="text-blue-400 underline">lucide.dev/icons</a></p>
+
+    <div class="mb-3">
+      <label class="text-xs text-white/40 mb-1.5 block">Color de acento (hex)</label>
+      <div class="flex gap-2 items-center">
+        <input type="color" id="ab_accent_color_picker" value="${escHtml(item?.accent_color || '#F57C00')}" style="width:44px;height:38px;border:none;background:transparent;cursor:pointer;border-radius:8px;">
+        <input type="text" id="ab_accent_color" class="auth-input flex-1" value="${escHtml(item?.accent_color || '')}" placeholder="#EF4444 (opcional)">
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="text-xs text-white/40 mb-1.5 block">URL (link externo, opcional)</label>
+      <input type="text" id="ab_url" class="auth-input" value="${escHtml(item?.url || '')}" placeholder="https://...">
+    </div>
+
+    <div class="mb-3">
+      <label class="text-xs text-white/40 mb-1.5 block">Orden</label>
+      <input type="number" id="ab_order_index" class="auth-input" value="${item?.order_index ?? 0}">
+    </div>
+
+    <div class="flex items-center justify-between py-3 border-b border-white/5 mb-3">
+      <label class="text-sm text-white/70">Activo</label>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="ab_is_active" class="sr-only peer" ${item?.is_active !== false ? 'checked' : ''}>
+        <div class="w-10 h-5 rounded-full peer-checked:bg-orange-500 bg-white/10 peer-focus:outline-none transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+      </label>
+    </div>
+
+    <div id="admin-form-error" class="text-xs text-error mb-3" style="display:none"></div>
+    <button id="admin-save-btn" onclick="saveAdminBloque()" class="btn-grad w-full py-3 rounded-xl text-sm mb-3">
+      ${isNew ? 'Crear bloque' : 'Guardar cambios'}
+    </button>
+  `;
+
+  // Wire up the color picker ↔ text input
+  setTimeout(() => {
+    const picker = document.getElementById('ab_accent_color_picker');
+    const text   = document.getElementById('ab_accent_color');
+    if (picker && text) {
+      picker.addEventListener('input', () => { text.value = picker.value; });
+      text.addEventListener('input', () => {
+        if (/^#[0-9a-f]{6}$/i.test(text.value.trim())) picker.value = text.value.trim();
+      });
+    }
+  }, 0);
+
+  const overlay = document.getElementById('admin-modal-overlay');
+  const sheet   = document.getElementById('admin-modal-sheet');
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  sheet.classList.remove('animate');
+  void sheet.offsetWidth;
+  sheet.classList.add('animate');
+  lucide.createIcons();
+}
+
+async function saveAdminBloque() {
+  const id      = document.getElementById('ab_id')?.value;
+  const errEl   = document.getElementById('admin-form-error');
+  const btn     = document.getElementById('admin-save-btn');
+
+  const payload = {
+    section:      document.getElementById('ab_section').value,
+    title:        document.getElementById('ab_title').value.trim() || null,
+    subtitle:     document.getElementById('ab_subtitle').value.trim() || null,
+    emoji:        document.getElementById('ab_emoji').value.trim() || null,
+    icon:         document.getElementById('ab_icon').value.trim() || null,
+    accent_color: document.getElementById('ab_accent_color').value.trim() || null,
+    url:          document.getElementById('ab_url').value.trim() || null,
+    order_index:  parseInt(document.getElementById('ab_order_index').value, 10) || 0,
+    is_active:    document.getElementById('ab_is_active').checked,
+  };
+
+  if (!payload.title) {
+    errEl.textContent = 'El título es obligatorio';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  setLoading(btn, true);
+  let result;
+  if (id) {
+    result = await sb.from('landing_blocks').update(payload).eq('id', id).select();
+  } else {
+    result = await sb.from('landing_blocks').insert(payload).select();
+  }
+  setLoading(btn, false);
+
+  const { data, error } = result;
+  if (!error && (!data || data.length === 0)) {
+    alert('No se guardó (posible bloqueo por RLS). Revisá las policies de landing_blocks.');
+    return;
+  }
+  if (error) {
+    console.error('[saveAdminBloque] error:', error);
+    alert('Error: ' + (error.message || 'desconocido'));
+    errEl.textContent = error.message || 'Error al guardar';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // Refresh cache and re-render dependent UIs
+  await loadLandingBlocks();
+  // If the user is currently on the Clases section, refresh its static content
+  // so the change appears immediately without a page reload.
+  if (window._loaded_clases && document.getElementById('clases-static-content')) {
+    renderClasesStaticContent();
+  }
+
+  closeAdminModal();
+  showToast(id ? 'Bloque actualizado ✓' : 'Bloque creado ✓');
+  loadAdminBloques();
+}
+
+async function confirmDeleteAdminBloque(id) {
+  if (!confirm('¿Eliminar este bloque? Esta acción no se puede deshacer.')) return;
+  const { error } = await sb.from('landing_blocks').delete().eq('id', id);
+  if (error) { showToast('Error al eliminar: ' + error.message, true); return; }
+  await loadLandingBlocks();
+  if (window._loaded_clases && document.getElementById('clases-static-content')) {
+    renderClasesStaticContent();
+  }
+  showToast('Bloque eliminado');
+  loadAdminBloques();
 }
 
 /* ── TAB: Usuarios ── */
@@ -4546,8 +4881,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 2. Inject section shells into DOM
   injectSectionShells();
 
-  // 2.1 Load admin-configured settings (hero/nutrición URLs) + plans table in parallel
-  await Promise.all([loadAppSettings(), loadPlans()]);
+  // 2.1 Load admin-configured settings (hero/nutrición URLs) + plans + landing blocks in parallel
+  await Promise.all([loadAppSettings(), loadPlans(), loadLandingBlocks()]);
   applyStoredImagesToDom();
 
   // 3. Set first active section (nav is rendered AFTER auth check to avoid flash)
