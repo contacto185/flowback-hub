@@ -3045,19 +3045,42 @@ async function _reorderAdminItem(table, id, dir) {
   }
 }
 
-/* Write HTML into #admin-tab-content. Always re-queries the DOM right before
-   writing, so a stale/detached reference from before an await cannot leave the
-   tab stuck on skeletons. Wraps lucide so an icon error never aborts the write. */
-function _writeAdminContent(html) {
-  const target = document.getElementById('admin-tab-content');
-  if (!target) {
-    console.warn('[admin] _writeAdminContent: #admin-tab-content not in DOM at write time');
-    return false;
+/* Get #admin-tab-content, restoring it via renderAdminShell() if it went
+   missing. The whole "skeletons eternos" bug class boils down to writing
+   into a container that no longer lives in the DOM — this function ensures
+   that never happens silently. */
+function _ensureAdminTabContent() {
+  let target = document.getElementById('admin-tab-content');
+  if (target) return target;
+  console.warn('[admin] #admin-tab-content missing — re-rendering shell to restore it');
+  if (!document.getElementById('admin-content')) {
+    console.error('[admin] #admin-content also missing — sec-admin not in DOM');
+    return null;
   }
-  target.innerHTML = html;
-  try { lucide.createIcons(); }
-  catch (e) { console.warn('[admin] lucide.createIcons failed:', e); }
-  return true;
+  renderAdminShell();
+  return document.getElementById('admin-tab-content');
+}
+
+/* Write HTML into #admin-tab-content. Schedules the write on the next
+   animation frame so the browser has committed any pending DOM updates
+   (e.g., the just-rendered shell) before we touch innerHTML. Returns a
+   Promise that resolves with true on success. */
+function _writeAdminContent(html) {
+  return new Promise(resolve => {
+    requestAnimationFrame(() => {
+      const target = _ensureAdminTabContent();
+      if (!target) {
+        console.warn('[admin] _writeAdminContent: container unavailable after restore attempt');
+        resolve(false);
+        return;
+      }
+      target.innerHTML = html;
+      try { lucide.createIcons(); }
+      catch (e) { console.warn('[admin] lucide.createIcons failed:', e); }
+      console.log(`[admin] wrote ${html.length} chars into #admin-tab-content`);
+      resolve(true);
+    });
+  });
 }
 
 /* Friendly empty state for any admin tab. Big emoji + title + hint, wrapped
@@ -3075,8 +3098,10 @@ function renderAdminEmptyState(emoji, title, hint) {
    Logs data/error, shows real error message, always shows Agregar button.
    RLS returning [] is handled: user sees empty state + Agregar, not stuck skeletons. */
 async function _loadAdminTab({ queryFn, label, type, cols, emptyEmoji, emptyTitle, emptyHint, reorderTable }) {
-  const initial = document.getElementById('admin-tab-content');
-  if (!initial) { console.warn(`[Admin ${label}] container missing at start`); return; }
+  // _ensureAdminTabContent re-creates the container if it went missing,
+  // so we can never reach the fetch with a non-existent target.
+  const initial = _ensureAdminTabContent();
+  if (!initial) { console.warn(`[Admin ${label}] container unavailable at start`); return; }
   initial.innerHTML = skeletonCards(3);
 
   try {
@@ -3100,7 +3125,7 @@ async function _loadAdminTab({ queryFn, label, type, cols, emptyEmoji, emptyTitl
           emptyHint  || 'Agregá el primero con el botón + Agregar'
         );
     const html = renderAdminListHeader(label, type) + body;
-    const ok = _writeAdminContent(html);
+    const ok = await _writeAdminContent(html);
     console.log(`[Admin ${label}] write success=${ok}`);
   } catch(err) {
     console.error(`[Admin ${label}] error:`, err);
@@ -3149,7 +3174,7 @@ function loadAdminEventos() {
 
 /* ── TAB: Cursos ── */
 async function loadAdminCursos() {
-  const c = document.getElementById('admin-tab-content');
+  const c = _ensureAdminTabContent();
   if (!c) return;
   c.innerHTML = skeletonCards(3);
   try {
@@ -3196,7 +3221,7 @@ async function loadAdminCursos() {
             </div>
           </div>`).join('')
         : renderAdminEmptyState('🎓', 'No hay cursos creados aún', 'Agregá el primero con el botón + Agregar'));
-    const ok = _writeAdminContent(html);
+    const ok = await _writeAdminContent(html);
     console.log('[Admin Cursos] write success=' + ok);
   } catch(err) {
     console.error('[Admin Cursos] error:', err);
@@ -3221,7 +3246,7 @@ async function loadAdminCursos() {
 async function loadAdminLecciones(courseId, courseTitle) {
   _adminLessonsCourseId    = courseId;
   _adminLessonsCourseTitle = courseTitle;
-  const c = document.getElementById('admin-tab-content');
+  const c = _ensureAdminTabContent();
   if (!c) return;
   c.innerHTML = skeletonCards(3);
   try {
@@ -3271,7 +3296,7 @@ async function loadAdminLecciones(courseId, courseTitle) {
             </div>
           </div>`).join('')
         : renderAdminEmptyState('📖', 'No hay lecciones aún', 'Tocá + Agregar para crear la primera lección'));
-    const ok = _writeAdminContent(html);
+    const ok = await _writeAdminContent(html);
     console.log('[Admin Lecciones] write success=' + ok);
   } catch(err) {
     console.error('[Admin Lecciones] error:', err);
@@ -3319,7 +3344,7 @@ function loadAdminDocumentos() {
 
 /* ── TAB: Planes ── */
 async function loadAdminPlanes() {
-  const c = document.getElementById('admin-tab-content');
+  const c = _ensureAdminTabContent();
   if (!c) return;
   c.innerHTML = skeletonCards(3);
   try {
@@ -3354,7 +3379,7 @@ async function loadAdminPlanes() {
             </div>
           </div>`).join('')
         : renderAdminEmptyState('💎', 'No hay planes en la base de datos', 'Insertá los 3 planes base directamente en Supabase'));
-    const ok = _writeAdminContent(html);
+    const ok = await _writeAdminContent(html);
     console.log('[Admin Planes] write success=' + ok);
   } catch(err) {
     console.error('[Admin Planes] error:', err);
@@ -3527,7 +3552,7 @@ async function saveAdminPlan() {
 
 /* ── TAB: Usuarios ── */
 async function loadAdminUsuarios() {
-  const c = document.getElementById('admin-tab-content');
+  const c = _ensureAdminTabContent();
   if (!c) return;
   c.innerHTML = skeletonCards(3);
   try {
@@ -3568,7 +3593,7 @@ async function loadAdminUsuarios() {
         <span class="text-xs text-white/30 italic">Email: requiere service role</span>
       </div>
       ${rows || renderAdminEmptyState('👥', 'No hay usuarios registrados aún', 'Cuando alguien se registre va a aparecer acá')}`;
-    const ok = _writeAdminContent(html);
+    const ok = await _writeAdminContent(html);
     console.log('[Admin Usuarios] write success=' + ok);
   } catch(err) {
     console.error('[Admin Usuarios] error:', err);
@@ -3623,7 +3648,7 @@ async function setSetting(key, value) {
 }
 
 function loadAdminImagenes() {
-  const c = document.getElementById('admin-tab-content');
+  const c = _ensureAdminTabContent();
   if (!c) return;
 
   // Static content renders IMMEDIATELY using the app_settings cache (loaded at boot).
