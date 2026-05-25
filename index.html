@@ -4193,14 +4193,21 @@ async function loadAdminUsuarios() {
     if (_adminSeqStale(seq, 'Usuarios')) return;
     if (error) throw error;
 
-    const rows = (data || []).map(p => `
+    // Sub-line shows email if available (column populated by trigger
+     // on auth.users) and falls back to short user_id for any profile
+     // the trigger hasn't synced yet.
+    const rows = (data || []).map(p => {
+      const subLine = p.email
+        ? `<i data-lucide="mail" class="w-3 h-3 inline-block align-text-bottom mr-0.5 text-white/30"></i>${escHtml(p.email)}`
+        : `ID: ${escHtml(p.user_id?.slice(0,8))}…`;
+      return `
     <div class="card rounded-xl p-3.5 mb-2.5">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-sm"
           style="background:var(--grad); color:#fff">${escHtml(getInitials(p.full_name,''))}</div>
         <div class="flex-1 min-w-0">
           <p class="text-sm font-medium text-white truncate">${escHtml(p.full_name || '(sin nombre)')}</p>
-          <p class="text-xs text-white/30 truncate mt-0.5">ID: ${escHtml(p.user_id?.slice(0,8))}…</p>
+          <p class="text-xs text-white/40 truncate mt-0.5">${subLine}</p>
         </div>
         <select onchange="changeUserTier('${p.user_id}', this.value)"
           class="auth-input text-xs py-1.5 px-2 w-28 rounded-lg"
@@ -4211,15 +4218,20 @@ async function loadAdminUsuarios() {
           <option value="vip"${(p.tier||'').toLowerCase().trim()==='vip'?' selected':''}>VIP</option>
         </select>
       </div>
-    </div>`).join('');
+    </div>`;
+    }).join('');
 
-    console.log('[Admin Usuarios]', { count: data?.length ?? 'null', error, seq });
+    const withEmail    = (data || []).filter(p => p.email).length;
+    const withoutEmail = (data?.length || 0) - withEmail;
+    console.log('[Admin Usuarios]', { count: data?.length ?? 'null', withEmail, withoutEmail, seq });
     const html = `
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-bold text-white/60 uppercase tracking-wide">
           Usuarios <span class="text-white/30 font-normal">(${data?.length ?? 0})</span>
         </p>
-        <span class="text-xs text-white/30 italic">Email: requiere service role</span>
+        ${withoutEmail > 0
+          ? `<span class="text-xs text-orange-400/70 italic">${withoutEmail} sin email · correr migración</span>`
+          : ''}
       </div>
       ${rows || renderAdminEmptyState('👥', 'No hay usuarios registrados aún', 'Cuando alguien se registre va a aparecer acá')}`;
     const ok = await _writeAdminContent(html, seq);
