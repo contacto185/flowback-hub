@@ -3064,7 +3064,10 @@ function _ensureAdminTabContent() {
 /* Write HTML into #admin-tab-content. Schedules the write on the next
    animation frame so the browser has committed any pending DOM updates
    (e.g., the just-rendered shell) before we touch innerHTML. Returns a
-   Promise that resolves with true on success. */
+   Promise that resolves with true on success.
+
+   Includes a read-back verification + a delayed clobber check, so if
+   something overwrites the content right after we set it, we log it. */
 function _writeAdminContent(html) {
   return new Promise(resolve => {
     requestAnimationFrame(() => {
@@ -3077,7 +3080,25 @@ function _writeAdminContent(html) {
       target.innerHTML = html;
       try { lucide.createIcons(); }
       catch (e) { console.warn('[admin] lucide.createIcons failed:', e); }
-      console.log(`[admin] wrote ${html.length} chars into #admin-tab-content`);
+
+      // Read back to confirm the write actually committed.
+      const verify = document.getElementById('admin-tab-content');
+      const verifyLen = verify ? verify.innerHTML.length : 0;
+      const cs = verify ? getComputedStyle(verify) : null;
+      console.log(
+        `[admin] wrote ${html.length} chars · verifyLen=${verifyLen}` +
+        ` · display=${cs?.display} · offsetH=${verify?.offsetHeight}` +
+        ` · w×h=${verify?.offsetWidth}×${verify?.offsetHeight}`
+      );
+
+      // Catch any code path that clobbers admin-tab-content immediately
+      // after we set it (e.g., another async loader's race).
+      requestAnimationFrame(() => {
+        const v2 = document.getElementById('admin-tab-content');
+        if (v2 && v2.innerHTML.length < html.length / 2) {
+          console.warn(`[admin] write was clobbered on the next frame · was=${html.length} · now=${v2.innerHTML.length}`);
+        }
+      });
       resolve(true);
     });
   });
@@ -3330,8 +3351,13 @@ function loadAdminWebinars() {
 }
 
 /* ── TAB: Documentos ── */
+/* Docs-specific diagnostic: dumps the actual innerHTML, dimensions and
+   computed style of the container AFTER the loader finishes writing. If
+   the user reports skeletons here, the log will show whether the write
+   landed and whether the element is laid out visibly. */
 function loadAdminDocumentos() {
-  return _loadAdminTab({
+  console.log('[Admin Docs] loader invoked');
+  const result = _loadAdminTab({
     queryFn:    () => sb.from('documents').select('*').order('created_at',{ascending:false}),
     label:      'Documentos',
     type:       'documento',
@@ -3340,6 +3366,22 @@ function loadAdminDocumentos() {
     emptyTitle: 'No hay documentos creados aún',
     emptyHint:  'Agregá el primero con el botón + Agregar',
   });
+  result.then(() => {
+    const c = document.getElementById('admin-tab-content');
+    if (!c) { console.warn('[Admin Docs] POST: container is GONE'); return; }
+    const cs = getComputedStyle(c);
+    const sec = document.getElementById('sec-admin');
+    const secCs = sec ? getComputedStyle(sec) : null;
+    console.log('[Admin Docs] POST innerHTML length:', c.innerHTML.length);
+    console.log('[Admin Docs] POST innerHTML head (300):', c.innerHTML.slice(0, 300));
+    console.log('[Admin Docs] POST innerHTML tail (200):', c.innerHTML.slice(-200));
+    console.log('[Admin Docs] POST size:', c.offsetWidth + '×' + c.offsetHeight);
+    console.log('[Admin Docs] POST display/visibility/opacity:', cs.display, '·', cs.visibility, '·', cs.opacity);
+    console.log('[Admin Docs] POST contains skeleton class?', /class="[^"]*skeleton/.test(c.innerHTML));
+    console.log('[Admin Docs] POST sec-admin active?', sec?.classList.contains('active'),
+      '· sec-admin display:', secCs?.display);
+  });
+  return result;
 }
 
 /* ── TAB: Planes ── */
