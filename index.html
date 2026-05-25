@@ -623,6 +623,7 @@ let currentSection = 'inicio';
 let notifVisible  = false;
 let appPlans          = [];   // Loaded from `plans` table — single source of truth
 let appLandingBlocks  = { benefits: [], resources: [] };  // Loaded from `landing_blocks`
+let _docLoadSeq       = 0;    // Monotonic counter — same race-protection pattern as _adminLoadSeq
 
 /* ═══════════════════════════════════════════
    HELPERS
@@ -2821,35 +2822,58 @@ function renderGrabadaWebinarCard(w) {
 
 /* ═══════════════════════════════════════════
    LOAD DOCUMENTOS (member-facing, filtered by user tier)
+   Uses the same seq/race-protection pattern as _adminLoadSeq: bumps
+   _docLoadSeq on entry, captures local seq, validates before and
+   after the fetch and before every write.
 ═══════════════════════════════════════════ */
-async function loadDocumentos() {
-  window._loaded_documentos = true;
-  const container = document.getElementById('documentos-list');
-  if (!container) return;
+function _docSeqStale(seq) {
+  if (seq !== _docLoadSeq) {
+    console.log(`[Documentos] seq=${seq} stale (current=${_docLoadSeq}) — discarding`);
+    return true;
+  }
+  return false;
+}
 
+async function loadDocumentos() {
+  const seq = ++_docLoadSeq;
+  const tag = '[Documentos] seq=' + seq;
+  console.log(`${tag} ┌─ START`);
+  window._loaded_documentos = true;
+
+  // ── 1. Container guard (synchronous) ─────────────────────────────
+  const container = document.getElementById('documentos-list');
+  if (!container) { console.warn(`${tag} no container — abort`); return; }
+
+  // ── 2. Member gate: no fetch needed if logged out ───────────────
   if (!currentUser) {
     container.innerHTML = renderMemberGate();
     lucide.createIcons();
+    console.log(`${tag} └─ logged-out gate rendered`);
     return;
   }
 
+  // ── 3. Skeleton synchronously BEFORE any await ──────────────────
   container.innerHTML = skeletonCards(3);
 
   try {
+    // ── 4. Fetch (validate seq before AND after) ───────────────────
+    if (_docSeqStale(seq)) return;
     const { data: docs, error } = await sb
       .from('documents')
       .select('*')
       .eq('is_active', true)
       .order('created_at', { ascending: false });
+    if (_docSeqStale(seq)) return;
 
-    console.log('[Documentos] tier:', getUserTier(), '| docs:', docs?.length, '| error:', error);
+    console.log(`${tag} tier=${getUserTier()} · docs=${docs?.length ?? 'null'} · error=${error?.message ?? 'none'}`);
     if (error) throw error;
 
-    // Filter to only docs the user can access (per the spec)
-    const accessible = (docs || []).filter(d => canAccess(d.tier_required || 'free'));
+    // Client-side filter by tier (the user only sees what they can access)
+    const accessible  = (docs || []).filter(d => canAccess(d.tier_required || 'free'));
     const lockedCount = (docs?.length || 0) - accessible.length;
-    console.log('[Documentos] accessible:', accessible.length, '· locked above tier:', lockedCount);
+    console.log(`${tag} accessible=${accessible.length} · locked=${lockedCount}`);
 
+    // ── 5. Build & write (re-check seq right before each write) ────
     if (!accessible.length) {
       const hint = lockedCount > 0
         ? `Hay ${lockedCount} documento${lockedCount !== 1 ? 's' : ''} en planes superiores`
@@ -2859,14 +2883,19 @@ async function loadDocumentos() {
           ? `<button onclick="switchSection('tribu'); setTimeout(()=>showSubTab('planes'),120)"
               class="btn-grad w-full py-2.5 rounded-xl text-sm mt-3">Ver planes →</button>`
           : '');
-      _writeMemberSection('documentos-list', html);
+      if (_docSeqStale(seq)) return;
+      const ok = _writeMemberSection('documentos-list', html);
+      console.log(`${tag} └─ DONE empty-state · write success=${ok}`);
       return;
     }
 
     const cards = accessible.map(renderDocCard).join('');
-    _writeMemberSection('documentos-list', cards);
+    if (_docSeqStale(seq)) return;
+    const ok = _writeMemberSection('documentos-list', cards);
+    console.log(`${tag} └─ DONE ${accessible.length} cards · write success=${ok}`);
   } catch (err) {
-    console.error('[Documentos] error:', err);
+    if (_docSeqStale(seq)) return;   // don't overwrite a fresher load's content with our error
+    console.error(`${tag} error:`, err);
     _writeMemberSection('documentos-list', renderLoadError());
   }
 }
