@@ -1633,14 +1633,38 @@ async function doForgotPassword() {
 }
 
 async function doSignOut() {
-  await sb.auth.signOut();
-  // Clear state immediately — don't wait for onAuthStateChange
-  currentUser  = null;
-  userProfile  = null;
-  updateHeader();
-  updateUIForLoggedOutUser();
-  switchSection('inicio');
-  showToast('Sesión cerrada');
+  console.log('[doSignOut] iniciando logout');
+  showToast('Cerrando sesión…');
+
+  // Race the signOut against a 5s timeout so the UI never gets stuck if the
+  // network call hangs (we'll fall through to the localStorage purge + reload).
+  try {
+    await Promise.race([
+      sb.auth.signOut().then(({ error }) => {
+        if (error) console.error('[doSignOut] supabase signOut error:', error);
+      }),
+      new Promise(resolve => setTimeout(() => {
+        console.warn('[doSignOut] timeout 5s — forcing local cleanup');
+        resolve();
+      }, 5000)),
+    ]);
+  } catch (err) {
+    console.error('[doSignOut] exception:', err);
+  }
+
+  // Defensively purge any persisted Supabase session keys in case signOut
+  // didn't (some browsers / extensions block the storage clear).
+  try {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('sb-') || k.toLowerCase().includes('supabase')) {
+        localStorage.removeItem(k);
+      }
+    });
+  } catch (e) { console.warn('[doSignOut] storage clear failed:', e); }
+
+  // Hard reload to a guaranteed-clean state. This handles every edge case
+  // (stuck modals, half-rendered admin, lingering iframes) in one shot.
+  window.location.reload();
 }
 
 function openChangePasswordFlow() {
