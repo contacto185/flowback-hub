@@ -3060,10 +3060,21 @@ function _writeAdminContent(html) {
   return true;
 }
 
+/* Friendly empty state for any admin tab. Big emoji + title + hint, wrapped
+   in a card so it sits visually alongside the rest of the admin UI. */
+function renderAdminEmptyState(emoji, title, hint) {
+  return `
+    <div class="card rounded-2xl p-8 text-center mt-2">
+      <div style="font-size:48px;line-height:1;margin-bottom:12px;">${emoji}</div>
+      <p class="font-semibold text-white/70 mb-1">${escHtml(title)}</p>
+      <p class="text-xs text-white/40">${escHtml(hint)}</p>
+    </div>`;
+}
+
 /* ── Shared admin tab loader ──
    Logs data/error, shows real error message, always shows Agregar button.
    RLS returning [] is handled: user sees empty state + Agregar, not stuck skeletons. */
-async function _loadAdminTab({ queryFn, label, type, cols, emptyIcon, reorderTable }) {
+async function _loadAdminTab({ queryFn, label, type, cols, emptyEmoji, emptyTitle, emptyHint, reorderTable }) {
   const initial = document.getElementById('admin-tab-content');
   if (!initial) { console.warn(`[Admin ${label}] container missing at start`); return; }
   initial.innerHTML = skeletonCards(3);
@@ -3081,14 +3092,14 @@ async function _loadAdminTab({ queryFn, label, type, cols, emptyIcon, reorderTab
       : null;
     console.log(`[Admin ${label}] rendered HTML length:`, rows ? rows.length : 0);
 
-    const html = renderAdminListHeader(label, type) +
-      (rows
-        ? rows
-        : `<div class="card rounded-2xl p-8 text-center mt-1">
-             <i data-lucide="${emptyIcon}" class="w-8 h-8 mx-auto mb-3 text-white/20"></i>
-             <p class="font-medium text-white/50 mb-1">Sin ${label.toLowerCase()} aún</p>
-             <p class="text-xs text-white/25">Agregá contenido con el botón <span class="text-white/40">+ Agregar</span></p>
-           </div>`);
+    const body = rows
+      ? rows
+      : renderAdminEmptyState(
+          emptyEmoji || '📭',
+          emptyTitle || `No hay ${label.toLowerCase()} creados aún`,
+          emptyHint  || 'Agregá el primero con el botón + Agregar'
+        );
+    const html = renderAdminListHeader(label, type) + body;
     const ok = _writeAdminContent(html);
     console.log(`[Admin ${label}] write success=${ok}`);
   } catch(err) {
@@ -3116,7 +3127,9 @@ function loadAdminVideos() {
     label:         'Videos',
     type:          'video',
     cols:          [{key:'title'},{key:'tier_required'},{key:'duration'}],
-    emptyIcon:     'video-off',
+    emptyEmoji:    '🎥',
+    emptyTitle:    'No hay videos creados aún',
+    emptyHint:     'Agregá el primero con el botón + Agregar',
     reorderTable:  'videos',
   });
 }
@@ -3124,11 +3137,13 @@ function loadAdminVideos() {
 /* ── TAB: Eventos ── */
 function loadAdminEventos() {
   return _loadAdminTab({
-    queryFn:   () => sb.from('events').select('*').order('event_date',{ascending:false}),
-    label:     'Eventos',
-    type:      'evento',
-    cols:      [{key:'title'},{key:'event_date'},{key:'type'}],
-    emptyIcon: 'calendar-x',
+    queryFn:    () => sb.from('events').select('*').order('event_date',{ascending:false}),
+    label:      'Eventos',
+    type:       'evento',
+    cols:       [{key:'title'},{key:'event_date'},{key:'type'}],
+    emptyEmoji: '📅',
+    emptyTitle: 'No hay eventos creados aún',
+    emptyHint:  'Agregá el primero con el botón + Agregar',
   });
 }
 
@@ -3180,11 +3195,7 @@ async function loadAdminCursos() {
               </button>
             </div>
           </div>`).join('')
-        : `<div class="card rounded-2xl p-8 text-center mt-1">
-             <i data-lucide="graduation-cap" class="w-8 h-8 mx-auto mb-3 text-white/20"></i>
-             <p class="font-medium text-white/50 mb-1">Sin cursos aún</p>
-             <p class="text-xs text-white/25">Agregá contenido con el botón <span class="text-white/40">+ Agregar</span></p>
-           </div>`);
+        : renderAdminEmptyState('🎓', 'No hay cursos creados aún', 'Agregá el primero con el botón + Agregar'));
     const ok = _writeAdminContent(html);
     console.log('[Admin Cursos] write success=' + ok);
   } catch(err) {
@@ -3259,11 +3270,7 @@ async function loadAdminLecciones(courseId, courseTitle) {
               </button>
             </div>
           </div>`).join('')
-        : `<div class="card rounded-2xl p-8 text-center mt-1">
-             <i data-lucide="list" class="w-8 h-8 mx-auto mb-3 text-white/20"></i>
-             <p class="font-medium text-white/50 mb-1">Sin lecciones aún</p>
-             <p class="text-xs text-white/25">Tocá "+ Agregar" para crear la primera lección</p>
-           </div>`);
+        : renderAdminEmptyState('📖', 'No hay lecciones aún', 'Tocá + Agregar para crear la primera lección'));
     const ok = _writeAdminContent(html);
     console.log('[Admin Lecciones] write success=' + ok);
   } catch(err) {
@@ -3290,7 +3297,9 @@ function loadAdminWebinars() {
     label:         'Webinars',
     type:          'webinar',
     cols:          [{key:'title'},{key:'date'},{key:'type'}],
-    emptyIcon:     'radio',
+    emptyEmoji:    '📡',
+    emptyTitle:    'No hay webinars creados aún',
+    emptyHint:     'Agregá el primero con el botón + Agregar',
     reorderTable:  'webinars',
   });
 }
@@ -3298,11 +3307,13 @@ function loadAdminWebinars() {
 /* ── TAB: Documentos ── */
 function loadAdminDocumentos() {
   return _loadAdminTab({
-    queryFn:   () => sb.from('documents').select('*').order('created_at',{ascending:false}),
-    label:     'Documentos',
-    type:      'documento',
-    cols:      [{key:'title'},{key:'tier_required'},{key:'drive_url'}],
-    emptyIcon: 'file-text',
+    queryFn:    () => sb.from('documents').select('*').order('created_at',{ascending:false}),
+    label:      'Documentos',
+    type:       'documento',
+    cols:       [{key:'title'},{key:'tier_required'},{key:'drive_url'}],
+    emptyEmoji: '📄',
+    emptyTitle: 'No hay documentos creados aún',
+    emptyHint:  'Agregá el primero con el botón + Agregar',
   });
 }
 
@@ -3342,11 +3353,7 @@ async function loadAdminPlanes() {
               </button>
             </div>
           </div>`).join('')
-        : `<div class="card rounded-2xl p-8 text-center mt-1">
-             <i data-lucide="package-x" class="w-8 h-8 mx-auto mb-3 text-white/20"></i>
-             <p class="font-medium text-white/50 mb-1">Sin planes en la tabla</p>
-             <p class="text-xs text-white/25">Inserta los planes base directamente en Supabase</p>
-           </div>`);
+        : renderAdminEmptyState('💎', 'No hay planes en la base de datos', 'Insertá los 3 planes base directamente en Supabase'));
     const ok = _writeAdminContent(html);
     console.log('[Admin Planes] write success=' + ok);
   } catch(err) {
@@ -3560,11 +3567,7 @@ async function loadAdminUsuarios() {
         </p>
         <span class="text-xs text-white/30 italic">Email: requiere service role</span>
       </div>
-      ${rows || `<div class="card rounded-2xl p-8 text-center">
-        <i data-lucide="users" class="w-8 h-8 mx-auto mb-3 text-white/20"></i>
-        <p class="font-medium text-white/50 mb-1">Sin usuarios aún</p>
-        <p class="text-xs text-white/25">Cuando alguien se registre va a aparecer acá</p>
-      </div>`}`;
+      ${rows || renderAdminEmptyState('👥', 'No hay usuarios registrados aún', 'Cuando alguien se registre va a aparecer acá')}`;
     const ok = _writeAdminContent(html);
     console.log('[Admin Usuarios] write success=' + ok);
   } catch(err) {
@@ -3711,12 +3714,12 @@ async function _loadAdminImagenesDbLists() {
     if (vBox) {
       vBox.innerHTML = videos.length
         ? videos.map(v => _renderDbThumbRow({ table:'videos', item:v })).join('')
-        : '<div class="card rounded-xl p-4 text-center text-xs text-white/40">Sin videos</div>';
+        : renderAdminEmptyState('🎥', 'No hay videos creados aún', 'Agregá uno desde el tab Videos para subir su thumbnail');
     }
     if (cBox) {
       cBox.innerHTML = courses.length
         ? courses.map(c => _renderDbThumbRow({ table:'courses', item:c })).join('')
-        : '<div class="card rounded-xl p-4 text-center text-xs text-white/40">Sin cursos</div>';
+        : renderAdminEmptyState('🎓', 'No hay cursos creados aún', 'Agregá uno desde el tab Cursos para subir su thumbnail');
     }
     lucide.createIcons();
   } catch (e) {
@@ -3758,7 +3761,7 @@ async function loadAdminImagenesGaleria() {
   unique.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 
   if (!unique.length) {
-    container.innerHTML = '<div class="card rounded-xl p-4 text-center text-xs text-white/40">No hay imágenes en el bucket</div>';
+    container.innerHTML = renderAdminEmptyState('🖼️', 'No hay imágenes en la galería aún', 'Subí imágenes desde los tabs Videos, Cursos o las cards de Hero/Nutrición arriba');
     return;
   }
 
