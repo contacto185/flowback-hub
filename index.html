@@ -996,7 +996,7 @@ function renderNavTabs() {
 /* ═══════════════════════════════════════════
    SECTION SWITCHING
 ═══════════════════════════════════════════ */
-const ALL_SECTIONS = ['inicio', 'eventos', 'clases-gratis', 'cursos', 'tribu', 'agenda', 'grabadas', 'admin'];
+const ALL_SECTIONS = ['inicio', 'eventos', 'clases-gratis', 'cursos', 'tribu', 'agenda', 'grabadas', 'documentos', 'admin'];
 
 function switchSection(name) {
   currentSection = name;
@@ -1013,12 +1013,13 @@ function switchSection(name) {
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
-  if (name === 'eventos'      && !window._loaded_eventos)   loadEventos();
-  if (name === 'clases-gratis'&& !window._loaded_clases)    loadClasesGratis();
-  if (name === 'cursos'       && !window._loaded_cursos)    loadCursos();
-  if (name === 'agenda'       && !window._loaded_agenda)    loadAgenda();
-  if (name === 'grabadas'     && !window._loaded_grabadas)  loadGrabadas();
-  if (name === 'admin'        && !window._loaded_admin)     loadAdmin();
+  if (name === 'eventos'      && !window._loaded_eventos)    loadEventos();
+  if (name === 'clases-gratis'&& !window._loaded_clases)     loadClasesGratis();
+  if (name === 'cursos'       && !window._loaded_cursos)     loadCursos();
+  if (name === 'agenda'       && !window._loaded_agenda)     loadAgenda();
+  if (name === 'grabadas'     && !window._loaded_grabadas)   loadGrabadas();
+  if (name === 'documentos'   && !window._loaded_documentos) loadDocumentos();
+  if (name === 'admin'        && !window._loaded_admin)      loadAdmin();
 }
 
 /* ═══════════════════════════════════════════
@@ -1095,17 +1096,19 @@ function updateUIForLoggedInUser() {
   if (tribu) renderTribuSection();
 
   // Reset loaded flags so member sections re-fetch with the new auth state
-  window._loaded_agenda   = false;
-  window._loaded_grabadas = false;
+  window._loaded_agenda     = false;
+  window._loaded_grabadas   = false;
+  window._loaded_documentos = false;
 
   // If the user is already on a member section, reload it now
   // (switchSection won't fire again because currentSection didn't change)
-  if (currentSection === 'agenda')   loadAgenda();
-  if (currentSection === 'grabadas') loadGrabadas();
+  if (currentSection === 'agenda')     loadAgenda();
+  if (currentSection === 'grabadas')   loadGrabadas();
+  if (currentSection === 'documentos') loadDocumentos();
 
   if (document.getElementById('paypal-basica')) renderPaypalButtons();
 
-  const memberTabs = ['inicio', 'eventos', 'clases-gratis', 'cursos', 'agenda', 'grabadas', 'tribu', 'admin'];
+  const memberTabs = ['inicio', 'eventos', 'clases-gratis', 'cursos', 'agenda', 'grabadas', 'documentos', 'tribu', 'admin'];
   if (!memberTabs.includes(currentSection)) switchSection('inicio');
 }
 
@@ -1121,7 +1124,7 @@ function updateUIForLoggedOutUser() {
   if (document.getElementById('paypal-basica')) renderPaypalButtons();
 
   // If on a member-only section, redirect to tribu
-  if (['agenda', 'grabadas'].includes(currentSection)) {
+  if (['agenda', 'grabadas', 'documentos'].includes(currentSection)) {
     switchSection('tribu');
   }
 }
@@ -1246,6 +1249,19 @@ function injectSectionShells() {
         <h1 class="text-2xl font-black serif mb-1">Sesiones <span class="grad-text">grabadas</span></h1>
         <p class="text-xs text-white/40 mb-5">Contenido exclusivo premium y VIP</p>
         <div id="grabadas-list"></div>
+      </div>
+    </section>
+
+    <!-- DOCUMENTOS (members) -->
+    <section id="sec-documentos" class="tab-section">
+      <div class="pt-6 pb-2">
+        <button onclick="switchSection('tribu')"
+          class="flex items-center gap-1.5 text-sm text-white/40 mb-4 active:opacity-70">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver a Mi cuenta
+        </button>
+        <h1 class="text-2xl font-black serif mb-1">Tus <span class="grad-text">documentos</span></h1>
+        <p class="text-xs text-white/40 mb-5">Guías, recetas y materiales descargables</p>
+        <div id="documentos-list"></div>
       </div>
     </section>
 
@@ -1490,6 +1506,19 @@ function renderTribuMember(container) {
           <i data-lucide="chevron-right" class="w-4 h-4 text-white/30"></i>
         </div>
 
+        <!-- Documentos -->
+        <div class="card rounded-xl p-4 flex items-center gap-3 cursor-pointer hover:border-orange-500/30 transition-colors"
+          onclick="switchSection('documentos')">
+          <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style="background:rgba(56,189,248,.12)">
+            <i data-lucide="folder" class="w-4 h-4" style="color:var(--blue)"></i>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm text-white font-medium">Documentos</p>
+            <p class="text-xs text-white/35 mt-0.5">Guías y materiales descargables de tu plan</p>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-white/30"></i>
+        </div>
+
         <!-- Admin badge + always-visible Panel Admin button (backup in case nav tab doesn't show) -->
         ${isAdmin() ? `
         <div class="card rounded-xl p-4 flex items-center gap-3"
@@ -1557,6 +1586,16 @@ function renderTribuMember(container) {
             <p class="text-xs text-white/30 mt-0.5">Requiere membresía Premium</p>
           </div>
         </div>`}
+        <button onclick="switchSection('documentos')" class="w-full card rounded-xl p-4 flex items-center gap-3 text-left">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(56,189,248,.12)">
+            <i data-lucide="folder" class="w-5 h-5" style="color:var(--blue)"></i>
+          </div>
+          <div class="flex-1">
+            <p class="font-semibold text-sm text-white">Documentos</p>
+            <p class="text-xs text-white/40 mt-0.5">Guías y materiales descargables</p>
+          </div>
+          <i data-lucide="arrow-right" class="w-4 h-4 text-white/30"></i>
+        </button>
       </div>
     </div>` : ''}
 
@@ -2775,6 +2814,93 @@ function renderGrabadaWebinarCard(w) {
             class="btn-grad w-full py-2.5 rounded-xl text-sm text-center block">Ver grabación</a>`
         : `<button class="w-full py-2.5 rounded-xl text-sm font-medium text-white/40 cursor-default"
             style="background:rgba(42,32,26,.05); border:1px solid rgba(42,32,26,.1)">Próximamente</button>`
+      }
+    </div>
+  </article>`;
+}
+
+/* ═══════════════════════════════════════════
+   LOAD DOCUMENTOS (member-facing, filtered by user tier)
+═══════════════════════════════════════════ */
+async function loadDocumentos() {
+  window._loaded_documentos = true;
+  const container = document.getElementById('documentos-list');
+  if (!container) return;
+
+  if (!currentUser) {
+    container.innerHTML = renderMemberGate();
+    lucide.createIcons();
+    return;
+  }
+
+  container.innerHTML = skeletonCards(3);
+
+  try {
+    const { data: docs, error } = await sb
+      .from('documents')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    console.log('[Documentos] tier:', getUserTier(), '| docs:', docs?.length, '| error:', error);
+    if (error) throw error;
+
+    // Filter to only docs the user can access (per the spec)
+    const accessible = (docs || []).filter(d => canAccess(d.tier_required || 'free'));
+    const lockedCount = (docs?.length || 0) - accessible.length;
+    console.log('[Documentos] accessible:', accessible.length, '· locked above tier:', lockedCount);
+
+    if (!accessible.length) {
+      const hint = lockedCount > 0
+        ? `Hay ${lockedCount} documento${lockedCount !== 1 ? 's' : ''} en planes superiores`
+        : 'Próximamente más material descargable';
+      const html = renderEmptyMemberState('📂', 'No hay documentos disponibles aún', hint) +
+        (lockedCount > 0
+          ? `<button onclick="switchSection('tribu'); setTimeout(()=>showSubTab('planes'),120)"
+              class="btn-grad w-full py-2.5 rounded-xl text-sm mt-3">Ver planes →</button>`
+          : '');
+      _writeMemberSection('documentos-list', html);
+      return;
+    }
+
+    const cards = accessible.map(renderDocCard).join('');
+    _writeMemberSection('documentos-list', cards);
+  } catch (err) {
+    console.error('[Documentos] error:', err);
+    _writeMemberSection('documentos-list', renderLoadError());
+  }
+}
+
+function renderDocCard(d) {
+  const tier      = (d.tier_required || 'free').toLowerCase();
+  const showBadge = tier && tier !== 'free';
+  const url       = d.drive_url || '';
+  const isPdf     = /\.pdf(\?|$)/i.test(url);
+  const isDrive   = /drive\.google\.com/i.test(url);
+  const iconName  = isPdf ? 'file-text' : isDrive ? 'hard-drive' : 'file';
+  const ctaLabel  = isPdf || /\.(docx?|xlsx?|pptx?|zip)(\?|$)/i.test(url) ? 'Descargar' : 'Abrir documento';
+
+  return `
+  <article class="card rounded-2xl overflow-hidden mb-4">
+    <div class="p-4">
+      <div class="flex items-start gap-3 mb-3">
+        <div class="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center"
+             style="background:rgba(56,189,248,.12)">
+          <i data-lucide="${iconName}" class="w-5 h-5" style="color:var(--blue)"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-base serif mb-1 text-white">${escHtml(d.title)}</h3>
+          ${d.description ? `<p class="text-xs text-white/50 leading-relaxed line-clamp-2">${escHtml(d.description)}</p>` : ''}
+        </div>
+        ${showBadge ? `<span class="badge-${tier} text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0">${tierLabel(tier)}</span>` : ''}
+      </div>
+      ${url
+        ? `<a href="${escHtml(url)}" target="_blank" rel="noopener"
+            class="btn-grad w-full py-2.5 rounded-xl text-sm text-center flex items-center justify-center gap-2">
+            <i data-lucide="external-link" class="w-4 h-4"></i>${ctaLabel}
+          </a>`
+        : `<button class="w-full py-2.5 rounded-xl text-sm font-medium text-white/40 cursor-default"
+            style="background:rgba(42,32,26,.05); border:1px solid rgba(42,32,26,.1)">URL no disponible</button>`
       }
     </div>
   </article>`;
