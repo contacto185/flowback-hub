@@ -3699,62 +3699,133 @@ const ADMIN_BLOQUE_SECTIONS = {
 
 async function loadAdminBloques() {
   const seq = ++_adminLoadSeq;
-  console.log('[Admin Bloques] starting · seq=' + seq);
-  const c = _ensureAdminTabContent();
-  if (!c) return;
-  c.innerHTML = skeletonCards(3);
+  const t0  = performance.now();
+  const tag = '[Admin Bloques] seq=' + seq;
+  console.log(`${tag} ┌─ START`);
+
+  // Outer try/catch: anything thrown anywhere lands here, including
+  // synchronous explosions that the previous version's inner try missed.
   try {
-    const { data, error } = await sb.from('landing_blocks')
-      .select('*')
-      .order('section')
-      .order('order_index', { nullsLast: true });
+    // ── 1. ensure container ──────────────────────────────────────
+    console.log(`${tag} │ 1 ensuring container…`);
+    const c = _ensureAdminTabContent();
+    if (!c) {
+      console.error(`${tag} │ 1 FAIL: no container — aborting`);
+      return;
+    }
+    console.log(`${tag} │ 1 OK`);
+
+    // ── 2. write skeleton ────────────────────────────────────────
+    console.log(`${tag} │ 2 writing skeleton`);
+    c.innerHTML = skeletonCards(3);
+    console.log(`${tag} │ 2 OK`);
+
+    // ── 3. fetch (with 10s timeout to surface hangs as errors) ───
+    console.log(`${tag} │ 3 fetching landing_blocks…`);
+    let data, error;
+    try {
+      const result = await Promise.race([
+        sb.from('landing_blocks').select('*').order('section').order('order_index', { nullsLast: true }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('FETCH_TIMEOUT_10s')), 10000)),
+      ]);
+      ({ data, error } = result || {});
+    } catch (fetchErr) {
+      console.error(`${tag} │ 3 FETCH THREW:`, fetchErr?.message, fetchErr);
+      throw fetchErr;
+    }
+    console.log(`${tag} │ 3 OK · count=${data?.length ?? 'null'} · error=${error ? error.message : 'none'}`);
+
     if (_adminSeqStale(seq, 'Bloques')) return;
     if (error) throw error;
 
+    // ── 4. group rows by section ─────────────────────────────────
+    console.log(`${tag} │ 4 grouping by section`);
     const bySection = {};
     Object.keys(ADMIN_BLOQUE_SECTIONS).forEach(s => bySection[s] = []);
     (data || []).forEach(b => {
       if (!bySection[b.section]) bySection[b.section] = [];
       bySection[b.section].push(b);
     });
+    const counts = Object.entries(bySection).map(([s, arr]) => `${s}=${arr.length}`).join(', ');
+    console.log(`${tag} │ 4 OK · ${counts}`);
 
-    const html = `
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-bold text-white/60 uppercase tracking-wide">Bloques de Landing</p>
-        <button onclick="openAdminBloqueForm(null)"
-          class="btn-grad text-xs px-3 py-2 rounded-xl flex items-center gap-1.5">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i>Agregar
-        </button>
-      </div>
-      ${Object.keys(ADMIN_BLOQUE_SECTIONS).map(section => {
-        const meta = ADMIN_BLOQUE_SECTIONS[section];
+    // ── 5. build HTML (inner try so one bad row doesn't kill all) ─
+    console.log(`${tag} │ 5 building HTML`);
+    let html;
+    try {
+      const sectionsHtml = Object.keys(ADMIN_BLOQUE_SECTIONS).map(section => {
+        const meta  = ADMIN_BLOQUE_SECTIONS[section];
         const items = bySection[section] || [];
+        let rowsHtml = '';
+        try {
+          rowsHtml = items.length
+            ? items.map((b, i) => _renderAdminBloqueRow(b, i, items.length)).join('')
+            : `<div class="card rounded-xl p-4 text-center mb-3">
+                <p class="text-xs text-white/40">Sin bloques · tocá <span class="text-white/60">+ Agregar</span> y elegí esta sección</p>
+               </div>`;
+        } catch (rowErr) {
+          console.error(`${tag} │ 5 ROW BUILD FAILED for section="${section}":`, rowErr);
+          rowsHtml = `<div class="card rounded-xl p-3 text-xs text-red-400">Error renderizando bloques de "${escHtml(section)}": ${escHtml(rowErr.message || String(rowErr))}</div>`;
+        }
         return `
           <p class="text-xs font-bold text-white/40 uppercase tracking-wider mb-2 mt-4">${escHtml(meta.label)}</p>
-          ${items.length ? items.map((b, i) => _renderAdminBloqueRow(b, i, items.length)).join('') : `
-            <div class="card rounded-xl p-4 text-center mb-3">
-              <p class="text-xs text-white/40">Sin bloques · tocá <span class="text-white/60">+ Agregar</span> y elegí esta sección</p>
-            </div>`}
-        `;
-      }).join('')}
-    `;
-    const ok = await _writeAdminContent(html, seq);
-    console.log('[Admin Bloques] write success=' + ok + ' · seq=' + seq);
-  } catch(err) {
+          ${rowsHtml}`;
+      }).join('');
+
+      html = `
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sm font-bold text-white/60 uppercase tracking-wide">Bloques de Landing</p>
+          <button onclick="openAdminBloqueForm(null)"
+            class="btn-grad text-xs px-3 py-2 rounded-xl flex items-center gap-1.5">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>Agregar
+          </button>
+        </div>
+        ${sectionsHtml}
+      `;
+    } catch (htmlErr) {
+      console.error(`${tag} │ 5 HTML BUILD FAILED:`, htmlErr);
+      throw htmlErr;
+    }
+    console.log(`${tag} │ 5 OK · html length=${html.length}`);
+
+    // ── 6. write ─────────────────────────────────────────────────
+    console.log(`${tag} │ 6 calling _writeAdminContent`);
+    let ok;
+    try {
+      ok = await _writeAdminContent(html, seq);
+    } catch (writeErr) {
+      console.error(`${tag} │ 6 WRITE THREW:`, writeErr?.message, writeErr);
+      throw writeErr;
+    }
+    const elapsed = Math.round(performance.now() - t0);
+    console.log(`${tag} └─ DONE · write success=${ok} · total ${elapsed}ms`);
+  } catch (err) {
     if (_adminSeqStale(seq, 'Bloques')) return;
-    console.error('[Admin Bloques] error:', err);
+    const elapsed = Math.round(performance.now() - t0);
+    console.error(`${tag} └─ EXCEPTION after ${elapsed}ms:`, err);
+    if (err?.stack) console.error(`${tag} stack:`, err.stack);
+
     const isMissing = /landing_blocks/i.test(err?.message || '') || err?.code === 'PGRST205';
-    await _writeAdminContent(`<div class="card rounded-2xl p-6 text-center mt-1" style="border-color:rgba(245,124,0,.3);">
-      <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-3 text-orange-400"></i>
-      <p class="font-semibold text-white mb-1">Error al cargar Bloques</p>
-      <p class="text-xs text-white/50 mb-3 font-mono">${escHtml(err?.message || String(err))}</p>
-      ${isMissing ? `<p class="text-xs text-white/40 mb-3 leading-relaxed">
-        La tabla <code class="text-orange-400/70">landing_blocks</code> no existe todavía.
-        Ejecutá la migración <code class="text-orange-400/70">migrations/2026-05-25_landing_blocks.sql</code>
-        en el SQL editor de Supabase y reintentá.
-      </p>` : ''}
-      <button onclick="switchAdminTab('bloques')" class="btn-grad text-xs px-4 py-2 rounded-xl">Reintentar</button>
-    </div>`, seq);
+    const isTimeout = err?.message === 'FETCH_TIMEOUT_10s';
+    try {
+      await _writeAdminContent(`<div class="card rounded-2xl p-6 text-center mt-1" style="border-color:rgba(245,124,0,.3);">
+        <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-3 text-orange-400"></i>
+        <p class="font-semibold text-white mb-1">Error al cargar Bloques</p>
+        <p class="text-xs text-white/50 mb-3 font-mono">${escHtml(err?.message || String(err))}</p>
+        ${isTimeout ? `<p class="text-xs text-white/40 mb-3 leading-relaxed">
+          La query a Supabase no respondió en 10 segundos. Revisá conexión y RLS.
+        </p>` : ''}
+        ${isMissing ? `<p class="text-xs text-white/40 mb-3 leading-relaxed">
+          La tabla <code class="text-orange-400/70">landing_blocks</code> no existe todavía.
+          Ejecutá la migración <code class="text-orange-400/70">migrations/2026-05-25_landing_blocks.sql</code>
+          en el SQL editor de Supabase y reintentá.
+        </p>` : ''}
+        <button onclick="switchAdminTab('bloques')" class="btn-grad text-xs px-4 py-2 rounded-xl">Reintentar</button>
+      </div>`, seq);
+    } catch (catchWriteErr) {
+      // If even writing the error card fails, log it — at least we'll know in console
+      console.error(`${tag} catch: ALSO failed to write error card:`, catchWriteErr);
+    }
   }
 }
 
