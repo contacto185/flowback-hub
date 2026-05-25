@@ -15,7 +15,8 @@
       "Bash(curl *)",
       "Bash(node --check index.html)",
       "Bash(node -e ' *)",
-      "Bash(node --check _check.mjs)"
+      "Bash(node --check _check.mjs)",
+      "Bash(rm -f _check.mjs)"
     ]
   }
 }
