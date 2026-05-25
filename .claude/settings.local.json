@@ -12,7 +12,10 @@
       "Bash(git commit *)",
       "WebFetch(domain:flowback.infraqualia.com)",
       "Bash(git *)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(node --check index.html)",
+      "Bash(node -e ' *)",
+      "Bash(node --check _check.mjs)"
     ]
   }
 }
