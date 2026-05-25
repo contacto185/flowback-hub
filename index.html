@@ -3106,20 +3106,8 @@ async function loadAdmin() {
   }
   renderAdminShell();
   switchAdminTab('videos');
-  _adminBucketDiagnostics();
-}
-
-/* Run once on admin load: confirms required Storage buckets are reachable. */
-async function _adminBucketDiagnostics() {
-  for (const name of ['course-materials', 'thumbnails']) {
-    try {
-      const { data, error } = await sb.storage.getBucket(name);
-      console.log('[bucket check]', name, data, error);
-      if (error) console.warn(`[bucket check] '${name}' inaccesible:`, error.message);
-    } catch (e) {
-      console.error('[bucket check] excepción para', name, e);
-    }
-  }
+  // _adminBucketDiagnostics() removed — getBucket() requires service_role,
+  // and the buckets are already confirmed to exist + work via from(...).upload().
 }
 
 function renderAdminShell() {
