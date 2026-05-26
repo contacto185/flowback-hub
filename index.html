@@ -3158,7 +3158,7 @@ const ADMIN_FORMS = {
     fields: [
       { key:'title',         label:'Título',              type:'text',     required:true },
       { key:'description',   label:'Descripción',         type:'textarea' },
-      { key:'event_date',    label:'Fecha',               type:'date' },
+      { key:'event_date',    label:'Fecha',               type:'date',     required:true },
       { key:'event_time',    label:'Hora',                type:'time' },
       { key:'duration',      label:'Duración',            type:'text',     placeholder:'ej: 2h' },
       { key:'type',          label:'Tipo',                type:'select',   options:['online','presencial'] },
@@ -3191,8 +3191,8 @@ const ADMIN_FORMS = {
     fields: [
       { key:'title',         label:'Título',              type:'text',     required:true },
       { key:'description',   label:'Descripción',         type:'textarea' },
-      { key:'date',          label:'Fecha',               type:'date' },
-      { key:'time',          label:'Hora',                type:'time' },
+      { key:'date',          label:'Fecha',               type:'date',     required:true },
+      { key:'time',          label:'Hora',                type:'time',     required:true },
       { key:'duration',      label:'Duración',            type:'text',     placeholder:'ej: 1h 30min' },
       { key:'type',          label:'Tipo',                type:'select',   options:['online','grabada'] },
       { key:'zoom_url',      label:'URL Zoom / YouTube',  type:'text' },
@@ -5174,6 +5174,26 @@ function _updateAdminFormVisibility() {
   });
 }
 
+/* Map of admin table → user-facing _loaded_* flags that should be reset
+   when something changes in that table. Without this, the user-facing
+   listings keep showing stale data after an admin create/edit/delete
+   until the user does a hard refresh. */
+const _USER_CACHE_FLAGS_BY_TABLE = {
+  videos:    ['_loaded_clases', '_loaded_agenda', '_loaded_grabadas'],
+  events:    ['_loaded_eventos'],
+  webinars:  ['_loaded_eventos', '_loaded_grabadas'],
+  courses:   ['_loaded_cursos'],
+  lessons:   ['_loaded_cursos'],
+  documents: ['_loaded_documentos'],
+};
+
+function _invalidateUserFacingCache(table) {
+  const flags = _USER_CACHE_FLAGS_BY_TABLE[table];
+  if (!flags) return;
+  flags.forEach(flag => { window[flag] = false; });
+  console.log('[admin] invalidated user-facing cache for table=' + table + ' · flags=' + flags.join(','));
+}
+
 async function saveAdminForm() {
   const schema = ADMIN_FORMS[_adminEditType];
   if (!schema) return;
@@ -5240,6 +5260,10 @@ async function saveAdminForm() {
     return;
   }
 
+  // Invalidate user-facing cache so next visit to the affected section
+  // fetches fresh data (otherwise _loaded_* flags from boot keep stale lists)
+  _invalidateUserFacingCache(schema.table);
+
   closeAdminModal();
   showToast(`${schema.title} ${_adminEditItem ? 'actualizado' : 'creado'} ✓`);
   if (_adminEditType === 'leccion') {
@@ -5257,6 +5281,7 @@ async function confirmDeleteAdmin(type, id) {
   const { error } = await sb.from(schema.table).delete().eq('id', id);
   if (error) showToast('Error al eliminar: ' + error.message, true);
   else {
+    _invalidateUserFacingCache(schema.table);
     showToast(`${schema.title} eliminado`);
     if (type === 'leccion') {
       loadAdminLecciones(_adminLessonsCourseId, _adminLessonsCourseTitle);
