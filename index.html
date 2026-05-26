@@ -1449,7 +1449,8 @@ function renderTribuMember(container) {
   const initials   = getInitials(userProfile?.full_name, currentUser.email);
   const avatarUrl  = userProfile?.avatar_url;
   const canMember  = canAccess('basica');
-  const canPremium = canAccess('premium');
+  // Grabadas requires VIP or higher (vip rank 2, premium rank 3)
+  const canVip     = canAccess('vip');
 
   container.innerHTML = `
     <h1 class="text-2xl font-black serif mb-5">Tribu <span class="grad-text">Flowback</span></h1>
@@ -1567,14 +1568,14 @@ function renderTribuMember(container) {
           </div>
           <i data-lucide="arrow-right" class="w-4 h-4 text-white/30"></i>
         </button>
-        ${canPremium ? `
+        ${canVip ? `
         <button onclick="switchSection('grabadas')" class="w-full card rounded-xl p-4 flex items-center gap-3 text-left">
           <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(245,124,0,.12)">
             <i data-lucide="play-circle" class="w-5 h-5" style="color:var(--orange)"></i>
           </div>
           <div class="flex-1">
             <p class="font-semibold text-sm text-white">Sesiones grabadas</p>
-            <p class="text-xs text-white/40 mt-0.5">Contenido exclusivo Premium y VIP</p>
+            <p class="text-xs text-white/40 mt-0.5">Contenido exclusivo VIP y Premium</p>
           </div>
           <i data-lucide="arrow-right" class="w-4 h-4 text-white/30"></i>
         </button>` : `
@@ -1584,7 +1585,7 @@ function renderTribuMember(container) {
           </div>
           <div class="flex-1">
             <p class="text-sm text-white/50">Sesiones grabadas</p>
-            <p class="text-xs text-white/30 mt-0.5">Requiere membresía Premium</p>
+            <p class="text-xs text-white/30 mt-0.5">Requiere membresía VIP</p>
           </div>
         </div>`}
         <button onclick="switchSection('documentos')" class="w-full card rounded-xl p-4 flex items-center gap-3 text-left">
@@ -2747,8 +2748,8 @@ async function loadGrabadas() {
   const container = document.getElementById('grabadas-list');
   if (!container) return;
 
-  if (!currentUser)          { container.innerHTML = renderMemberGate();                           lucide.createIcons(); return; }
-  if (!canAccess('premium')) { container.innerHTML = renderTierGate('premium','las Sesiones Grabadas'); lucide.createIcons(); return; }
+  if (!currentUser)      { container.innerHTML = renderMemberGate();                       lucide.createIcons(); return; }
+  if (!canAccess('vip')) { container.innerHTML = renderTierGate('vip','las Sesiones Grabadas'); lucide.createIcons(); return; }
 
   // Skeletons appear DURING the fetch, not before
   container.innerHTML = skeletonCards(4);
