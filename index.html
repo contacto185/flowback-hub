@@ -2332,28 +2332,41 @@ function mountPaypal(container, tier, amount, label) {
 async function onPaypalSuccess(plan, orderID, amount, details) {
   if (!currentUser) { showToast('Sesión expirada. Inicia sesión.', true); return; }
 
-  const { error: payErr } = await sb.from('payments').insert({
-    user_id:        currentUser.id,
-    amount:         Number(amount),
-    currency:       'USD',
-    method:         'paypal',
-    status:         'confirmed',
-    reference_code: orderID,
-    confirmed_at:   new Date().toISOString(),
-  });
-  if (payErr) console.error('payments insert error', payErr);
+  console.log('[PayPal] confirming server-side · plan=' + plan + ' · orderID=' + orderID);
 
-  const { error: profErr } = await sb.from('profiles')
-    .update({ tier: plan })
-    .eq('user_id', currentUser.id);
-  if (profErr) {
-    console.error('profile tier update error', profErr);
-    showToast('Pago recibido, pero no pudimos actualizar tu plan. Contacta a soporte.', true);
+  // Delegate to the confirm-payment Edge Function: it verifies the capture
+  // against PayPal, validates amount against the plans table, and updates
+  // profiles.tier using service_role. The client never touches profiles
+  // directly anymore.
+  let resp;
+  try {
+    resp = await sb.functions.invoke('confirm-payment', {
+      body: {
+        orderID,
+        userID: currentUser.id,
+        planID: plan,
+      },
+    });
+  } catch (err) {
+    console.error('[PayPal] confirm-payment threw:', err);
+    showToast('Pago recibido pero no pudimos confirmarlo. Contactá a soporte.', true);
     return;
   }
 
-  if (userProfile) userProfile.tier = plan;
-  showToast('¡Bienvenido a la Tribu!');
+  const { data, error } = resp || {};
+  if (error || !data?.success) {
+    console.error('[PayPal] confirm-payment failed:', error, data);
+    const msg = data?.error || error?.message || 'No pudimos confirmar el pago';
+    showToast(msg + ' — contactá a soporte si el cargo aparece.', true);
+    return;
+  }
+
+  // Authoritative new tier comes from the server, not from the client request
+  const newTier = data.tier || plan;
+  console.log('[PayPal] confirmed · newTier=' + newTier + (data.alreadyProcessed ? ' (already processed)' : ''));
+
+  if (userProfile) userProfile.tier = newTier;
+  showToast(data.alreadyProcessed ? '¡Bienvenido de vuelta a la Tribu!' : '¡Bienvenido a la Tribu!');
   updateHeader();
   updateUIForLoggedInUser();
 }
