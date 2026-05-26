@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-cream text-ink font-sans antialiased;
+    min-height: 100dvh;
+  }
+}
+
+@layer components {
+  /* Gradient text used in headings (e.g. "Flowback Hub") */
+  .grad-text {
+    @apply bg-grad-brand bg-clip-text text-transparent;
+  }
+
+  /* Reusable card with the cream-theme drop shadow */
+  .card {
+    @apply bg-card rounded-2xl border border-line shadow-card transition-shadow;
+  }
+  .card:hover {
+    @apply shadow-card-hover;
+  }
+
+  /* Primary CTA: gradient pill */
+  .btn-grad {
+    @apply inline-flex items-center justify-center font-semibold text-white
+           bg-grad-brand rounded-xl px-4 py-2.5 transition-transform;
+  }
+  .btn-grad:hover {
+    @apply scale-[1.02];
+  }
+}
