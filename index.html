@@ -626,6 +626,9 @@ let appLandingBlocks  = { benefits: [], resources: [] };  // Loaded from `landin
 let _docLoadSeq       = 0;    // Monotonic counter — same race-protection pattern as _adminLoadSeq
 let _agendaLoadSeq    = 0;    // Same pattern for Agenda
 let _grabadasLoadSeq  = 0;    // Same pattern for Grabadas
+let _eventosLoadSeq   = 0;    // Same pattern for public Eventos section
+let _clasesLoadSeq    = 0;    // Same pattern for public Clases Gratis section
+let _cursosLoadSeq    = 0;    // Shared by loadCursos and openCourseDetail — both write to #cursos-list
 
 /* ═══════════════════════════════════════════
    HELPERS
@@ -1953,33 +1956,63 @@ function renderLoadError() {
 /* ═══════════════════════════════════════════
    LOAD EVENTOS (events + webinars merged)
 ═══════════════════════════════════════════ */
+function _eventosSeqStale(seq) {
+  if (seq !== _eventosLoadSeq) {
+    console.log(`[Eventos] seq=${seq} stale (current=${_eventosLoadSeq}) — discarding`);
+    return true;
+  }
+  return false;
+}
+
 async function loadEventos() {
+  const seq = ++_eventosLoadSeq;
+  const tag = '[Eventos] seq=' + seq;
+  console.log(`${tag} ┌─ START`);
   window._loaded_eventos = true;
+
   const container = document.getElementById('eventos-list');
-  if (!container) return;
+  if (!container) { console.warn(`${tag} no container — abort`); return; }
+
+  // Skeletons already in place from injectSectionShells; if we got here from a
+  // re-click without skeletons, write them synchronously so the user gets a
+  // visible loading state before the fetch.
+  if (!container.querySelector('.skeleton')) container.innerHTML = skeletonCards(3);
 
   try {
+    if (_eventosSeqStale(seq)) return;
     const today = new Date().toISOString().split('T')[0];
     const [{ data: events, error: e1 }, { data: webinars, error: e2 }] = await Promise.all([
       sb.from('events').select('*').eq('is_active', true).gte('event_date', today).order('event_date').order('event_time'),
       sb.from('webinars').select('*').eq('is_active', true).gte('date', today).order('date').order('time'),
     ]);
+    if (_eventosSeqStale(seq)) return;
+    console.log(`${tag} events=${events?.length ?? 'null'} · webinars=${webinars?.length ?? 'null'} · e1=${e1?.message ?? 'none'} · e2=${e2?.message ?? 'none'}`);
     if (e1 || e2) throw e1 || e2;
 
     const combined = [
-      ...(events   || []).map(e => ({ ...e, _src: 'event',   _date: e.event_date, _time: e.event_time   })),
-      ...(webinars || []).map(w => ({ ...w, _src: 'webinar', _date: w.date,        _time: w.time         })),
+      ...(events   || []).map(e => ({ ...e, _src: 'event',   _date: e.event_date, _time: e.event_time })),
+      ...(webinars || []).map(w => ({ ...w, _src: 'webinar', _date: w.date,        _time: w.time       })),
     ].sort((a, b) => (a._date + (a._time || '')).localeCompare(b._date + (b._time || '')));
 
+    if (_eventosSeqStale(seq)) return;
+    const fresh = document.getElementById('eventos-list');
+    if (!fresh) { console.warn(`${tag} container disappeared`); return; }
+
     if (!combined.length) {
-      container.innerHTML = renderEmptyState('calendar-x', 'No hay eventos próximos', 'Vuelve pronto para ver nuevas fechas');
-      lucide.createIcons(); return;
+      fresh.innerHTML = renderEmptyState('calendar-x', 'No hay eventos próximos', 'Vuelve pronto para ver nuevas fechas');
+      lucide.createIcons();
+      console.log(`${tag} └─ DONE empty`);
+      return;
     }
 
-    container.innerHTML = combined.map(renderEventCard).join('');
+    fresh.innerHTML = combined.map(renderEventCard).join('');
     lucide.createIcons();
-  } catch {
-    container.innerHTML = renderLoadError();
+    console.log(`${tag} └─ DONE ${combined.length} cards`);
+  } catch(err) {
+    if (_eventosSeqStale(seq)) return;
+    console.error(`${tag} error:`, err);
+    const fresh = document.getElementById('eventos-list');
+    if (fresh) fresh.innerHTML = renderLoadError();
   }
 }
 
@@ -2035,12 +2068,26 @@ function renderEventCard(e) {
 /* ═══════════════════════════════════════════
    LOAD CLASES GRATIS (free Vimeo videos)
 ═══════════════════════════════════════════ */
+function _clasesSeqStale(seq) {
+  if (seq !== _clasesLoadSeq) {
+    console.log(`[Clases] seq=${seq} stale (current=${_clasesLoadSeq}) — discarding`);
+    return true;
+  }
+  return false;
+}
+
 async function loadClasesGratis() {
+  const seq = ++_clasesLoadSeq;
+  const tag = '[Clases] seq=' + seq;
+  console.log(`${tag} ┌─ START`);
   window._loaded_clases = true;
+
   const container = document.getElementById('clases-list');
-  if (!container) return;
+  if (!container) { console.warn(`${tag} no container — abort`); return; }
+  if (!container.querySelector('.skeleton')) container.innerHTML = skeletonCards(4);
 
   try {
+    if (_clasesSeqStale(seq)) return;
     const { data: videos, error } = await sb
       .from('videos')
       .select('*')
@@ -2048,20 +2095,27 @@ async function loadClasesGratis() {
       .eq('is_active', true)
       .order('order_index', { nullsLast: true })
       .order('created_at', { ascending: false });
+    if (_clasesSeqStale(seq)) return;
+    console.log(`${tag} videos=${videos?.length ?? 'null'} · error=${error?.message ?? 'none'}`);
     if (error) throw error;
 
-    if (!videos?.length) {
-      container.innerHTML = renderEmptyState('video-off', 'Sin clases por ahora', 'Próximamente nuevas clases gratuitas');
-      lucide.createIcons();
-    } else {
-      container.innerHTML = videos.map(v => renderVideoCard(v, false)).join('');
-      lucide.createIcons();
-    }
+    const fresh = document.getElementById('clases-list');
+    if (!fresh) { console.warn(`${tag} container disappeared`); return; }
 
-    // Inject static resources section below the dynamic videos
+    if (!videos?.length) {
+      fresh.innerHTML = renderEmptyState('video-off', 'Sin clases por ahora', 'Próximamente nuevas clases gratuitas');
+    } else {
+      fresh.innerHTML = videos.map(v => renderVideoCard(v, false)).join('');
+    }
+    lucide.createIcons();
+    // Static block below the dynamic videos
     renderClasesStaticContent();
-  } catch {
-    container.innerHTML = renderLoadError();
+    console.log(`${tag} └─ DONE ${videos?.length ?? 0} cards`);
+  } catch(err) {
+    if (_clasesSeqStale(seq)) return;
+    console.error(`${tag} error:`, err);
+    const fresh = document.getElementById('clases-list');
+    if (fresh) fresh.innerHTML = renderLoadError();
     renderClasesStaticContent();
   }
 }
@@ -2307,40 +2361,67 @@ async function onPaypalSuccess(plan, orderID, amount, details) {
 /* ═══════════════════════════════════════════
    LOAD CURSOS
 ═══════════════════════════════════════════ */
+/* Shared by loadCursos and openCourseDetail since both write to #cursos-list.
+   Without sharing: clicking a course then back-arrow racing the in-flight
+   detail fetch could overwrite the list view with stale detail HTML. */
+function _cursosSeqStale(seq) {
+  if (seq !== _cursosLoadSeq) {
+    console.log(`[Cursos] seq=${seq} stale (current=${_cursosLoadSeq}) — discarding`);
+    return true;
+  }
+  return false;
+}
+
 async function loadCursos() {
+  const seq = ++_cursosLoadSeq;
+  const tag = '[Cursos list] seq=' + seq;
+  console.log(`${tag} ┌─ START`);
   window._loaded_cursos = true;
+
   const container = document.getElementById('cursos-list');
-  if (!container) return;
+  if (!container) { console.warn(`${tag} no container — abort`); return; }
+  if (!container.querySelector('.skeleton')) container.innerHTML = skeletonCards(3);
 
   try {
+    if (_cursosSeqStale(seq)) return;
     const { data: courses, error } = await sb
       .from('courses')
       .select('*')
       .eq('is_active', true)
       .order('order_index', { nullsLast: true })
       .order('created_at', { ascending: false });
+    if (_cursosSeqStale(seq)) return;
+    console.log(`${tag} courses=${courses?.length ?? 'null'} · error=${error?.message ?? 'none'}`);
     if (error) throw error;
 
-    // Short-circuit on empty BEFORE the purchases query
+    const fresh = () => document.getElementById('cursos-list');
+
     if (!courses || courses.length === 0) {
-      container.innerHTML = renderEmptyState('graduation-cap', 'Sin cursos disponibles', 'Próximamente nuevos programas');
-      lucide.createIcons(); return;
+      const el = fresh();
+      if (el) { el.innerHTML = renderEmptyState('graduation-cap', 'Sin cursos disponibles', 'Próximamente nuevos programas'); lucide.createIcons(); }
+      console.log(`${tag} └─ DONE empty`);
+      return;
     }
 
-    // If user is logged in, fetch their purchases
+    // If logged in, fetch purchases — validate seq again after this second await
     let purchasedIds = new Set();
     if (currentUser) {
       const { data: purchases } = await sb
-        .from('course_purchases')
-        .select('course_id')
-        .eq('user_id', currentUser.id);
+        .from('course_purchases').select('course_id').eq('user_id', currentUser.id);
+      if (_cursosSeqStale(seq)) return;
       purchasedIds = new Set((purchases || []).map(p => p.course_id));
     }
 
-    container.innerHTML = courses.map(c => renderCourseCard(c, purchasedIds.has(c.id))).join('');
+    const el = fresh();
+    if (!el) { console.warn(`${tag} container disappeared`); return; }
+    el.innerHTML = courses.map(c => renderCourseCard(c, purchasedIds.has(c.id))).join('');
     lucide.createIcons();
-  } catch {
-    container.innerHTML = renderLoadError();
+    console.log(`${tag} └─ DONE ${courses.length} cards`);
+  } catch(err) {
+    if (_cursosSeqStale(seq)) return;
+    console.error(`${tag} error:`, err);
+    const el = document.getElementById('cursos-list');
+    if (el) el.innerHTML = renderLoadError();
   }
 }
 
@@ -2389,16 +2470,24 @@ function renderCourseCard(c, purchased = false) {
    COURSE DETAIL VIEW
 ═══════════════════════════════════════════ */
 async function openCourseDetail(courseId) {
+  const seq = ++_cursosLoadSeq;            // shared with loadCursos
+  const tag = '[Cursos detail] seq=' + seq + ' courseId=' + courseId;
+  console.log(`${tag} ┌─ START`);
+
   const container = document.getElementById('cursos-list');
-  if (!container) return;
+  if (!container) { console.warn(`${tag} no container — abort`); return; }
   container.innerHTML = skeletonCards(3);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
   try {
+    if (_cursosSeqStale(seq)) return;
     const [{ data: course, error: cErr }, { data: lessons }] = await Promise.all([
       sb.from('courses').select('*').eq('id', courseId).single(),
       sb.from('lessons').select('*').eq('course_id', courseId).eq('is_active', true)
         .order('order_index', { nullsLast: true }),
     ]);
+    if (_cursosSeqStale(seq)) return;
+    console.log(`${tag} course=${course ? 'ok' : 'null'} · lessons=${lessons?.length ?? 'null'} · cErr=${cErr?.message ?? 'none'}`);
     if (cErr) throw cErr;
 
     let purchased = false;
@@ -2411,21 +2500,29 @@ async function openCourseDetail(courseId) {
           .eq('user_id', currentUser.id)
           .in('video_id', (lessons || []).map(l => l.id).filter(Boolean)),
       ]);
+      if (_cursosSeqStale(seq)) return;
       purchased = !!(purchases?.length);
       (progRows || []).forEach(p => { progressMap[p.video_id] = p; });
     }
 
-    container.innerHTML = renderCourseDetail(course, lessons || [], purchased, progressMap);
+    const fresh = document.getElementById('cursos-list');
+    if (!fresh) { console.warn(`${tag} container disappeared`); return; }
+    fresh.innerHTML = renderCourseDetail(course, lessons || [], purchased, progressMap);
     lucide.createIcons();
+    console.log(`${tag} └─ DONE`);
   } catch(err) {
-    console.error('[Course detail] error:', err);
-    container.innerHTML = `
-      <div class="card rounded-2xl p-6 text-center mt-4">
-        <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-3 text-orange-400"></i>
-        <p class="text-white/50 mb-3">Error al cargar el curso</p>
-        <button onclick="backToCursos()" class="btn-grad px-4 py-2 rounded-xl text-sm">← Volver</button>
-      </div>`;
-    lucide.createIcons();
+    if (_cursosSeqStale(seq)) return;
+    console.error(`${tag} error:`, err);
+    const fresh = document.getElementById('cursos-list');
+    if (fresh) {
+      fresh.innerHTML = `
+        <div class="card rounded-2xl p-6 text-center mt-4">
+          <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-3 text-orange-400"></i>
+          <p class="text-white/50 mb-3">Error al cargar el curso</p>
+          <button onclick="backToCursos()" class="btn-grad px-4 py-2 rounded-xl text-sm">← Volver</button>
+        </div>`;
+      lucide.createIcons();
+    }
   }
 }
 
@@ -4415,16 +4512,24 @@ function loadAdminImagenes() {
   loadAdminImagenesGaleria();
 }
 
+/* Sub-loader of loadAdminImagenes — reuses _adminLoadSeq (the parent already
+   bumped it). If the user switches admin tab during the fetch, our writes
+   are discarded so we don't paint into a container that no longer reflects
+   the active tab. */
 async function _loadAdminImagenesDbLists() {
-  const vBox = document.getElementById('img-mgr-videos');
-  const cBox = document.getElementById('img-mgr-courses');
+  const seq = _adminLoadSeq;
+  console.log('[Admin Imágenes lists] seq=' + seq + ' ┌─ START');
   try {
     const [vRes, cRes] = await Promise.all([
       sb.from('videos').select('id,title,thumbnail_url').order('created_at',{ascending:false}),
       sb.from('courses').select('id,title,thumbnail_url').order('created_at',{ascending:false}),
     ]);
+    if (_adminSeqStale(seq, 'Imágenes lists')) return;
+
     const videos  = vRes.data  || [];
     const courses = cRes.data  || [];
+    const vBox = document.getElementById('img-mgr-videos');
+    const cBox = document.getElementById('img-mgr-courses');
     if (vBox) {
       vBox.innerHTML = videos.length
         ? videos.map(v => _renderDbThumbRow({ table:'videos', item:v })).join('')
@@ -4436,9 +4541,13 @@ async function _loadAdminImagenesDbLists() {
         : renderAdminEmptyState('🎓', 'No hay cursos creados aún', 'Agregá uno desde el tab Cursos para subir su thumbnail');
     }
     lucide.createIcons();
+    console.log('[Admin Imágenes lists] seq=' + seq + ' └─ DONE · videos=' + videos.length + ' · courses=' + courses.length);
   } catch (e) {
-    console.error('[Admin Imágenes] db lists error:', e);
+    if (_adminSeqStale(seq, 'Imágenes lists')) return;
+    console.error('[Admin Imágenes lists] seq=' + seq + ' error:', e);
     const errHtml = '<div class="card rounded-xl p-3 text-center text-xs text-orange-400/70">Error al cargar</div>';
+    const vBox = document.getElementById('img-mgr-videos');
+    const cBox = document.getElementById('img-mgr-courses');
     if (vBox) vBox.innerHTML = errHtml;
     if (cBox) cBox.innerHTML = errHtml;
   }
@@ -4447,13 +4556,17 @@ async function _loadAdminImagenesDbLists() {
 /* List images stored in the thumbnails bucket. We list known admin subfolders +
    bucket root so users see everything the app has uploaded. */
 async function loadAdminImagenesGaleria() {
+  const seq = _adminLoadSeq;   // reuse parent admin tab counter
+  const tag = '[Admin Imágenes galería] seq=' + seq;
+  console.log(`${tag} ┌─ START`);
   const container = document.getElementById('img-mgr-galeria');
-  if (!container) return;
+  if (!container) { console.warn(`${tag} no container — abort`); return; }
   container.innerHTML = '<div class="card rounded-xl p-4 text-center text-xs text-white/40">Cargando galería…</div>';
 
   const prefixes = ['', 'admin/hero', 'admin/nutricion', 'admin/videos', 'admin/courses', 'lessons'];
   const items = [];
   for (const prefix of prefixes) {
+    if (_adminSeqStale(seq, 'Imágenes galería')) return;
     try {
       const { data, error } = await sb.storage.from('thumbnails').list(prefix, {
         limit: 500,
@@ -4461,25 +4574,28 @@ async function loadAdminImagenesGaleria() {
       });
       if (error) { console.warn('[galeria] list error', prefix, error.message); continue; }
       for (const f of data || []) {
-        // Folders have id === null in Supabase Storage listing — skip them
         if (!f.id || !f.name) continue;
         const path = prefix ? `${prefix}/${f.name}` : f.name;
         items.push({ path, name: f.name, createdAt: f.created_at });
       }
     } catch (e) { console.warn('[galeria] exception', prefix, e); }
   }
+  if (_adminSeqStale(seq, 'Imágenes galería')) return;
 
-  // Dedupe (root list can overlap when buckets are flat) and sort newest first
   const seen = new Set();
   const unique = items.filter(i => seen.has(i.path) ? false : (seen.add(i.path), true));
   unique.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 
+  const fresh = document.getElementById('img-mgr-galeria');
+  if (!fresh) { console.warn(`${tag} container disappeared`); return; }
+
   if (!unique.length) {
-    container.innerHTML = renderAdminEmptyState('🖼️', 'No hay imágenes en la galería aún', 'Subí imágenes desde los tabs Videos, Cursos o las cards de Hero/Nutrición arriba');
+    fresh.innerHTML = renderAdminEmptyState('🖼️', 'No hay imágenes en la galería aún', 'Subí imágenes desde los tabs Videos, Cursos o las cards de Hero/Nutrición arriba');
+    console.log(`${tag} └─ DONE empty`);
     return;
   }
 
-  container.innerHTML = `
+  fresh.innerHTML = `
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
       ${unique.map(it => {
         const { data: pub } = sb.storage.from('thumbnails').getPublicUrl(it.path);
@@ -4509,6 +4625,7 @@ async function loadAdminImagenesGaleria() {
     </div>
   `;
   lucide.createIcons();
+  console.log(`${tag} └─ DONE ${unique.length} images`);
 }
 
 async function _galeriaCopyUrl(url) {
