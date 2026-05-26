@@ -624,6 +624,8 @@ let notifVisible  = false;
 let appPlans          = [];   // Loaded from `plans` table — single source of truth
 let appLandingBlocks  = { benefits: [], resources: [] };  // Loaded from `landing_blocks`
 let _docLoadSeq       = 0;    // Monotonic counter — same race-protection pattern as _adminLoadSeq
+let _agendaLoadSeq    = 0;    // Same pattern for Agenda
+let _grabadasLoadSeq  = 0;    // Same pattern for Grabadas
 
 /* ═══════════════════════════════════════════
    HELPERS
@@ -2688,18 +2690,34 @@ function renderEmptyMemberState(emoji, title, subtitle) {
     </div>`;
 }
 
+function _agendaSeqStale(seq) {
+  if (seq !== _agendaLoadSeq) {
+    console.log(`[Agenda] seq=${seq} stale (current=${_agendaLoadSeq}) — discarding`);
+    return true;
+  }
+  return false;
+}
+
 async function loadAgenda() {
+  const seq = ++_agendaLoadSeq;
+  const tag = '[Agenda] seq=' + seq;
+  console.log(`${tag} ┌─ START`);
   window._loaded_agenda = true;
+
+  // ── 1. Container guard (synchronous) ─────────────────────────────
   const container = document.getElementById('agenda-list');
-  if (!container) return;
+  if (!container) { console.warn(`${tag} no container — abort`); return; }
 
-  if (!currentUser)         { container.innerHTML = renderMemberGate();                    lucide.createIcons(); return; }
-  if (!canAccess('basica')) { container.innerHTML = renderTierGate('basica','la Agenda'); lucide.createIcons(); return; }
+  // ── 2. Member / tier gates (sync, no fetch needed) ──────────────
+  if (!currentUser)         { container.innerHTML = renderMemberGate();                    lucide.createIcons(); console.log(`${tag} └─ logged-out gate`); return; }
+  if (!canAccess('basica')) { container.innerHTML = renderTierGate('basica','la Agenda'); lucide.createIcons(); console.log(`${tag} └─ tier gate`); return; }
 
-  // Skeletons appear DURING the fetch, not before — so they can't get stuck if loadAgenda never runs.
+  // ── 3. Skeleton synchronously BEFORE any await ──────────────────
   container.innerHTML = skeletonCards(4);
 
   try {
+    // ── 4. Fetch (validate seq before AND after) ───────────────────
+    if (_agendaSeqStale(seq)) return;
     const { data: videos, error } = await sb
       .from('videos')
       .select('*')
@@ -2707,35 +2725,39 @@ async function loadAgenda() {
       .eq('is_active', true)
       .order('order_index', { nullsLast: true })
       .order('created_at', { ascending: false });
+    if (_agendaSeqStale(seq)) return;
 
-    console.log('[Agenda] tier:', getUserTier(), '| videos:', videos?.length, '| error:', error);
+    console.log(`${tag} tier=${getUserTier()} · videos=${videos?.length ?? 'null'} · error=${error?.message ?? 'none'}`);
     if (error) throw error;
 
-    // No data → friendly empty state. Re-fetch container so a stale reference
-    // (the original `container` captured before the await) can never leave
-    // the user staring at skeletons.
+    // ── 5. Empty state ─────────────────────────────────────────────
     if (!videos || videos.length === 0) {
+      if (_agendaSeqStale(seq)) return;
       const ok = _writeMemberSection('agenda-list', renderEmptyMemberState(
         '🎬',
         'No hay clases disponibles aún',
         'Próximamente nuevo contenido para miembros'
       ));
-      console.log('[Agenda] empty state write success=' + ok);
+      console.log(`${tag} └─ DONE empty-state · write success=${ok}`);
       return;
     }
 
+    // ── 6. Progress map (second fetch — validate seq again) ────────
     let progressMap = {};
     const { data: prog } = await sb
       .from('video_progress').select('video_id, progress_percent').eq('user_id', currentUser.id);
+    if (_agendaSeqStale(seq)) return;
     (prog || []).forEach(p => { progressMap[p.video_id] = p.progress_percent; });
 
     const html = videos.map(v =>
       renderVideoCard({ ...v, _progress: progressMap[v.id] ?? 0 }, !canAccess(v.tier_required))
     ).join('');
+    if (_agendaSeqStale(seq)) return;
     const ok = _writeMemberSection('agenda-list', html);
-    console.log('[Agenda] content write success=' + ok);
+    console.log(`${tag} └─ DONE ${videos.length} cards · write success=${ok}`);
   } catch(err) {
-    console.error('[Agenda] error:', err);
+    if (_agendaSeqStale(seq)) return;
+    console.error(`${tag} error:`, err);
     _writeMemberSection('agenda-list', renderLoadError());
   }
 }
@@ -2743,54 +2765,76 @@ async function loadAgenda() {
 /* ═══════════════════════════════════════════
    LOAD GRABADAS (webinars grabadas + premium/vip videos)
 ═══════════════════════════════════════════ */
+function _grabadasSeqStale(seq) {
+  if (seq !== _grabadasLoadSeq) {
+    console.log(`[Grabadas] seq=${seq} stale (current=${_grabadasLoadSeq}) — discarding`);
+    return true;
+  }
+  return false;
+}
+
 async function loadGrabadas() {
+  const seq = ++_grabadasLoadSeq;
+  const tag = '[Grabadas] seq=' + seq;
+  console.log(`${tag} ┌─ START`);
   window._loaded_grabadas = true;
+
+  // ── 1. Container guard (synchronous) ─────────────────────────────
   const container = document.getElementById('grabadas-list');
-  if (!container) return;
+  if (!container) { console.warn(`${tag} no container — abort`); return; }
 
-  if (!currentUser)      { container.innerHTML = renderMemberGate();                       lucide.createIcons(); return; }
-  if (!canAccess('vip')) { container.innerHTML = renderTierGate('vip','las Sesiones Grabadas'); lucide.createIcons(); return; }
+  // ── 2. Member / tier gates (sync, no fetch needed) ──────────────
+  if (!currentUser)      { container.innerHTML = renderMemberGate();                       lucide.createIcons(); console.log(`${tag} └─ logged-out gate`); return; }
+  if (!canAccess('vip')) { container.innerHTML = renderTierGate('vip','las Sesiones Grabadas'); lucide.createIcons(); console.log(`${tag} └─ tier gate`); return; }
 
-  // Skeletons appear DURING the fetch, not before
+  // ── 3. Skeleton synchronously BEFORE any await ──────────────────
   container.innerHTML = skeletonCards(4);
 
   try {
+    // ── 4. Parallel fetch (validate seq before AND after) ──────────
+    if (_grabadasSeqStale(seq)) return;
     const [{ data: webinars, error: e1 }, { data: videos, error: e2 }] = await Promise.all([
       sb.from('webinars').select('*').eq('type','grabada').eq('is_active',true)
         .order('date', { ascending: false }),
       sb.from('videos').select('*').in('tier_required',['premium','vip']).eq('is_active',true)
         .order('order_index',{ nullsLast:true }).order('created_at',{ ascending:false }),
     ]);
+    if (_grabadasSeqStale(seq)) return;
 
-    console.log('[Grabadas] tier:', getUserTier(), '| webinars:', webinars?.length, '| videos:', videos?.length, '| e1:', e1, '| e2:', e2);
+    console.log(`${tag} tier=${getUserTier()} · webinars=${webinars?.length ?? 'null'} · videos=${videos?.length ?? 'null'} · e1=${e1?.message ?? 'none'} · e2=${e2?.message ?? 'none'}`);
     if (e1 || e2) throw e1 || e2;
 
-    // No data → friendly empty state (re-fetch container to dodge stale refs)
+    // ── 5. Empty state ─────────────────────────────────────────────
     const noWebinars = !webinars || webinars.length === 0;
     const noVideos   = !videos   || videos.length === 0;
     if (noWebinars && noVideos) {
+      if (_grabadasSeqStale(seq)) return;
       const ok = _writeMemberSection('grabadas-list', renderEmptyMemberState(
         '📹',
         'No hay sesiones grabadas aún',
         'Próximamente contenido exclusivo'
       ));
-      console.log('[Grabadas] empty state write success=' + ok);
+      console.log(`${tag} └─ DONE empty-state · write success=${ok}`);
       return;
     }
 
+    // ── 6. Progress map (second fetch — validate seq again) ────────
     let progressMap = {};
     const { data: prog } = await sb
       .from('video_progress').select('video_id, progress_percent').eq('user_id', currentUser.id);
+    if (_grabadasSeqStale(seq)) return;
     (prog || []).forEach(p => { progressMap[p.video_id] = p.progress_percent; });
 
     const webinarCards = (webinars || []).map(renderGrabadaWebinarCard);
     const videoCards   = (videos   || []).map(v =>
       renderVideoCard({ ...v, _progress: progressMap[v.id] ?? 0 }, !canAccess(v.tier_required))
     );
+    if (_grabadasSeqStale(seq)) return;
     const ok = _writeMemberSection('grabadas-list', [...webinarCards, ...videoCards].join(''));
-    console.log('[Grabadas] content write success=' + ok);
+    console.log(`${tag} └─ DONE ${webinarCards.length + videoCards.length} cards · write success=${ok}`);
   } catch(err) {
-    console.error('[Grabadas] error:', err);
+    if (_grabadasSeqStale(seq)) return;
+    console.error(`${tag} error:`, err);
     _writeMemberSection('grabadas-list', renderLoadError());
   }
 }
