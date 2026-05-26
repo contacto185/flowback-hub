@@ -513,7 +513,7 @@ tailwind.config = {
   <!-- Center: logo -->
   <div class="flex items-center">
     <img src="/logo.png" alt="Flowback Hub" style="width:120px; height:auto; display:block;"
-      onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='block'">
+      onerror="this.onerror=null; this.style.display='none'; document.getElementById('logo-fallback').style.display='block'">
     <span id="logo-fallback" class="text-xl font-black serif grad-text" style="display:none; letter-spacing:-.5px">Flowback Hub</span>
   </div>
 
@@ -1876,7 +1876,7 @@ function renderVideoCard(video, locked = false) {
   const progress= video._progress ?? 0;
 
   const thumbHtml = thumb
-    ? `<img class="vimeo-thumb" src="${escHtml(thumb)}" alt="${escHtml(video.title)}" loading="lazy" onerror="this.style.display='none'">`
+    ? `<img class="vimeo-thumb" src="${escHtml(thumb)}" alt="${escHtml(video.title)}" loading="lazy" onerror="this.onerror=null; this.style.display='none'">`
     : `<div class="vimeo-thumb" style="background:linear-gradient(135deg,rgba(245,124,0,.08),rgba(56,189,248,.08))"></div>`;
 
   const durationBadge = video.duration
@@ -2040,7 +2040,7 @@ function renderEventCard(e) {
     <div class="relative">
       <img src="${escHtml(thumb)}" alt="${escHtml(e.title)}" loading="lazy"
         class="w-full object-cover" style="aspect-ratio:16/9"
-        onerror="this.src='https://flowback.infraqualia.com/assets/flowback-1.jpg'">
+        onerror="this.onerror=null; this.style.display='none'">
       <span class="${badgeCls} absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full">${badgeTxt}</span>
       ${isMember ? `<span class="badge-gold absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full">Miembros</span>` : ''}
       ${day !== '' ? `
@@ -2447,7 +2447,7 @@ function renderCourseCard(c, purchased = false) {
     <div class="relative">
       <img src="${escHtml(thumb)}" alt="${escHtml(c.title)}" loading="lazy"
         class="w-full object-cover" style="aspect-ratio:16/9"
-        onerror="this.src='https://flowback.infraqualia.com/assets/flowback-1.jpg'">
+        onerror="this.onerror=null; this.style.display='none'">
       <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(11,14,20,.78) 0%,transparent 55%)"></div>
       ${tierBadge}
       ${purchased ? `<span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full"
@@ -2591,7 +2591,7 @@ function renderCourseDetail(course, lessons, purchased, progressMap) {
       <div class="relative">
         <img src="${escHtml(thumb)}" alt="${escHtml(course.title)}"
           class="w-full object-cover" style="aspect-ratio:16/9"
-          onerror="this.src='https://flowback.infraqualia.com/assets/flowback-1.jpg'">
+          onerror="this.onerror=null; this.style.display='none'">
         <div class="absolute inset-0"
           style="background:linear-gradient(to top,rgba(11,14,20,.8) 0%,transparent 50%)"></div>
         ${isGold ? `<span class="badge-gold absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full">⭐ PREMIUM</span>` : ''}
@@ -4604,7 +4604,7 @@ async function loadAdminImagenesGaleria() {
         return `
         <div class="card rounded-xl overflow-hidden flex flex-col">
           <div class="w-full" style="aspect-ratio:1/1; background:rgba(255,255,255,.04)">
-            <img src="${escHtml(url)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy" onerror="this.style.display='none'">
+            <img src="${escHtml(url)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy" onerror="this.onerror=null; this.style.display='none'">
           </div>
           <div class="p-2">
             <p class="text-[10px] text-white/40 truncate mb-1.5" title="${safePath}">${escHtml(it.name)}</p>
@@ -4709,7 +4709,7 @@ function _renderImageManagerCard({ title, subtitle, slot, currentUrl }) {
       </div>
     </div>
     <div id="img-mgr-preview-${slot}" class="w-full rounded-xl overflow-hidden mb-3" style="aspect-ratio: ${slot==='nutricion'?'1/1':'2/1'}; background:rgba(255,255,255,.04);">
-      <img src="${escHtml(currentUrl)}" alt="${escHtml(title)}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'">
+      <img src="${escHtml(currentUrl)}" alt="${escHtml(title)}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.onerror=null; this.style.display='none'">
     </div>
     <div id="img-mgr-progress-${slot}" class="hidden mb-3">
       <div class="w-full h-2 rounded-full overflow-hidden" style="background:rgba(255,255,255,.08)">
@@ -4731,7 +4731,7 @@ function _renderDbThumbRow({ table, item }) {
   <div class="card rounded-xl p-3 mb-2 flex items-center gap-3">
     <div class="w-16 h-10 rounded-lg overflow-hidden flex-shrink-0" style="background:rgba(255,255,255,.05)">
       ${thumb
-        ? `<img src="${escHtml(thumb)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'">`
+        ? `<img src="${escHtml(thumb)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.onerror=null; this.style.display='none'">`
         : `<div class="w-full h-full flex items-center justify-center"><i data-lucide="image-off" class="w-4 h-4 text-white/30"></i></div>`}
     </div>
     <div class="flex-1 min-w-0">
