@@ -16,7 +16,12 @@
       "Bash(node --check index.html)",
       "Bash(node -e ' *)",
       "Bash(node --check _check.mjs)",
-      "Bash(rm -f _check.mjs)"
+      "Bash(rm -f _check.mjs)",
+      "Bash(command -v npm)",
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npx vite *)"
     ]
   }
 }

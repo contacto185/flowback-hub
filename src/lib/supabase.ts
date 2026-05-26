@@ -27,6 +27,22 @@ export const ADMIN_EMAILS = [
   'jimmylavinfeldman@gmail.com',
 ] as const;
 
+export type AdminEmail = typeof ADMIN_EMAILS[number];
+
+export function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const normalized = email.toLowerCase().trim();
+  return (ADMIN_EMAILS as readonly string[]).includes(normalized);
+}
+
 export const TIER_RANK: Record<string, number> = {
   free: 0, basica: 1, vip: 2, premium: 3,
 };
+
+export type Tier = 'free' | 'basica' | 'vip' | 'premium';
+
+export function canAccessTier(userTier: string | null | undefined, required: string): boolean {
+  if (!required || required === 'free') return true;
+  const u = (userTier ?? 'free').toLowerCase().trim();
+  return (TIER_RANK[u] ?? 0) >= (TIER_RANK[required] ?? 0);
+}
