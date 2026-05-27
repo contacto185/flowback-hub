@@ -2,40 +2,21 @@ import { type ReactNode } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import AuthProvider from '@/components/AuthProvider';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { useAuth } from '@/hooks/useAuth';
-import Home from '@/pages/Home';
-import Login from '@/pages/Login';
+import BottomNav from '@/components/BottomNav';
+import Home     from '@/pages/Home';
+import Clases   from '@/pages/Clases';
+import Eventos  from '@/pages/Eventos';
+import Cursos   from '@/pages/Cursos';
+import Agenda   from '@/pages/Agenda';
+import Grabadas from '@/pages/Grabadas';
+import MiCuenta from '@/pages/MiCuenta';
+import Admin    from '@/pages/Admin';
+import Login    from '@/pages/Login';
 import NotFound from '@/pages/NotFound';
 
-/** Logged-in user chip + sign out, shown in the header */
-function UserMenu() {
-  const { currentUser, userProfile, isAdmin, signOut } = useAuth();
-  if (!currentUser) return null;
-  const name = userProfile?.full_name || currentUser.email?.split('@')[0] || 'Usuario';
-  const tier = userProfile?.tier || 'free';
-
-  return (
-    <div className="ml-auto flex items-center gap-2 text-xs">
-      <span className="hidden sm:inline text-ink/50">{name}</span>
-      <span className={`px-2 py-0.5 rounded-full font-bold uppercase tracking-wide
-        ${tier === 'premium' ? 'bg-accent-orange/15 text-accent-orange' :
-          tier === 'vip'     ? 'bg-accent-purple/15 text-accent-purple' :
-          tier === 'basica'  ? 'bg-accent-blue/15 text-accent-blue' :
-                               'bg-ink/[.06] text-ink/50'}`}>
-        {tier}
-      </span>
-      {isAdmin && <span className="px-2 py-0.5 rounded-full bg-accent-orange text-white font-bold">admin</span>}
-      <button
-        onClick={signOut}
-        className="ml-1 px-3 py-1.5 rounded-lg text-ink/60 hover:bg-ink/[.06] transition-colors"
-      >
-        Salir
-      </button>
-    </div>
-  );
-}
-
-/** Layout used for every protected page: header + main wrapper. */
+/** Layout used for every protected page: header on top, BottomNav fixed
+    at the bottom, content in between. `pb-28` keeps content from being
+    occluded by the floating BottomNav. */
 function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-cream text-ink font-sans">
@@ -44,11 +25,26 @@ function AppShell({ children }: { children: ReactNode }) {
           <Link to="/" className="font-serif text-lg font-black grad-text">
             Flowback Hub
           </Link>
-          <UserMenu />
+          <span className="ml-auto text-[10px] uppercase tracking-wider text-ink/30">
+            react-v2
+          </span>
         </nav>
       </header>
-      <main className="max-w-screen-md mx-auto px-4 py-6">{children}</main>
+
+      <main className="max-w-screen-md mx-auto px-4 py-6 pb-28">{children}</main>
+
+      <BottomNav />
     </div>
+  );
+}
+
+/** Helper: wraps a page element in ProtectedRoute + AppShell. Cuts route
+    declaration noise when we have ~10 protected pages. */
+function Protected({ element, adminOnly = false }: { element: ReactNode; adminOnly?: boolean }) {
+  return (
+    <ProtectedRoute adminOnly={adminOnly}>
+      <AppShell>{element}</AppShell>
+    </ProtectedRoute>
   );
 }
 
@@ -59,25 +55,20 @@ export default function App() {
         {/* Public */}
         <Route path="/login" element={<Login />} />
 
-        {/* Protected (require any logged-in user) */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <AppShell><Home /></AppShell>
-            </ProtectedRoute>
-          }
-        />
+        {/* Protected — any logged-in user */}
+        <Route path="/"          element={<Protected element={<Home     />} />} />
+        <Route path="/clases"    element={<Protected element={<Clases   />} />} />
+        <Route path="/eventos"   element={<Protected element={<Eventos  />} />} />
+        <Route path="/cursos"    element={<Protected element={<Cursos   />} />} />
+        <Route path="/agenda"    element={<Protected element={<Agenda   />} />} />
+        <Route path="/grabadas"  element={<Protected element={<Grabadas />} />} />
+        <Route path="/mi-cuenta" element={<Protected element={<MiCuenta />} />} />
 
-        {/* Catch-all — also protected so we don't leak a layout-less 404 */}
-        <Route
-          path="*"
-          element={
-            <ProtectedRoute>
-              <AppShell><NotFound /></AppShell>
-            </ProtectedRoute>
-          }
-        />
+        {/* Protected — admins only */}
+        <Route path="/admin"     element={<Protected element={<Admin    />} adminOnly />} />
+
+        {/* 404 (also protected so we don't leak a layout-less page) */}
+        <Route path="*"          element={<Protected element={<NotFound />} />} />
       </Routes>
     </AuthProvider>
   );
