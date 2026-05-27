@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase, isAdminEmail } from '@/lib/supabase';
 import {
@@ -20,23 +20,27 @@ export default function AuthProvider({ children }: Props) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading]     = useState(true);
 
+  // Standalone fetcher — used by both the auth-state listener AND by
+  // refreshProfile() exposed to consumers. Returns the new profile so the
+  // caller can react synchronously, but ALSO updates context state.
+  const fetchProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('user_id, full_name, email, tier, avatar_url')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) {
+      console.warn('[auth] profile fetch error:', error.message);
+      setUserProfile(null);
+      return null;
+    }
+    const profile = data as UserProfile | null;
+    setUserProfile(profile);
+    return profile;
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-
-    async function fetchProfile(userId: string): Promise<void> {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, email, tier, avatar_url')
-        .eq('user_id', userId)
-        .maybeSingle();
-      if (cancelled) return;
-      if (error) {
-        console.warn('[auth] profile fetch error:', error.message);
-        setUserProfile(null);
-        return;
-      }
-      setUserProfile(data as UserProfile | null);
-    }
 
     // 1) Resolve initial session synchronously-ish (via getSession),
     //    then unblock the UI by clearing isLoading.
@@ -75,7 +79,12 @@ export default function AuthProvider({ children }: Props) {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile]);
+
+  const refreshProfile = useCallback(async (): Promise<void> => {
+    if (!currentUser) return;
+    await fetchProfile(currentUser.id);
+  }, [currentUser, fetchProfile]);
 
   const value = useMemo<AuthContextValue>(() => {
     const isAdmin = isAdminEmail(currentUser?.email);
@@ -85,6 +94,7 @@ export default function AuthProvider({ children }: Props) {
       userProfile,
       isAdmin,
       isLoading,
+      refreshProfile,
       signOut: async () => {
         console.log('[auth] signOut requested');
         // 5s timeout — never let a hung network call lock the UI
@@ -110,7 +120,7 @@ export default function AuthProvider({ children }: Props) {
         window.location.assign('/login');
       },
     };
-  }, [currentUser, userProfile, isLoading]);
+  }, [currentUser, userProfile, isLoading, refreshProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

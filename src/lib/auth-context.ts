@@ -20,6 +20,10 @@ export interface AuthContextValue {
   isLoading: boolean;
   /** Sign out, purge persisted session and redirect to /login */
   signOut: () => Promise<void>;
+  /** Re-fetch the profile row. Call after a server-side change (e.g. tier upgrade
+   *  via the confirm-payment Edge Function) so the UI reflects the new state
+   *  without a full page reload. */
+  refreshProfile: () => Promise<void>;
 }
 
 /**

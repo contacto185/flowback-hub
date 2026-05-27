@@ -10,6 +10,7 @@
     "lint": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@paypal/react-paypal-js": "^9.2.0",
     "@supabase/supabase-js": "^2.45.0",
     "lucide-react": "^0.469.0",
     "react": "^18.3.1",
