@@ -56,6 +56,47 @@ Ver `.env.example`. Las que empiezan con `VITE_` quedan disponibles en
 `import.meta.env.VITE_*` (y se incrustan en el bundle — no usar para secrets
 de server-side; esos van en las Edge Functions vía `supabase secrets set`).
 
+| variable                 | uso                                                                  | requerida |
+|--------------------------|----------------------------------------------------------------------|-----------|
+| `VITE_SUPABASE_URL`      | URL del proyecto Supabase (ej. `https://wvxcqavtjtgvxdvtuvvd.supabase.co`) | sí        |
+| `VITE_SUPABASE_ANON_KEY` | Anon JWT del proyecto Supabase (`Settings → API`)                    | sí        |
+| `VITE_PAYPAL_CLIENT_ID`  | Client-id del SDK PayPal — `Live` para prod, `Sandbox` para tests    | opcional · si falta los botones de pago se deshabilitan |
+
+## Deploy en Vercel
+
+El repo trae `vercel.json` configurado para Vite + SPA. Al importar el
+repo en Vercel, todo lo demás se autodetecta — solo hay que cargar las
+env vars y elegir la rama.
+
+**Pasos:**
+
+1. En Vercel: `New Project` → importar `contacto185/flowback-hub`.
+2. **Production branch** → `react-v2` (Project Settings → Git).
+3. **Environment Variables** (Project Settings → Environment Variables):
+   Cargar las 3 de la tabla de arriba. Habilitar el toggle de las 3
+   environments (Production, Preview, Development).
+4. `Deploy` → primera build corre `npm install && npm run build`.
+
+**`vercel.json` ya configurado:**
+
+```json
+{
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
+```
+
+La rewrite manda cualquier ruta no encontrada como archivo estático a
+`/index.html` → React Router se hace cargo del routing client-side
+(necesario para que `/eventos`, `/admin/videos`, etc. funcionen al
+refrescar el browser).
+
+Vercel sirve los archivos reales (`/assets/index-abc.js`, `/manifest.json`,
+etc.) ANTES de aplicar las rewrites — la regla solo dispara para paths
+que no matchean un archivo del build.
+
 ## Convivencia con `main`
 
 | rama | entry point | runtime |
