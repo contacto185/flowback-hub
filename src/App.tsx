@@ -16,8 +16,13 @@ import NotFound      from '@/pages/NotFound';
 import AdminLayout       from '@/pages/admin/AdminLayout';
 import AdminVideos       from '@/pages/admin/AdminVideos';
 import AdminEventos      from '@/pages/admin/AdminEventos';
+import AdminWebinars     from '@/pages/admin/AdminWebinars';
 import AdminCursos       from '@/pages/admin/AdminCursos';
-import AdminComingSoon   from '@/pages/admin/AdminComingSoon';
+import AdminDocs         from '@/pages/admin/AdminDocs';
+import AdminPlanes       from '@/pages/admin/AdminPlanes';
+import AdminBloques      from '@/pages/admin/AdminBloques';
+import AdminImagenes     from '@/pages/admin/AdminImagenes';
+import AdminUsuarios     from '@/pages/admin/AdminUsuarios';
 
 /** Layout used for every protected page: header on top, BottomNav fixed
     at the bottom, content in between. `pb-28` keeps content from being
@@ -72,15 +77,15 @@ export default function App() {
         {/* Admin — nested routes. /admin redirects to /admin/videos. */}
         <Route path="/admin"      element={<Protected element={<AdminLayout />} adminOnly />}>
           <Route index             element={<Navigate to="videos"   replace />} />
-          <Route path="videos"     element={<AdminVideos  />} />
-          <Route path="eventos"    element={<AdminEventos />} />
-          <Route path="cursos"     element={<AdminCursos  />} />
-          <Route path="webinars"   element={<AdminComingSoon tabLabel="Webinars"  />} />
-          <Route path="docs"       element={<AdminComingSoon tabLabel="Documentos" />} />
-          <Route path="planes"     element={<AdminComingSoon tabLabel="Planes"    />} />
-          <Route path="bloques"    element={<AdminComingSoon tabLabel="Bloques"   />} />
-          <Route path="imagenes"   element={<AdminComingSoon tabLabel="Imágenes"  />} />
-          <Route path="usuarios"   element={<AdminComingSoon tabLabel="Usuarios"  />} />
+          <Route path="videos"     element={<AdminVideos    />} />
+          <Route path="eventos"    element={<AdminEventos   />} />
+          <Route path="webinars"   element={<AdminWebinars  />} />
+          <Route path="cursos"     element={<AdminCursos    />} />
+          <Route path="docs"       element={<AdminDocs      />} />
+          <Route path="planes"     element={<AdminPlanes    />} />
+          <Route path="bloques"    element={<AdminBloques   />} />
+          <Route path="imagenes"   element={<AdminImagenes  />} />
+          <Route path="usuarios"   element={<AdminUsuarios  />} />
         </Route>
 
         {/* 404 (also protected so we don't leak a layout-less page) */}
