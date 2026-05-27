@@ -7,9 +7,10 @@ import Home     from '@/pages/Home';
 import Clases   from '@/pages/Clases';
 import Eventos  from '@/pages/Eventos';
 import Cursos   from '@/pages/Cursos';
-import Agenda   from '@/pages/Agenda';
-import Grabadas from '@/pages/Grabadas';
-import MiCuenta from '@/pages/MiCuenta';
+import Agenda     from '@/pages/Agenda';
+import Grabadas   from '@/pages/Grabadas';
+import Documentos from '@/pages/Documentos';
+import MiCuenta   from '@/pages/MiCuenta';
 import Admin    from '@/pages/Admin';
 import Login    from '@/pages/Login';
 import NotFound from '@/pages/NotFound';
@@ -60,9 +61,10 @@ export default function App() {
         <Route path="/clases"    element={<Protected element={<Clases   />} />} />
         <Route path="/eventos"   element={<Protected element={<Eventos  />} />} />
         <Route path="/cursos"    element={<Protected element={<Cursos   />} />} />
-        <Route path="/agenda"    element={<Protected element={<Agenda   />} />} />
-        <Route path="/grabadas"  element={<Protected element={<Grabadas />} />} />
-        <Route path="/mi-cuenta" element={<Protected element={<MiCuenta />} />} />
+        <Route path="/agenda"     element={<Protected element={<Agenda     />} />} />
+        <Route path="/grabadas"   element={<Protected element={<Grabadas   />} />} />
+        <Route path="/documentos" element={<Protected element={<Documentos />} />} />
+        <Route path="/mi-cuenta"  element={<Protected element={<MiCuenta   />} />} />
 
         {/* Protected — admins only */}
         <Route path="/admin"     element={<Protected element={<Admin    />} adminOnly />} />

@@ -1,6 +1,9 @@
-import { Clock, MapPin, Video, CalendarX, AlertTriangle } from 'lucide-react';
+import { Clock, MapPin, Video, CalendarX } from 'lucide-react';
 import { useEventos, type EventoItem } from '@/hooks/useEventos';
 import { formatEventDate, parseDateBadge } from '@/lib/format';
+import CardSkeleton from '@/components/CardSkeleton';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
 
 export default function Eventos() {
   const { data, loading, error } = useEventos();
@@ -14,25 +17,15 @@ export default function Eventos() {
         <p className="text-xs text-ink/40">Únete a nuestras experiencias transformadoras</p>
       </header>
 
-      {loading && <EventosSkeleton />}
-
-      {!loading && error && (
-        <div
-          className="card p-6 text-center mt-4"
-          style={{ borderColor: 'rgba(245,124,0,.3)' }}
-        >
-          <AlertTriangle className="w-8 h-8 mx-auto mb-3 text-accent-orange" strokeWidth={2} />
-          <p className="font-semibold text-ink mb-1">Error al cargar los eventos</p>
-          <p className="text-xs text-ink/50 font-mono break-all">{error.message}</p>
-        </div>
-      )}
+      {loading && <CardSkeleton count={3} withImage />}
+      {!loading && error && <ErrorCard error={error} />}
 
       {!loading && !error && data && data.length === 0 && (
-        <div className="card p-8 text-center mt-4">
-          <CalendarX className="w-12 h-12 mx-auto mb-3 text-ink/20" strokeWidth={1.5} />
-          <p className="font-semibold text-ink/70 mb-1">No hay eventos próximos</p>
-          <p className="text-xs text-ink/40">Vuelve pronto para ver nuevas fechas</p>
-        </div>
+        <EmptyState
+          icon={CalendarX}
+          title="No hay eventos próximos"
+          description="Vuelve pronto para ver nuevas fechas"
+        />
       )}
 
       {!loading && !error && data && data.length > 0 && (
@@ -45,23 +38,6 @@ export default function Eventos() {
         </ul>
       )}
     </section>
-  );
-}
-
-function EventosSkeleton() {
-  return (
-    <ul className="space-y-3" aria-busy="true" aria-label="Cargando eventos">
-      {[0, 1, 2].map((i) => (
-        <li key={i} className="card overflow-hidden p-0">
-          <div className="aspect-[16/9] bg-ink/[.04] animate-pulse" />
-          <div className="p-4">
-            <div className="h-4 w-2/3 bg-ink/[.08] rounded animate-pulse mb-2" />
-            <div className="h-3 w-full bg-ink/[.05] rounded animate-pulse mb-1" />
-            <div className="h-3 w-1/2 bg-ink/[.05] rounded animate-pulse" />
-          </div>
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -79,7 +55,6 @@ function EventoCard({ evento: e }: { evento: EventoItem }) {
 
   return (
     <article className="card overflow-hidden p-0">
-      {/* Thumbnail with overlays */}
       <div className="relative aspect-[16/9] bg-grad-brand/10">
         {hasThumb && (
           <img
@@ -130,8 +105,8 @@ function EventoCard({ evento: e }: { evento: EventoItem }) {
             <>
               <span className="text-ink/20">·</span>
               {isOnline
-                ? <Video   className="w-3.5 h-3.5 flex-shrink-0 text-ink/40" strokeWidth={2} />
-                : <MapPin  className="w-3.5 h-3.5 flex-shrink-0 text-ink/40" strokeWidth={2} />}
+                ? <Video  className="w-3.5 h-3.5 flex-shrink-0 text-ink/40" strokeWidth={2} />
+                : <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-ink/40" strokeWidth={2} />}
               <span className="text-ink/50">{locLabel}</span>
             </>
           )}

@@ -6,6 +6,7 @@ import {
   Video,
   PlayCircle,
   UserCircle,
+  FolderOpen,
   ArrowRight,
   type LucideIcon,
 } from 'lucide-react';
@@ -39,8 +40,9 @@ const QUICK_CARDS: QuickCard[] = [
   { to: '/clases',   icon: Gift,          iconBg: 'bg-green-500/15',     iconFg: 'text-green-700',     title: 'Clases gratis',    subtitle: 'Acceso libre para empezar' },
   { to: '/cursos',   icon: GraduationCap, iconBg: 'bg-accent-blue/15',   iconFg: 'text-accent-blue',   title: 'Cursos',           subtitle: 'Programas de transformación' },
   { to: '/agenda',   icon: Video,         iconBg: 'bg-accent-purple/15', iconFg: 'text-accent-purple', title: 'Tu agenda',        subtitle: 'Clases grabadas para miembros' },
-  { to: '/grabadas', icon: PlayCircle,    iconBg: 'bg-accent-warm/20',   iconFg: 'text-accent-orange', title: 'Sesiones grabadas',subtitle: 'Contenido exclusivo VIP / Premium' },
-  { to: '/mi-cuenta',icon: UserCircle,    iconBg: 'bg-ink/[.06]',        iconFg: 'text-ink/70',        title: 'Mi cuenta',        subtitle: 'Perfil, plan y configuración' },
+  { to: '/grabadas',  icon: PlayCircle,    iconBg: 'bg-accent-warm/20',   iconFg: 'text-accent-orange', title: 'Sesiones grabadas',subtitle: 'Contenido exclusivo VIP / Premium' },
+  { to: '/documentos',icon: FolderOpen,    iconBg: 'bg-accent-blue/15',   iconFg: 'text-accent-blue',   title: 'Documentos',       subtitle: 'Guías y materiales descargables' },
+  { to: '/mi-cuenta', icon: UserCircle,    iconBg: 'bg-ink/[.06]',        iconFg: 'text-ink/70',        title: 'Mi cuenta',        subtitle: 'Perfil, plan y configuración' },
 ];
 
 export default function Home() {
