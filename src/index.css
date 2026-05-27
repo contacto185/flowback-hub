@@ -12,6 +12,12 @@
   }
 }
 
+/* Slide-up animation for AdminFormSheet (and any future bottom-sheet) */
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
 @layer components {
   /* Gradient text used in headings (e.g. "Flowback Hub") */
   .grad-text {
@@ -33,5 +39,12 @@
   }
   .btn-grad:hover {
     @apply scale-[1.02];
+  }
+
+  /* Form input — used by Login + every admin form. Cream-tinted bg by default,
+     white + orange border on focus. Works for text/email/password/date/time/url. */
+  .form-input {
+    @apply w-full bg-ink/[.04] border border-ink/10 rounded-xl px-3 py-2.5 text-sm
+           transition-colors focus:outline-none focus:border-accent-orange focus:bg-white;
   }
 }
